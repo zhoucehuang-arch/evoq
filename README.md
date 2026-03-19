@@ -42,11 +42,12 @@ It brings research, multi-agent review, strategy development, governed execution
 
 If you want to publish this project to GitHub and deploy it to VPS nodes, start here:
 
-1. [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
-2. [VPS Deployment Runbook](docs/next-gen/VPS-DEPLOYMENT-RUNBOOK.md)
-3. [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
-4. [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
-5. [Next-Gen Docs Index](docs/next-gen/README.md)
+1. [Product Overview](docs/next-gen/PRODUCT-OVERVIEW.md)
+2. [FAQ](docs/next-gen/FAQ.md)
+3. [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
+4. [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
+5. [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
+6. [Next-Gen Docs Index](docs/next-gen/README.md)
 
 ### Quick Deploy Summary
 
@@ -84,6 +85,8 @@ When you use a relay, configure these values on both Core and Worker nodes:
 
 ### Documentation
 
+- [Product Overview](docs/next-gen/PRODUCT-OVERVIEW.md)
+- [FAQ](docs/next-gen/FAQ.md)
 - [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
 - [VPS Deployment Runbook](docs/next-gen/VPS-DEPLOYMENT-RUNBOOK.md)
 - [Backup and Restore Runbook](docs/next-gen/BACKUP-AND-RESTORE-RUNBOOK.md)
@@ -91,6 +94,13 @@ When you use a relay, configure these values on both Core and Worker nodes:
 - [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
 - [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
 - [Next-Gen Architecture Index](docs/next-gen/README.md)
+
+### Project Standards
+
+- [Contributing Guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
+- [Support](SUPPORT.md)
 
 ## 中文
 

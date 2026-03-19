@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Operator Docs
+    url: https://github.com/zhoucehuang-arch/quant-evo-nextgen/blob/main/docs/next-gen/README.md
+    about: Start here for deployment, operations, and product docs.
+  - name: Support Guide
+    url: https://github.com/zhoucehuang-arch/quant-evo-nextgen/blob/main/SUPPORT.md
+    about: Use the support guide before filing an issue.

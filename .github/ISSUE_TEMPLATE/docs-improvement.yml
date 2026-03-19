@@ -1,0 +1,30 @@
+name: Docs Improvement
+description: Suggest an improvement to product, deploy, or operator docs
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page or file
+      description: Which doc is unclear or missing?
+      placeholder: README.md or docs/next-gen/...
+    validations:
+      required: true
+  - type: textarea
+    id: audience
+    attributes:
+      label: Audience
+      description: Who is blocked by this docs issue?
+      placeholder: First-time owner, VPS deployer, contributor, operator
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is confusing or missing
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested improvement

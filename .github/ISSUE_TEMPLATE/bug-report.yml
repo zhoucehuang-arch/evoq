@@ -1,0 +1,52 @@
+name: Bug Report
+description: Report a reproducible product, docs, deploy, or runtime problem
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dashboard
+        - Discord control plane
+        - Deployment / VPS
+        - Trading / execution
+        - Learning / research
+        - Evolution / governance
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: Describe the behavior you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      description: Include commands, prompts, pages, or workflow steps.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include local, Core VPS, Worker VPS, paper, live, relay, or browser details.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Logs or diagnostics
+      description: Paste redacted logs, doctor output, or smoke-check results.

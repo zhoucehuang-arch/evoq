@@ -76,6 +76,23 @@ a {
   line-height: 1.6;
 }
 
+.header-note-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.header-note {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .nav {
   display: flex;
   flex-wrap: wrap;
@@ -95,6 +112,13 @@ a {
   border-color: var(--panel-strong);
   color: var(--text);
   background: rgba(255, 255, 255, 0.06);
+}
+
+.nav a.is-active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(116, 223, 202, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(116, 223, 202, 0.12);
 }
 
 .hero {

@@ -1,20 +1,22 @@
 # Owner Operation Quickstart
 
-## 1. Primary surfaces
+This guide is for the person operating the system day to day.
 
-- Discord: ask, approve, pause, inspect, and request governed config or deploy-draft changes in natural language.
-- Dashboard: inspect trading state, learning state, evolution state, incidents, and runtime health.
-- SSH: use only for deploy, upgrade, restore, or break-glass repair.
+## Main Surfaces
 
-## 2. First things to do after deploy
+- Discord: control, approvals, questions, pauses, and governed config changes
+- Dashboard: health, trading state, learning state, evolution state, and incident visibility
+- SSH: deployment, upgrade, restore, and break-glass recovery
+
+## First-Day Checklist
 
 1. Open the dashboard and confirm it loads.
 2. Run `./ops/bin/core-smoke.sh` on the Core VPS and confirm it reports no `fail`.
 3. Run `./ops/bin/worker-smoke.sh` on the Worker VPS and confirm it reports no `fail`.
-4. In Discord, verify that `/status`, `/config`, `/approvals`, `/deploy-status`, and `/deploy-bootstrap` respond only for the allowed owner accounts and channels.
-5. If Alpaca is enabled, wait for the first broker sync cycle and confirm the trading dashboard updates.
+4. In Discord, verify that only the allowed owner accounts and channels can control the bot.
+5. If a real broker is configured, wait for the first broker sync and confirm the trading view updates correctly.
 
-## 3. Safe prompts in Discord
+## Good Discord Prompts
 
 - `现在系统整体状态怎么样？`
 - `列出待审批事项。`
@@ -33,7 +35,9 @@
 - `设置 core 中转key 为 <secret>`
 - `设置 worker 数据库url 为 <private-postgres-url>`
 
-## 4. When to intervene manually
+## When To Intervene
+
+Intervene manually if:
 
 - `doctor` or `core-smoke.sh` returns `fail`
 - broker sync or reconciliation turns red
@@ -42,16 +46,30 @@
 - dashboard stops updating
 - the Worker can no longer see `codex`
 
-## 5. Safe owner habits
+## Safe Operating Habits
 
-- Keep the broker in `paper` mode until the first full deploy, smoke checks, and broker sync are all clean.
+- Keep the broker in `paper` mode until the first full deploy and smoke cycle are clean.
 - Keep `QE_DISCORD_ALLOWED_USER_IDS` narrow.
-- Prefer governed config changes over manual env edits once the system is running.
-- Prefer deploy-draft changes through Discord over copying secrets into random shell history.
-- Treat every live-promotion step as a deliberate approval event, not a casual chat instruction.
+- Prefer governed config changes over manual env edits after the system is running.
+- Prefer Discord deploy-draft updates over copying secrets into shell history.
+- Treat every live-promotion step as an explicit approval event.
 
-## 6. Honest current limits
+## What Still Requires SSH
 
-- Deploy-draft changes made through Discord usually require a service restart before the runtime reads the new values.
-- Conflicting option conversion events still go to `review_required` instead of auto-applying unconditionally.
-- Truly unattended live operation still depends on the VPS-side smoke checks, broker sync, paper/live promotion, and capital activation steps being completed cleanly.
+- first deployment
+- GitHub-based upgrades
+- backup and restore
+- systemd setup
+- break-glass repair
+
+## Important Limits
+
+- Deploy-draft changes made through Discord usually still require a service restart before the runtime reads the new values.
+- Conflicting option conversion events still go to `review_required` instead of applying automatically.
+- Truly unattended live operation still depends on clean smoke checks, broker sync, paper/live promotion discipline, and actual production activation on the target VPS.
+
+## Next Reading
+
+- [FAQ.md](FAQ.md)
+- [GITHUB-TO-VPS-DEPLOYMENT.md](GITHUB-TO-VPS-DEPLOYMENT.md)
+- [VPS-DEPLOYMENT-RUNBOOK.md](VPS-DEPLOYMENT-RUNBOOK.md)
