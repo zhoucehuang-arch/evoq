@@ -1,0 +1,22 @@
+name: quant-evo-core-edge
+
+services:
+  dashboard-edge:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    env_file:
+      - ${QE_CORE_RUNTIME_ENV_FILE:-./core.env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      dashboard-web:
+        condition: service_started
+
+volumes:
+  caddy-data:
+  caddy-config:

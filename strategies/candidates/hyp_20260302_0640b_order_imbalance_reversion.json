@@ -1,0 +1,44 @@
+{
+  "type": "HYPOTHESIS",
+  "cycle_id": "cycle_20260302_0640",
+  "hypothesis_id": "hyp_20260302_0640b",
+  "statement": "When intraday order-imbalance proxy and relative volume expansion occur against a stretched RSI move, a short-horizon reversion setup can capture liquidity normalization within 1 to 6 hours.",
+  "rationale": "Flow pressure and temporary imbalance can overshoot fair value intraday. Requiring technical stretch plus trend context reduces random noise entries.",
+  "expected_traits": {
+    "holding_period": "1h ~ 6h",
+    "holding_period_days_cap": 1,
+    "target_sharpe": 1.0,
+    "max_drawdown": "< 8%",
+    "asset_class": "equity",
+    "archetype": "mean_reversion"
+  },
+  "signal_sources": [
+    "alternative_data_proxy_order_imbalance",
+    "alternative_data_proxy_relative_volume",
+    "technical_rsi"
+  ],
+  "entry_trigger": "Enter reversion when imbalance_proxy >= threshold, relative_volume >= 1.6x baseline, and RSI(14) >= 72 for short side or <= 28 for long side.",
+  "exit_trigger": "Exit at RSI mean reversion band (45-55), or stop at 1.2*ATR adverse move, or hard timeout at 6 hours.",
+  "risk_controls": {
+    "max_position_pct": 0.02,
+    "max_concurrent_positions": 6,
+    "intraday_only": true,
+    "no_entry_in_earnings_window": true
+  },
+  "quant_metrics": {
+    "status": "pending_backtest",
+    "required": [
+      "oos_sharpe",
+      "oos_max_drawdown",
+      "oos_win_rate",
+      "expectancy_after_costs",
+      "slippage_stress",
+      "sensitivity_pm10"
+    ]
+  },
+  "evidence": [
+    "knowledge/papers/paper_note_20260302_order_imbalance.md:1",
+    "evo/cycles/cycle_20260302_0640_refresh_metrics.md:1"
+  ],
+  "delivery_target": "#a-report + repo artifacts"
+}

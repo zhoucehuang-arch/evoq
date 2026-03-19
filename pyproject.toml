@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quant-evo-nextgen"
+version = "0.1.0"
+description = "Next-generation autonomous investment system foundation."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.135,<0.136",
+  "uvicorn>=0.42,<0.43",
+  "pydantic>=2.12,<3.0",
+  "pydantic-settings>=2.11,<3.0",
+  "pydantic-ai-slim[openai]>=1.70,<1.71",
+  "dbos>=2.15,<2.16",
+  "discord.py>=2.7,<2.8",
+  "sqlalchemy>=2.0,<2.1",
+  "psycopg[binary]>=3.2,<3.3",
+  "httpx>=0.28,<0.29",
+  "alembic>=1.16,<1.17",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4,<8.5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quant_evo_nextgen"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

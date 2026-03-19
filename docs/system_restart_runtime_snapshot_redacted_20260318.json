@@ -1,0 +1,81 @@
+{
+  "generated_at_utc": "2026-03-18T03:20:00Z",
+  "sanitized": true,
+  "repo": {
+    "path": "/root/.openclaw/workspace/repos/quant-evo-do-test",
+    "branch": "main",
+    "commit": "e60b301de86395a931ad36b6f471c73687e1be20"
+  },
+  "agents": [
+    {"id": "main", "name": "wattson_nadah", "workspace": "/root/.openclaw/workspace"},
+    {"id": "operator", "name": "Operator", "workspace": "/root/.openclaw/workspace/bot-b/operator"},
+    {"id": "trader", "name": "Trader", "workspace": "/root/.openclaw/workspace/bot-b/trader"},
+    {"id": "guardian", "name": "Guardian", "workspace": "/root/.openclaw/workspace/bot-b/guardian"}
+  ],
+  "bindings": [
+    {"agentId": "operator", "channelId": "1475566933079359650"},
+    {"agentId": "trader", "channelId": "1475566934891430042"},
+    {"agentId": "guardian", "channelId": "1475566936359178374"},
+    {"agentId": "operator", "channelId": "1475566937911201814"},
+    {"agentId": "operator", "channelId": "1475566939442254039"},
+    {"agentId": "operator", "channelId": "1475566941518303294"},
+    {"agentId": "main", "channelId": "1475551113163047194"}
+  ],
+  "enabled_jobs": [
+    "a-network-learning-dispatch-v1",
+    "b-opportunity-dispatch-v1",
+    "b-snapshot-refresh-5m-v1",
+    "b-report-autopublish-v3-30m",
+    "a-hourly-report-autopublish-v1",
+    "trading-hours-health-15m-v1",
+    "preopen-action-plan-5m-v1",
+    "post-market-review-daily-v1",
+    "daily-evolution-report-daily-v1",
+    "kj-clove-repair-progress-15m-v1",
+    "open-bell-report-v1",
+    "first-30m-open-report-v1"
+  ],
+  "strategy_state": {
+    "candidates_count": 21,
+    "staging_count": 10,
+    "production_files": [".gitkeep"],
+    "staging_examples": [
+      "adaptive_basket_event_react_v1.py",
+      "adaptive_basket_momo_breakout_v1.py",
+      "adaptive_basket_momo_breakout_v2.py",
+      "adaptive_basket_mr_pullback_v1.py",
+      "multi_logic_router_v1.py",
+      "multi_logic_router_v2.py",
+      "solid_altflow_technical_v1.py",
+      "solid_altflow_technical_v2.py"
+    ]
+  },
+  "artifact_freshness": {
+    "paper_account_snapshot_latest": "fresh_on_2026-03-18",
+    "opportunity_research_latest": "stale_since_2026-03-07",
+    "community_signal_watch_latest": "stale_since_2026-03-07"
+  },
+  "recent_admin_policies": [
+    "admin_continuous_autonomous_operation_20260318.md",
+    "admin_immediate_error_repair_not_hourly_report_20260318.md",
+    "admin_sleep_autonomous_supervision_20260318.md",
+    "admin_strategy_universe_options_shorts_20260318.md"
+  ],
+  "preserve_paths": [
+    "bot-b/operator",
+    "bot-b/trader",
+    "bot-b/guardian",
+    "protocols",
+    "knowledge",
+    "memory",
+    "strategies",
+    "trading"
+  ],
+  "known_issues": [
+    "execution-generation chain stalled while account snapshots remain live",
+    "research/opportunity outputs stale since 2026-03-07",
+    "speaker drift between A content and operator-facing reports",
+    "messaging/gateway delivery quirks seen in logs",
+    "production strategy directory currently empty except .gitkeep"
+  ]
+}

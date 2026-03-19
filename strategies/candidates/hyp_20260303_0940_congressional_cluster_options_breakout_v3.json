@@ -1,0 +1,105 @@
+{
+  "type": "REVISED_HYPOTHESIS",
+  "hypothesis_id": "hyp_20260303_0940_congressional_cluster_options_breakout_v3",
+  "supersedes": "hyp_20260303_0940_congressional_cluster_options_breakout_v1",
+  "deployment_status": "NOT_APPROVED_UNTIL_BACKTEST_PASS",
+  "statement": "Post-disclosure congressional cluster-buy signals may have short-horizon alpha only when validated on a strict no-leak clock and confirmed by options aggression plus liquid breakout conditions.",
+  "signal_sources": [
+    "public_filing_availability_timestamp",
+    "congressional_trade_disclosure_buy_only",
+    "locked_committee_ticker_map_v1",
+    "call_sweep_notional_and_zscore",
+    "20d_breakout_relative_volume",
+    "liquidity_spread_adv_filters",
+    "vix_regime_filter",
+    "bucketed_execution_cost_model"
+  ],
+  "entry_trigger": "At T+1 session (10:15-11:30 ET), enter long only if all conditions hold: (1) >=2 BUY disclosures for same ticker became publicly available within prior 7 calendar days using availability timestamp only; discard signals older than 21 days, (2) call sweep notional >= 500k and sweep z-score > 2.0 vs 60-session baseline, (3) close > 20-day high and relative volume >= 1.3, (4) spread <= 25 bps, ADV >= 40M, and opening gap <= 4%.",
+  "exit_trigger": "Exit at earliest of +5.5% TP, -3.0% stop, 5 trading-day timeout, 2-session options reversal (put premium > call premium), or forced T-1 exit before earnings.",
+  "event_window": "Open positions only during T+1 to T+3 trading days after the cluster disclosure becomes public.",
+  "expected_decay_timeline": "Edge half-life expected by day 4-5 post-public disclosure.",
+  "expected_traits": {
+    "holding_period": "1d ~ 5d",
+    "target_sharpe": 1.35,
+    "max_drawdown": "<= 13%",
+    "asset_class": "equity",
+    "archetype": "catalyst_event"
+  },
+  "confluence_scoring": {
+    "confirming_signals": [
+      "cluster_public_disclosure",
+      "call_sweep_zscore_gt_2",
+      "20d_breakout_with_relvol"
+    ],
+    "conflicting_signals": [
+      "disclosure_age_gt_21d",
+      "vix_gt_30"
+    ],
+    "confidence": 0.60
+  },
+  "risk_controls": {
+    "position_cap": "2.0% per symbol, 8% gross",
+    "adv_participation_cap": "<=1.0% ADV per order",
+    "spread_cap_bps": 25,
+    "halts_and_borrow_filter": "exclude halts; exclude short-borrow-dependent names",
+    "gap_through_stop_rule": "fill at next tradable print with slippage penalty",
+    "stale_signal_filter": "no entry when disclosure_age_days > 21",
+    "crowding_filter": "reject if pre-entry D-3 return > 9% or social/options popularity > 90th percentile"
+  },
+  "validation_protocol": {
+    "clock": "strict no-leak public timestamp",
+    "oos_window": ">=1 year walk-forward",
+    "regime_slices": [
+      "VIX<=20",
+      "20<VIX<=30",
+      "VIX>30"
+    ],
+    "execution_model": [
+      "half-spread",
+      "impact_by_participation",
+      "slippage_by_liquidity_bucket"
+    ],
+    "placebo_tests": [
+      "randomized_disclosure_dates",
+      "non_committee_matched_control"
+    ],
+    "decay_tests": [
+      "D1",
+      "D2",
+      "D3",
+      "D4",
+      "D5",
+      "D6-D8"
+    ],
+    "required_table": [
+      "period",
+      "N_events",
+      "win_rate",
+      "OOS_sharpe_after_cost",
+      "max_DD",
+      "avg_hold",
+      "VIX_gt_30_slice",
+      "signal_age_bucket_D1_D8",
+      "corr_vs_production"
+    ]
+  },
+  "hard_gates": {
+    "min_events_oos": 180,
+    "oos_sharpe_after_cost": ">=1.0",
+    "max_drawdown": "<=0.13",
+    "regime_consistency": "no >=3-month slice with Sharpe < 0",
+    "capacity": ">=90% trades satisfy ADV/spread constraints"
+  },
+  "search_provider": "searxng",
+  "query_scope": "congressional_public_timestamp_event_study + options_flow_breakout",
+  "parent_strategy": "seed_options_flow_v1",
+  "feature_map_target": [
+    7,
+    7,
+    4,
+    7,
+    0,
+    8
+  ],
+  "status": "approved_for_backtest"
+}

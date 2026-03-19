@@ -1,0 +1,59 @@
+{
+  "hypothesis_id": "hyp_20260225_1949",
+  "statement": "Go long 2-4 days before earnings only when insider dip-buying and sustained dark-pool accumulation align with bullish short-dated call flow, then exit before print.",
+  "rationale": "Insider open-market buys and dark-pool accumulation both signal informed positioning. Adding unusual bullish options flow narrows to high-conviction windows where pre-earnings drift is more likely to persist.",
+  "expected_traits": {
+    "holding_period": "2d ~ 4d",
+    "target_sharpe": 1.5,
+    "max_drawdown": "< 14%",
+    "asset_class": "equity",
+    "archetype": "event_driven"
+  },
+  "signal_sources": [
+    "corporate_insider",
+    "dark_pool_flow",
+    "options_flow",
+    "event_calendar"
+  ],
+  "entry_trigger": "At T-4 to T-1 trading days before earnings, enter long only if all are true: (1) >=1 CEO/CFO open-market buy in prior 30 days and close is within 10-day lower quartile, (2) dark-pool net buy ratio >= 1.25 for at least 3 consecutive sessions, (3) same-week call premium sweep >= $500k and call/put volume ratio >= 2.5x 20-day baseline, (4) stock closes above 5-day VWAP.",
+  "exit_trigger": "Exit at earliest of +4.0% take-profit, -2.0% stop-loss, options-flow reversal, or close before earnings release date.",
+  "confluence_scoring": {
+    "confirming_signals": [
+      "insider_buying",
+      "dark_pool_accumulation",
+      "bullish_options_flow"
+    ],
+    "conflicting_signals": [],
+    "confidence": 0.9
+  },
+  "risk_controls": {
+    "position_cap": "max 2.5% per symbol, 10% strategy gross",
+    "liquidity_filter": "ADV >= $25M, spread <= 30 bps",
+    "event_risk": "no overnight hold through earnings print",
+    "regime_guard": "disable entries when VIX > 32"
+  },
+  "validation_bundle_required": {
+    "backtest_window": ">= 3 years",
+    "oos_split": "purged walk-forward by earnings cohort",
+    "minimum_sample_gate": 20,
+    "required_metrics": [
+      "oos_sharpe",
+      "max_drawdown",
+      "profit_factor",
+      "hit_rate",
+      "return_after_costs"
+    ]
+  },
+  "search_provider": "searxng",
+  "query_scope": "us_equities_pre_earnings_alt_data_multi_signal",
+  "parent_strategy": "seed_pre_earnings_drift_v1",
+  "feature_map_target": [
+    8,
+    9,
+    3,
+    8,
+    0,
+    4
+  ],
+  "status": "candidate_ready_for_backtest_pipeline"
+}

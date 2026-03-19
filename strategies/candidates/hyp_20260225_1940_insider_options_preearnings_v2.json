@@ -1,0 +1,63 @@
+{
+  "hypothesis_id": "hyp_20260225_1940",
+  "statement": "Trade pre-earnings long setups only when insider dip-buying, unusual bullish options sweeps, and upward estimate revisions align 3-5 days before earnings, then exit before print.",
+  "rationale": "This targets short-horizon information diffusion: insider intent and options flow often lead, analyst revisions confirm direction, and pre-event drift captures move while avoiding binary announcement risk.",
+  "expected_traits": {
+    "holding_period": "1d ~ 5d",
+    "target_sharpe": 1.6,
+    "max_drawdown": "< 12%",
+    "asset_class": "equity",
+    "archetype": "event_driven"
+  },
+  "signal_sources": [
+    "corporate_insider",
+    "options_flow",
+    "analyst_revisions",
+    "event_calendar"
+  ],
+  "entry_trigger": "At T-5 to T-1 trading days before earnings, enter long only if all are true: (1) at least one CEO/CFO open-market buy in prior 30 days near local weakness, (2) bullish options sweep premium >= $500k or call/put volume ratio >= 3x 20d baseline, (3) net estimate revisions positive over prior 10 sessions, (4) IV rank <= 80.",
+  "exit_trigger": "Exit at earliest of: +4.5% take profit, -2.0% stop loss, signal invalidation (options/estimate reversal), or end-of-day before earnings release.",
+  "risk_controls": {
+    "position_cap": "max 3% per name, max 12% total event basket",
+    "liquidity_filter": "ADV >= $30M and spread <= 25 bps",
+    "gap_control": "no hold through earnings print",
+    "kill_switch": "disable new entries when VIX > 30"
+  },
+  "confluence_scoring": {
+    "confirming_signals": [
+      "insider_buying",
+      "bullish_options_flow",
+      "upward_estimate_revisions"
+    ],
+    "conflicting_signals": [
+      "iv_rank_above_80"
+    ],
+    "confidence": 0.75
+  },
+  "validation_bundle_required": {
+    "backtest_window": ">= 2 years",
+    "oos_split": "walk-forward with embargo",
+    "minimum_sample_gate": 20,
+    "required_metrics": [
+      "oos_sharpe",
+      "max_drawdown",
+      "win_rate",
+      "expectancy_after_costs",
+      "slippage_sensitivity"
+    ],
+    "hard_fail_rules": [
+      "reject if oos_sharpe < 0.3",
+      "reject if drawdown > 20%",
+      "reject if threshold perturbation (+/-10%) changes sharpe by > 30%"
+    ]
+  },
+  "evidence": [
+    "knowledge/strategy-frameworks.md:60",
+    "knowledge/strategy-frameworks.md:32",
+    "strategies/candidates/seed_pre_earnings_drift_v1.py:1",
+    "trading/logs/ab_replay_metrics_cycle_20260223_2030.json:1"
+  ],
+  "parent_strategy": "seed_pre_earnings_drift_v1",
+  "feature_map_target": [9, 8, 4, 8, 0, 3],
+  "status": "candidate_ready_for_backtest_pipeline"
+}

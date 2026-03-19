@@ -1,0 +1,17 @@
+{
+  email {$QE_EDGE_ACME_EMAIL}
+}
+
+{$QE_EDGE_PUBLIC_HOST} {
+  encode zstd gzip
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "same-origin"
+    -Server
+  }
+
+  reverse_proxy dashboard-web:3000
+}

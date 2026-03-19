@@ -1,0 +1,37 @@
+{
+  "type": "STRATEGY_ADJUSTMENT_ARTIFACT",
+  "task_id": "admin_1478069757101084888",
+  "agent": "critic",
+  "created_at_utc": "2026-03-02T21:10:00Z",
+  "objective": "A-side output acceleration with risk-gated execution",
+  "shared_method": [
+    "20m checkpoints",
+    "evidence-first",
+    "risk-gated execution"
+  ],
+  "adjustments": {
+    "checkpoint_policy": {
+      "cadence": ":00/:20/:40",
+      "required_fields": [
+        "cycle_id",
+        "mode",
+        "status",
+        "next_action",
+        "next_checkpoint_utc"
+      ]
+    },
+    "evidence_gate": {
+      "rule": "No publish without repo/branch/commit/path:line evidence",
+      "fallback": "Emit EVIDENCE_BLOCKED and continue async A-loop"
+    },
+    "risk_gate": {
+      "entry": "Only execute when hard-redline checks pass",
+      "kill_switch": "Auto REJECT and incident emit on missing proof"
+    }
+  },
+  "metrics": {
+    "checkpoint_miss_target": 0,
+    "evidence_payload_completeness_target": 1.0,
+    "risk_gate_bypass_target": 0
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "models": {
+    "providers": {
+      "gmn": {
+        "baseUrl": "https://gmn.chuangzuoli.com/v1",
+        "apiKey": "${OPENAI_KEY_A1}",
+        "auth": "api-key",
+        "api": "openai-responses",
+        "authHeader": true,
+        "models": [
+          {
+            "id": "gpt-5.3-codex",
+            "name": "GPT-5.3 Codex (Explorer)",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "contextWindow": 400000,
+            "maxTokens": 128000
+          }
+        ],
+        "headers": {
+          "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) OpenClaw/2026.2.14",
+          "Accept": "application/json"
+        }
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "heartbeat": {
+        "enabled": true,
+        "interval": 600000
+      },
+      "compaction": {
+        "enabled": true,
+        "memoryFlush": {
+          "enabled": true,
+          "softThreshold": 4000
+        }
+      },
+      "elevatedDefault": "full"
+    },
+    "list": [
+      {
+        "id": "explorer",
+        "name": "Explorer",
+        "workspace": "./agents/explorer",
+        "model": "gmn/gpt-5.3-codex",
+        "skills": [
+          "github",
+          "discord"
+        ],
+        "identity": {
+          "name": "Explorer",
+          "emoji": "🔬"
+        }
+      }
+    ]
+  },
+  "bindings": [
+    {
+      "agentId": "explorer",
+      "match": {
+        "channel": "discord",
+        "guildId": "${DISCORD_GUILD_ID}",
+        "peer": {
+          "kind": "channel",
+          "id": "${CH_A_ARENA}"
+        }
+      }
+    },
+    {
+      "agentId": "explorer",
+      "match": {
+        "channel": "discord",
+        "guildId": "${DISCORD_GUILD_ID}",
+        "peer": {
+          "kind": "channel",
+          "id": "${CH_A_RESEARCH}"
+        }
+      }
+    },
+    {
+      "agentId": "explorer",
+      "match": {
+        "channel": "discord",
+        "guildId": "${DISCORD_GUILD_ID}",
+        "peer": {
+          "kind": "channel",
+          "id": "${CH_A_REPORT}"
+        }
+      }
+    }
+  ],
+  "channels": {
+    "discord": {
+      "token": "${DISCORD_BOT_TOKEN_EXPLORER}",
+      "groupPolicy": "allowlist",
+      "allowBots": true,
+      "guilds": {
+        "${DISCORD_GUILD_ID}": {
+          "slug": "quant-evo-explorer",
+          "requireMention": false
+        }
+      }
+    }
+  },
+  "cron": {
+    "enabled": true,
+    "maxConcurrentRuns": 1
+  },
+  "skills": {
+    "allowBundled": [
+      "discord",
+      "github"
+    ]
+  },
+  "mcpServers": {
+    "one-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "one-search-mcp"
+      ],
+      "env": {
+        "SEARCH_PROVIDER": "searxng",
+        "SEARXNG_URL": "http://localhost:8888"
+      }
+    }
+  },
+  "memory": {
+    "backend": "qmd",
+    "qmd": {
+      "command": "/root/.bun/bin/qmd",
+      "includeDefaultMemory": true,
+      "sessions": {
+        "enabled": true
+      },
+      "update": {
+        "interval": "5m"
+      }
+    }
+  },
+  "memorySearch": {
+    "cache": {
+      "enabled": true,
+      "maxEntries": 50000
+    }
+  },
+  "tools": {
+    "exec": {
+      "host": "gateway",
+      "security": "full",
+      "ask": "off"
+    },
+    "elevated": {
+      "enabled": true,
+      "allowFrom": {
+        "discord": [
+          "*"
+        ]
+      }
+    }
+  },
+  "commands": {
+    "bash": true
+  }
+}

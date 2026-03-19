@@ -1,0 +1,27 @@
+{
+  "codex_run_id": "sample-run-001",
+  "goal_id": "foundation",
+  "task_id": "api-status",
+  "worker_class": "analysis_worker",
+  "objective": "Inspect the next-gen API scaffold and summarize the most important gaps.",
+  "context_summary": "Focus on the Stage 1 foundation. Do not modify files outside src/quant_evo_nextgen and tests.",
+  "repo_path": ".",
+  "workspace_path": ".",
+  "write_scope": [
+    "src/quant_evo_nextgen",
+    "tests"
+  ],
+  "allowed_tools": [
+    "shell",
+    "web"
+  ],
+  "search_enabled": true,
+  "risk_tier": "R2",
+  "max_duration_sec": 1800,
+  "max_token_budget": 120000,
+  "acceptance_criteria": [
+    "Identify the highest-value next implementation slice.",
+    "Call out any obvious runtime or deployment risks.",
+    "Return a concise, structured summary."
+  ]
+}

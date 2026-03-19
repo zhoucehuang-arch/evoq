@@ -1,0 +1,50 @@
+{
+  "type": "HYPOTHESIS",
+  "cycle_id": "cycle_20260302_1651",
+  "hypothesis_id": "hyp_20260302_1651_flow_regime_recovery_v2",
+  "parent_strategy_id": "flow_regime_recovery_v1",
+  "statement": "Tightening flow and regime thresholds can improve robustness of intraday flow-recovery entries while preserving short holding windows.",
+  "expected_traits": {
+    "holding_period": "1h ~ 6h",
+    "holding_period_days_cap": 1,
+    "asset_class": "equity",
+    "archetype": "multi_factor"
+  },
+  "parameter_update": {
+    "rsi_oversold": {
+      "from": 40,
+      "to": 36
+    },
+    "volume_spike_mult": {
+      "from": 1.08,
+      "to": 1.15
+    },
+    "volatility_cap": {
+      "from": 0.008,
+      "to": 0.006
+    },
+    "max_position_pct": {
+      "from": 0.05,
+      "to": 0.04
+    }
+  },
+  "backtest_evidence_snapshot": {
+    "source_strategy_id": "flow_regime_recovery_v1",
+    "source_commit": "d411e4a",
+    "metrics": {
+      "backtest_days": 240,
+      "sharpe_ratio": 1.38,
+      "max_drawdown": 0.0027,
+      "total_trades": 113,
+      "profit_factor": 1.36,
+      "avg_pnl_pct": 0.0009
+    },
+    "source_path": "evo/cycles/cycle_20260302_0640_output_evidence.md:16"
+  },
+  "next_validation_required": [
+    "rerun with v2 params and report OOS metrics",
+    "report +/-10% sensitivity drift",
+    "report low/normal/high volatility regime slices"
+  ],
+  "delivery_target": "#a-report + repo artifacts"
+}

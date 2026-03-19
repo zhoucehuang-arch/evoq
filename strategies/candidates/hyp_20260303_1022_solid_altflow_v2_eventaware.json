@@ -1,0 +1,26 @@
+{
+  "hypothesis_id": "hyp_20260303_1022",
+  "statement": "During turbulent regimes, a stricter flow-plus-RSI pullback filter with trend confirmation improves short-horizon hit quality versus baseline alt-flow entries.",
+  "rationale": "Geopolitical turbulence increases false breakouts and noisy volume spikes. Tightening entry thresholds (volume spike + lower RSI + trend alignment) should reduce low-quality entries while preserving reaction speed.",
+  "expected_traits": {
+    "holding_period": "1h ~ 3d",
+    "target_sharpe": 0.8,
+    "max_drawdown": "< 2% (synthetic fast-backtest)",
+    "asset_class": "equity",
+    "archetype": "multi_factor"
+  },
+  "signal_formula": {
+    "entry": "BUY if (volume_t > SMA(volume,15)*1.4) AND (RSI14 <= 38) AND (close_t >= SMA(close,15))",
+    "exit": "SELL if (RSI14 >= 57) OR (close_t < SMA(close,15)*0.992) OR stop/take reached",
+    "risk": "stop_loss=-1.8%, take_profit=+3.2%, max_position_pct=4.5%"
+  },
+  "risk_controls": {
+    "position_cap": "4.5% per symbol",
+    "event_risk_mode": "de-risk via reduced entry frequency under noisy regimes",
+    "liquidity_filter": "use liquid mega-cap universe",
+    "hard_limits": "no leverage increase; keep existing global DD guard"
+  },
+  "parent_strategy": "solid_altflow_technical_v1",
+  "candidate_strategy_path": "strategies/staging/solid_altflow_technical_v2.py",
+  "status": "candidate_ready_for_fast_backtest"
+}

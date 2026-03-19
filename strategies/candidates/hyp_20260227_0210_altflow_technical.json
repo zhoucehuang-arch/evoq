@@ -1,0 +1,50 @@
+{
+  "type": "HYPOTHESIS",
+  "cycle_id": "cycle_20260227_0210",
+  "hypothesis_id": "hyp_20260227_0210",
+  "statement": "A short-horizon long strategy that enters when abnormal flow proxy (volume spike) aligns with RSI pullback and short-trend support can deliver positive risk-adjusted returns over intraday-to-3-day holds.",
+  "rationale": "Behavioral/flow rationale: abnormal participation often precedes short-term repricing; technical filters reduce false positives by requiring pullback state plus trend support.",
+  "expected_traits": {
+    "holding_period": "60min ~ 3d",
+    "target_sharpe": 1.2,
+    "max_drawdown": "< 12%",
+    "asset_class": "equity",
+    "archetype": "multi_factor"
+  },
+  "signal_sources": [
+    "alternative_data_proxy_volume_spike",
+    "technical_rsi",
+    "technical_sma"
+  ],
+  "entry_trigger": "BUY when volume >= 1.5x 15-bar average AND RSI(14) <= 35 AND price >= 0.995 * SMA(15).",
+  "exit_trigger": "SELL when RSI(14) >= 55 OR price < 0.99 * SMA(15), plus hard risk controls stop=-2% / take=+3%.",
+  "risk_controls": {
+    "max_position_pct": 0.05,
+    "stop_loss_pct": -0.02,
+    "take_profit_pct": 0.03,
+    "holding_cap_days": 3
+  },
+  "quant_metrics": {
+    "backtest_days": 756,
+    "total_return": 0.0047,
+    "sharpe_ratio": 0.63,
+    "max_drawdown": 0.0045,
+    "total_trades": 85,
+    "win_rate": 0.72,
+    "profit_factor": 1.36,
+    "avg_pnl_pct": 0.0011
+  },
+  "confluence_scoring": {
+    "confirming_signals": 3,
+    "conflicting_signals": 0,
+    "confidence": 0.75
+  },
+  "evidence": [
+    "trading/logs/backtest_solid_altflow_technical_v1_cycle_20260227_0210.json:1",
+    "strategies/staging/solid_altflow_technical_v1.py:1",
+    "knowledge/strategy-frameworks.md:32"
+  ],
+  "parent_strategy": "seed_momentum_rsi_v1",
+  "feature_map_target": [6, 6, 2, 8, 0, 7],
+  "delivery_target": "#a-report + repo artifacts"
+}
