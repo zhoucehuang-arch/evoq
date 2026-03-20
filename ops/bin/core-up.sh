@@ -32,6 +32,11 @@ compose() {
   QE_CORE_RUNTIME_ENV_FILE="${ENV_FILE}" docker compose "${COMPOSE_ARGS[@]}" --env-file "${ENV_FILE}" "$@"
 }
 
+START_SERVICES=(core-api supervisor-runner discord-shell dashboard-web)
+if [[ "${QE_DEPLOYMENT_TOPOLOGY:-}" == "single_vps_compact" ]]; then
+  START_SERVICES+=(codex-fabric-runner)
+fi
+
 compose up -d --build postgres
 compose exec -T postgres sh -lc '
   until pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
@@ -39,10 +44,14 @@ compose exec -T postgres sh -lc '
   done
 '
 compose run --rm --no-deps --build core-api alembic upgrade head
-compose up -d --build core-api supervisor-runner discord-shell dashboard-web
+compose up -d --build "${START_SERVICES[@]}"
 if [[ -n "${QE_EDGE_PUBLIC_HOST:-}" ]]; then
   compose up -d dashboard-edge
 fi
 compose ps
 
-echo "Quant Evo core stack is up, migrated, and ready for smoke checks."
+if [[ "${QE_DEPLOYMENT_TOPOLOGY:-}" == "single_vps_compact" ]]; then
+  echo "Quant Evo single-VPS core stack is up, migrated, and now also hosts the Codex worker runtime."
+else
+  echo "Quant Evo core stack is up, migrated, and ready for smoke checks."
+fi

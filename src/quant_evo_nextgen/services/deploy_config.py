@@ -24,6 +24,10 @@ PLACEHOLDER_VALUES = {
     "CORE_VPS_IP",
     "postgresql+psycopg://quant_evo:change-me-now@CORE_VPS_IP:5432/quant_evo",
 }
+SUPPORTED_DEPLOYMENT_TOPOLOGIES = {
+    "single_vps_compact",
+    "two_vps_asymmetrical",
+}
 
 
 @dataclass(slots=True)
@@ -77,6 +81,8 @@ class DeployConfigService:
         overwrite: bool = False,
         interactive: bool = True,
         prompt: Callable[[str], str] | None = None,
+        secret_prompt: Callable[[str], str] | None = None,
+        prompt_profile: str = "full",
     ) -> Path:
         normalized = normalize_deploy_role(role)
         example_path = self.example_env_path(normalized)
@@ -88,9 +94,9 @@ class DeployConfigService:
 
         template_lines = example_path.read_text(encoding="utf-8").splitlines()
         values = self._read_env_values(example_path)
+        values.update(self._role_defaults(normalized))
         if target_path.exists() and not overwrite:
             values.update(self._read_env_values(target_path))
-        values.update(self._role_defaults(normalized))
         if overrides:
             values.update({key: value for key, value in overrides.items() if key.startswith("QE_")})
 
@@ -102,8 +108,10 @@ class DeployConfigService:
                 role=normalized,
                 values=values,
                 prompt=prompt_fn,
+                secret_prompt=secret_prompt or getpass,
+                prompt_profile=prompt_profile,
             )
-            if normalized == "core":
+            if normalized == "core" and prompt_profile == "full":
                 broker_mode = self._prompt_broker_mode(prompt_fn, broker_mode)
 
         self._apply_broker_mode(values, broker_mode)
@@ -147,8 +155,8 @@ class DeployConfigService:
         example_path = self.example_env_path(normalized)
         template_lines = example_path.read_text(encoding="utf-8").splitlines()
         values = self._read_env_values(example_path)
-        values.update(self._read_env_values(target_path))
         values.update(self._role_defaults(normalized))
+        values.update(self._read_env_values(target_path))
         if broker_mode:
             self._apply_broker_mode(values, broker_mode)
         if updates:
@@ -203,7 +211,7 @@ class DeployConfigService:
 
         checks = [
             self._check_role_alignment(role=normalized, raw_values=raw_values, settings=settings),
-            self._check_runtime_profile(raw_values=raw_values, settings=settings),
+            self._check_runtime_profile(role=normalized, raw_values=raw_values, settings=settings),
             self._check_codex_provider(raw_values=raw_values, settings=settings),
         ]
         if normalized == "core":
@@ -211,7 +219,7 @@ class DeployConfigService:
                 [
                     self._check_core_discord(raw_values=raw_values),
                     self._check_core_broker(raw_values=raw_values, settings=settings),
-                    self._check_core_postgres_exposure(raw_values=raw_values),
+                    self._check_core_postgres_exposure(raw_values=raw_values, settings=settings),
                     self._check_core_dashboard_security(raw_values=raw_values, settings=settings),
                 ]
             )
@@ -248,15 +256,17 @@ class DeployConfigService:
         role: str,
         values: dict[str, str],
         prompt: Callable[[str], str],
+        secret_prompt: Callable[[str], str],
+        prompt_profile: str,
     ) -> dict[str, str]:
-        for field in self._prompt_fields(role):
+        for field in self._prompt_fields(role, prompt_profile=prompt_profile):
             default = values.get(field.key, "").strip()
             suffix = " [Optional]" if field.optional else ""
             prompt_text = f"{field.prompt}{suffix}"
             if default:
                 prompt_text = f"{prompt_text} [{default}]"
             prompt_text = f"{prompt_text}: "
-            answer = getpass(prompt_text) if field.secret else prompt(prompt_text)
+            answer = secret_prompt(prompt_text) if field.secret else prompt(prompt_text)
             if answer.strip():
                 values[field.key] = answer.strip()
         return values
@@ -269,8 +279,20 @@ class DeployConfigService:
         ).strip().lower()
         return answer or default
 
-    def _prompt_fields(self, role: str) -> list[PromptField]:
+    def _prompt_fields(self, role: str, *, prompt_profile: str = "full") -> list[PromptField]:
         if role == "core":
+            if prompt_profile == "single_vps_minimal":
+                return [
+                    PromptField("QE_POSTGRES_PASSWORD", "Postgres password", secret=True),
+                    PromptField("QE_OPENAI_API_KEY", "Relay or OpenAI API key", secret=True),
+                    PromptField("QE_OPENAI_BASE_URL", "Relay base URL", optional=True),
+                    PromptField("QE_DISCORD_TOKEN", "Discord bot token", secret=True),
+                    PromptField("QE_DISCORD_GUILD_ID", "Discord guild ID"),
+                    PromptField("QE_DISCORD_CONTROL_CHANNEL_ID", "Discord control channel ID"),
+                    PromptField("QE_DISCORD_APPROVALS_CHANNEL_ID", "Discord approvals channel ID"),
+                    PromptField("QE_DISCORD_ALERTS_CHANNEL_ID", "Discord alerts channel ID"),
+                    PromptField("QE_DISCORD_ALLOWED_USER_IDS", "Allowed Discord user IDs, comma-separated"),
+                ]
             return [
                 PromptField("QE_POSTGRES_PASSWORD", "Postgres password", secret=True),
                 PromptField("QE_OPENAI_API_KEY", "Relay or OpenAI API key", secret=True),
@@ -286,6 +308,9 @@ class DeployConfigService:
                 PromptField("QE_DASHBOARD_API_TOKEN", "Dashboard API shared token", secret=True, optional=True),
                 PromptField("QE_EDGE_PUBLIC_HOST", "Dashboard public domain", optional=True),
                 PromptField("QE_EDGE_ACME_EMAIL", "ACME email for Caddy HTTPS", optional=True),
+                PromptField("QE_SEARXNG_BASE_URL", "SearXNG or local search/scrape base URL", optional=True),
+                PromptField("QE_RSSHUB_BASE_URL", "RSSHub base URL", optional=True),
+                PromptField("QE_PLAYWRIGHT_BROWSER_ENDPOINT", "Playwright browser endpoint", optional=True),
                 PromptField("QE_ALPACA_PAPER_API_KEY", "Alpaca paper API key", secret=True, optional=True),
                 PromptField("QE_ALPACA_PAPER_API_SECRET", "Alpaca paper API secret", secret=True, optional=True),
                 PromptField("QE_ALPACA_LIVE_API_KEY", "Alpaca live API key", secret=True, optional=True),
@@ -299,6 +324,9 @@ class DeployConfigService:
             ),
             PromptField("QE_OPENAI_API_KEY", "Relay or OpenAI API key", secret=True),
             PromptField("QE_OPENAI_BASE_URL", "Relay base URL", optional=True),
+            PromptField("QE_SEARXNG_BASE_URL", "SearXNG or local search/scrape base URL", optional=True),
+            PromptField("QE_RSSHUB_BASE_URL", "RSSHub base URL", optional=True),
+            PromptField("QE_PLAYWRIGHT_BROWSER_ENDPOINT", "Playwright browser endpoint", optional=True),
         ]
 
     def _role_defaults(self, role: str) -> dict[str, str]:
@@ -317,11 +345,21 @@ class DeployConfigService:
                 "QE_DASHBOARD_ACCESS_USERNAME": "owner",
                 "QE_EDGE_PUBLIC_HOST": "",
                 "QE_EDGE_ACME_EMAIL": "",
+                "QE_SEARXNG_BASE_URL": "",
+                "QE_RSSHUB_BASE_URL": "",
+                "QE_PLAYWRIGHT_BROWSER_ENABLED": "false",
+                "QE_PLAYWRIGHT_BROWSER_ENDPOINT": "",
+                "QE_SKILL_LIBRARY_ROOT": "skills",
             }
         return {
             "QE_ENV": "production",
             "QE_NODE_ROLE": "worker",
             "QE_DEPLOYMENT_TOPOLOGY": "two_vps_asymmetrical",
+            "QE_SEARXNG_BASE_URL": "",
+            "QE_RSSHUB_BASE_URL": "",
+            "QE_PLAYWRIGHT_BROWSER_ENABLED": "false",
+            "QE_PLAYWRIGHT_BROWSER_ENDPOINT": "",
+            "QE_SKILL_LIBRARY_ROOT": "skills",
         }
 
     def _apply_broker_mode(self, values: dict[str, str], broker_mode: str) -> None:
@@ -378,12 +416,29 @@ class DeployConfigService:
             details={"env_node_role": raw_node_role or settings.node_role, "expected_role": role},
         )
 
-    def _check_runtime_profile(self, *, raw_values: dict[str, str], settings: Settings) -> DeployConfigCheck:
+    def _check_runtime_profile(
+        self,
+        *,
+        role: str,
+        raw_values: dict[str, str],
+        settings: Settings,
+    ) -> DeployConfigCheck:
         issues: list[str] = []
         if settings.env != "production":
             issues.append("QE_ENV should be production for VPS deployment.")
-        if settings.deployment_topology != "two_vps_asymmetrical":
-            issues.append("QE_DEPLOYMENT_TOPOLOGY should stay two_vps_asymmetrical.")
+        topology = (settings.deployment_topology or "").strip().lower()
+        if topology not in SUPPORTED_DEPLOYMENT_TOPOLOGIES:
+            issues.append(
+                "QE_DEPLOYMENT_TOPOLOGY should be either `single_vps_compact` or `two_vps_asymmetrical`."
+            )
+        elif role == "worker" and topology != "two_vps_asymmetrical":
+            return DeployConfigCheck(
+                key="runtime_profile",
+                label="Runtime Profile",
+                status="fail",
+                message="Worker env files are only valid for the two-VPS topology. Single-VPS deployments should bootstrap only the Core env.",
+                details={"deployment_topology": settings.deployment_topology, "role": role},
+            )
         if settings.heartbeat_interval_seconds <= 0:
             return DeployConfigCheck(
                 key="runtime_profile",
@@ -404,7 +459,11 @@ class DeployConfigService:
             key="runtime_profile",
             label="Runtime Profile",
             status="ok",
-            message="Runtime profile matches the recommended VPS defaults.",
+            message=(
+                "Runtime profile matches the recommended single-VPS defaults."
+                if topology == "single_vps_compact"
+                else "Runtime profile matches the recommended two-VPS defaults."
+            ),
             details={
                 "env": settings.env,
                 "deployment_topology": settings.deployment_topology,
@@ -541,9 +600,22 @@ class DeployConfigService:
             details={"base_url": base_url, "default_broker_environment": settings.default_broker_environment},
         )
 
-    def _check_core_postgres_exposure(self, *, raw_values: dict[str, str]) -> DeployConfigCheck:
+    def _check_core_postgres_exposure(
+        self,
+        *,
+        raw_values: dict[str, str],
+        settings: Settings,
+    ) -> DeployConfigCheck:
         bind_host = raw_values.get("QE_POSTGRES_BIND_HOST", "127.0.0.1").strip()
         if bind_host == "127.0.0.1":
+            if (settings.deployment_topology or "").strip().lower() == "single_vps_compact":
+                return DeployConfigCheck(
+                    key="postgres_exposure",
+                    label="Postgres Exposure",
+                    status="ok",
+                    message="Core Postgres is bound to 127.0.0.1, which is correct for the single-VPS profile.",
+                    details={"postgres_bind_host": bind_host},
+                )
             return DeployConfigCheck(
                 key="postgres_exposure",
                 label="Postgres Exposure",

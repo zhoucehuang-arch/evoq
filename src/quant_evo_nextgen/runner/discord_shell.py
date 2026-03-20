@@ -93,7 +93,7 @@ def _authorize_message(message: discord.Message, *, action: str) -> tuple[bool, 
     return (decision.allowed, decision.reason)
 
 
-@bot.tree.command(name="status", description="查看当前系统状态")
+@bot.tree.command(name="status", description="Show the current system status.")
 async def status_command(interaction: discord.Interaction) -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -101,10 +101,10 @@ async def status_command(interaction: discord.Interaction) -> None:
         return
 
     overview = dashboard_service.build_overview()
-    await interaction.response.send_message(router.render_response(router.classify("状态"), overview))
+    await interaction.response.send_message(router.render_response(router.classify("status"), overview))
 
 
-@bot.tree.command(name="approvals", description="列出待处理审批")
+@bot.tree.command(name="approvals", description="List pending approvals.")
 async def approvals_command(interaction: discord.Interaction) -> None:
     allowed, reason = _authorize_interaction(interaction, action="approval")
     if not allowed:
@@ -112,7 +112,7 @@ async def approvals_command(interaction: discord.Interaction) -> None:
         return
 
     result = control_plane_service.handle_control_intent(
-        intent=router.classify("待审批"),
+        intent=router.classify("approvals"),
         actor=str(interaction.user),
         source_channel=getattr(interaction.channel, "name", "discord"),
         raw_message="slash approvals",
@@ -120,7 +120,7 @@ async def approvals_command(interaction: discord.Interaction) -> None:
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="config", description="查看运行时配置、提案和最近版本")
+@bot.tree.command(name="config", description="Show runtime config, proposals, and recent revisions.")
 async def config_command(interaction: discord.Interaction) -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -128,7 +128,7 @@ async def config_command(interaction: discord.Interaction) -> None:
         return
 
     result = control_plane_service.handle_control_intent(
-        intent=router.classify("查看配置"),
+        intent=router.classify("show config"),
         actor=str(interaction.user),
         source_channel=getattr(interaction.channel, "name", "discord"),
         raw_message="slash config",
@@ -136,8 +136,8 @@ async def config_command(interaction: discord.Interaction) -> None:
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="deploy-status", description="查看 core 或 worker 的部署预检状态")
-@app_commands.describe(role="节点角色，支持 core / worker")
+@bot.tree.command(name="deploy-status", description="Run deployment preflight for core or worker.")
+@app_commands.describe(role="Node role: core or worker.")
 async def deploy_status_command(interaction: discord.Interaction, role: str = "core") -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -158,8 +158,8 @@ async def deploy_status_command(interaction: discord.Interaction, role: str = "c
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="deploy-bootstrap", description="为 core 或 worker 生成部署配置草稿")
-@app_commands.describe(role="节点角色，支持 core / worker")
+@bot.tree.command(name="deploy-bootstrap", description="Prepare the deployment draft for core or worker.")
+@app_commands.describe(role="Node role: core or worker.")
 async def deploy_bootstrap_command(interaction: discord.Interaction, role: str = "core") -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -180,8 +180,8 @@ async def deploy_bootstrap_command(interaction: discord.Interaction, role: str =
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="rollback-config", description="创建运行时配置回滚提案")
-@app_commands.describe(revision_id="要回滚到的配置版本号")
+@bot.tree.command(name="rollback-config", description="Create a governed runtime-config rollback proposal.")
+@app_commands.describe(revision_id="Revision id to roll back to.")
 async def rollback_config_command(interaction: discord.Interaction, revision_id: str) -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -202,7 +202,7 @@ async def rollback_config_command(interaction: discord.Interaction, revision_id:
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="pause-trading", description="创建暂停自动交易的审批请求")
+@bot.tree.command(name="pause-trading", description="Create an approval request to pause auto-trading.")
 async def pause_trading_command(interaction: discord.Interaction) -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -210,7 +210,7 @@ async def pause_trading_command(interaction: discord.Interaction) -> None:
         return
 
     result = control_plane_service.handle_control_intent(
-        intent=router.classify("暂停自动交易"),
+        intent=router.classify("pause trading"),
         actor=str(interaction.user),
         source_channel=getattr(interaction.channel, "name", "discord"),
         raw_message="pause-trading slash command",
@@ -218,7 +218,7 @@ async def pause_trading_command(interaction: discord.Interaction) -> None:
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="pause-evolution", description="创建暂停自动进化的审批请求")
+@bot.tree.command(name="pause-evolution", description="Create an approval request to pause auto-evolution.")
 async def pause_evolution_command(interaction: discord.Interaction) -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -226,7 +226,7 @@ async def pause_evolution_command(interaction: discord.Interaction) -> None:
         return
 
     result = control_plane_service.handle_control_intent(
-        intent=router.classify("暂停自动进化"),
+        intent=router.classify("pause evolution"),
         actor=str(interaction.user),
         source_channel=getattr(interaction.channel, "name", "discord"),
         raw_message="pause-evolution slash command",
@@ -234,8 +234,8 @@ async def pause_evolution_command(interaction: discord.Interaction) -> None:
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="resume-domain", description="创建恢复某个域状态的审批请求")
-@app_commands.describe(domain="要恢复的域，例如 trading 或 evolution")
+@bot.tree.command(name="resume-domain", description="Create an approval request to resume a domain.")
+@app_commands.describe(domain="Domain to resume, for example trading or evolution.")
 async def resume_domain_command(interaction: discord.Interaction, domain: str) -> None:
     allowed, reason = _authorize_interaction(interaction, action="control")
     if not allowed:
@@ -243,7 +243,7 @@ async def resume_domain_command(interaction: discord.Interaction, domain: str) -
         return
 
     result = control_plane_service.handle_control_intent(
-        intent=router.classify(f"恢复 {domain}"),
+        intent=router.classify(f"resume {domain}"),
         actor=str(interaction.user),
         source_channel=getattr(interaction.channel, "name", "discord"),
         raw_message=f"resume-domain {domain}",
@@ -251,8 +251,8 @@ async def resume_domain_command(interaction: discord.Interaction, domain: str) -
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="approve", description="批准一个待处理审批")
-@app_commands.describe(approval_id="待处理审批编号", reason="可选，补充说明")
+@bot.tree.command(name="approve", description="Approve a pending approval request.")
+@app_commands.describe(approval_id="Pending approval id.", reason="Optional reason.")
 async def approve_command(interaction: discord.Interaction, approval_id: str, reason: str | None = None) -> None:
     allowed, reason_text = _authorize_interaction(interaction, action="approval")
     if not allowed:
@@ -260,7 +260,7 @@ async def approve_command(interaction: discord.Interaction, approval_id: str, re
         return
 
     result = control_plane_service.handle_control_intent(
-        intent=router.classify(f"批准 {approval_id}"),
+        intent=router.classify(f"approve {approval_id}"),
         actor=str(interaction.user),
         source_channel=getattr(interaction.channel, "name", "discord"),
         raw_message=reason or f"approve {approval_id}",
@@ -268,8 +268,8 @@ async def approve_command(interaction: discord.Interaction, approval_id: str, re
     await interaction.response.send_message(result.response_text)
 
 
-@bot.tree.command(name="reject", description="拒绝一个待处理审批")
-@app_commands.describe(approval_id="待处理审批编号", reason="可选，补充说明")
+@bot.tree.command(name="reject", description="Reject a pending approval request.")
+@app_commands.describe(approval_id="Pending approval id.", reason="Optional reason.")
 async def reject_command(interaction: discord.Interaction, approval_id: str, reason: str | None = None) -> None:
     allowed, reason_text = _authorize_interaction(interaction, action="approval")
     if not allowed:
@@ -277,7 +277,7 @@ async def reject_command(interaction: discord.Interaction, approval_id: str, rea
         return
 
     result = control_plane_service.handle_control_intent(
-        intent=router.classify(f"拒绝 {approval_id}"),
+        intent=router.classify(f"reject {approval_id}"),
         actor=str(interaction.user),
         source_channel=getattr(interaction.channel, "name", "discord"),
         raw_message=reason or f"reject {approval_id}",

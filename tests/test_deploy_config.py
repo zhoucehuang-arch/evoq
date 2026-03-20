@@ -145,3 +145,99 @@ def test_deploy_config_core_public_dashboard_bootstrap_generates_security_values
     assert statuses["dashboard_surface"] == "ok"
     assert "QE_DASHBOARD_ACCESS_PASSWORD=" in content
     assert "QE_DASHBOARD_API_TOKEN=" in content
+
+
+def test_deploy_config_core_single_vps_profile_is_accepted(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    service = DeployConfigService(repo_root)
+    env_path = tmp_path / "core-single-vps.env"
+
+    created = service.initialize_env_file(
+        role="core",
+        output_path=env_path,
+        overrides={
+            "QE_DEPLOYMENT_TOPOLOGY": "single_vps_compact",
+            "QE_POSTGRES_PASSWORD": "super-secret-password",
+            "QE_OPENAI_API_KEY": "relay-key",
+            "QE_DISCORD_TOKEN": "discord-token",
+            "QE_DISCORD_GUILD_ID": "123456789",
+            "QE_DISCORD_CONTROL_CHANNEL_ID": "111",
+            "QE_DISCORD_APPROVALS_CHANNEL_ID": "222",
+            "QE_DISCORD_ALERTS_CHANNEL_ID": "333",
+            "QE_DISCORD_ALLOWED_USER_IDS": "444,555",
+        },
+        interactive=False,
+    )
+
+    report = service.run_preflight(role="core", env_path=created)
+    runtime_profile = next(check for check in report["checks"] if check["key"] == "runtime_profile")
+
+    assert report["status"] == "ok"
+    assert runtime_profile["status"] == "ok"
+    assert "single-VPS" in runtime_profile["message"]
+
+
+def test_deploy_config_worker_single_vps_profile_is_rejected(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    service = DeployConfigService(repo_root)
+    env_path = tmp_path / "worker-single-vps.env"
+
+    created = service.initialize_env_file(
+        role="worker",
+        output_path=env_path,
+        overrides={
+            "QE_DEPLOYMENT_TOPOLOGY": "single_vps_compact",
+            "QE_POSTGRES_URL": "postgresql+psycopg://quant_evo:secret@100.64.0.30:5432/quant_evo",
+            "QE_OPENAI_API_KEY": "relay-key",
+        },
+        interactive=False,
+    )
+
+    report = service.run_preflight(role="worker", env_path=created)
+    runtime_profile = next(check for check in report["checks"] if check["key"] == "runtime_profile")
+
+    assert report["status"] == "fail"
+    assert runtime_profile["status"] == "fail"
+
+
+def test_deploy_config_single_vps_minimal_prompt_profile_keeps_owner_defaults(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    service = DeployConfigService(repo_root)
+    env_path = tmp_path / "core-single-vps-prompt.env"
+    prompts = iter(
+        [
+            "",
+            "123456789",
+            "111",
+            "222",
+            "333",
+            "444,555",
+        ]
+    )
+    secret_prompts = iter(
+        [
+            "super-secret-password",
+            "relay-key",
+            "discord-token",
+        ]
+    )
+
+    created = service.initialize_env_file(
+        role="core",
+        output_path=env_path,
+        overrides={"QE_DEPLOYMENT_TOPOLOGY": "single_vps_compact", "__broker_mode__": "paper_sim"},
+        interactive=True,
+        prompt=lambda _prompt: next(prompts),
+        secret_prompt=lambda _prompt: next(secret_prompts),
+        prompt_profile="single_vps_minimal",
+    )
+
+    content = created.read_text(encoding="utf-8")
+    report = service.run_preflight(role="core", env_path=created)
+
+    assert "QE_DEPLOYMENT_TOPOLOGY=single_vps_compact" in content
+    assert "QE_DEFAULT_BROKER_ADAPTER=paper_sim" in content
+    assert "QE_DASHBOARD_ACCESS_USERNAME=owner" in content
+    assert "QE_DASHBOARD_ACCESS_PASSWORD=" in content
+    assert "QE_DASHBOARD_API_TOKEN=" in content
+    assert report["status"] == "ok"

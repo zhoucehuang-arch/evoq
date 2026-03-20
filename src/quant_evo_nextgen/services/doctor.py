@@ -417,7 +417,7 @@ class DoctorService:
         )
 
     def _check_acquisition_stack(self) -> DoctorCheck:
-        summary = AcquisitionStackService(self.settings).build_summary()
+        summary = AcquisitionStackService(self.settings).build_summary(probe_endpoints=True)
         return DoctorCheck(
             key="acquisition_stack",
             label="Layered Acquisition Stack",
@@ -430,6 +430,7 @@ class DoctorService:
                 else "Layered research acquisition is unavailable."
             ),
             details={
+                "probe_endpoints": True,
                 "primary_mode": summary.primary_mode,
                 "layers": [asdict(layer) for layer in summary.layers],
             },

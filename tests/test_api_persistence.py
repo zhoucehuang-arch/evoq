@@ -469,6 +469,9 @@ def test_api_persists_evolution_governance_records_and_dashboard_metrics(tmp_pat
         assert dashboard_payload["metrics"]["active_canary_count"] == 0
         assert dashboard_payload["metrics"]["promoted_count"] == 1
         assert dashboard_payload["metrics"]["rolled_back_count"] == 0
+        assert len(dashboard_payload["capability_scorecards"]) == 5
+        assert dashboard_payload["stall_state"] == "healthy"
+        assert isinstance(dashboard_payload["capability_gaps"], list)
         assert dashboard_payload["recent_proposals"][0]["proposal_state"] == "promoted"
         assert dashboard_payload["recent_canary_runs"][0]["lane_type"] == "canary"
         assert dashboard_payload["recent_promotion_decisions"][0]["decision"] == "promoted"

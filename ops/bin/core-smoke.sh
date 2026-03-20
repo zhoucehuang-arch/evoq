@@ -37,6 +37,12 @@ compose exec -T core-api python -c "import json, os, urllib.request; headers = {
 echo "== Dashboard reachability =="
 compose exec -T core-api python -c "import base64, os, urllib.request; headers = {}; user = os.environ.get('QE_DASHBOARD_ACCESS_USERNAME', '').strip(); password = os.environ.get('QE_DASHBOARD_ACCESS_PASSWORD', '').strip(); token = base64.b64encode(f'{user}:{password}'.encode('utf-8')).decode('ascii') if user and password else ''; headers.update({'Authorization': f'Basic {token}'} if token else {}); request = urllib.request.Request('http://dashboard-web:3000', headers=headers); response = urllib.request.urlopen(request); print(f'dashboard status: {response.status}')"
 
+if [[ "${QE_DEPLOYMENT_TOPOLOGY:-}" == "single_vps_compact" ]]; then
+  echo "== Single-VPS Codex worker =="
+  compose exec -T codex-fabric-runner sh -lc 'command -v codex'
+  compose exec -T codex-fabric-runner python -c "import json; from quant_evo_nextgen.config import Settings; s = Settings(); assert bool(s.openai_api_key); print(json.dumps({'deployment_topology': s.deployment_topology, 'node_role': s.node_role, 'codex_command': s.codex_command}, ensure_ascii=False, indent=2))"
+fi
+
 if [[ -n "${QE_EDGE_PUBLIC_HOST:-}" ]]; then
   echo "== Edge proxy service =="
   compose ps dashboard-edge

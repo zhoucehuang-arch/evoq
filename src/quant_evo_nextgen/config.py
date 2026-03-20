@@ -67,8 +67,13 @@ class Settings(BaseSettings):
     codex_timeout_seconds: int = 1800
     codex_workspace_mode: str = "isolated_copy"
     web_fetch_base_url: str | None = None
+    searxng_base_url: str | None = None
+    rsshub_base_url: str | None = None
     browser_fallback_enabled: bool = False
     browser_fallback_endpoint: str | None = None
+    playwright_browser_enabled: bool | None = None
+    playwright_browser_endpoint: str | None = None
+    skill_library_root: str = "skills"
 
     heartbeat_interval_seconds: int = 60
     dashboard_title: str = "Quant Evo Terminal"

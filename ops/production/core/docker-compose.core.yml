@@ -59,6 +59,24 @@ services:
       core-api:
         condition: service_healthy
 
+  codex-fabric-runner:
+    build:
+      context: ../../..
+      dockerfile: docker/codex-runner.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ${QE_CORE_RUNTIME_ENV_FILE:-./core.env}
+    environment:
+      QE_REPO_ROOT: /workspace
+    command: python -m quant_evo_nextgen.runner.codex_fabric
+    volumes:
+      - ../../..:/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      core-api:
+        condition: service_healthy
+
   discord-shell:
     build:
       context: ../../..

@@ -518,6 +518,24 @@ class EvolutionGovernanceMetrics(BaseModel):
     rolled_back_count: int
 
 
+class CapabilityScorecardCard(BaseModel):
+    capability_key: str
+    label: str
+    score_pct: int
+    status: str
+    evidence_count: int
+    summary: str
+    gaps: list[str]
+
+
+class CapabilityGapCard(BaseModel):
+    gap_key: str
+    label: str
+    severity: str
+    summary: str
+    recommended_action: str
+
+
 class EvolutionProposalCard(BaseModel):
     id: str
     title: str
@@ -558,6 +576,10 @@ class DashboardEvolution(BaseModel):
     metrics: EvolutionGovernanceMetrics
     summary_cards: list[SummaryCard]
     highlights: list[str]
+    capability_scorecards: list[CapabilityScorecardCard]
+    capability_gaps: list[CapabilityGapCard]
+    stall_state: str
+    stall_summary: str | None = None
     recent_proposals: list[EvolutionProposalCard]
     recent_canary_runs: list[EvolutionCanaryRunCard]
     recent_promotion_decisions: list[EvolutionPromotionDecisionCard]

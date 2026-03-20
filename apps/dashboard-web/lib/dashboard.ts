@@ -194,8 +194,16 @@ function buildFallbackSystem(reason: string): DashboardSystem {
   return {
     generated_at: generatedAt,
     freshness: buildBrokenFreshness(generatedAt, reason),
-    summary_cards: [],
-    highlights: ["System view is waiting for backend authority-core state."],
+    summary_cards: [
+      { label: "Providers", value: "unknown", tone: "warn", hint: "Waiting for API" },
+      { label: "Supervisor loops", value: "unknown", tone: "warn", hint: "Waiting for API" },
+      { label: "Config proposals", value: "unknown", tone: "neutral", hint: "Waiting for API" },
+      { label: "Owner preferences", value: "unknown", tone: "neutral", hint: "Waiting for API" },
+    ],
+    highlights: [
+      "System view is waiting for backend authority-core state.",
+      "Treat this as degraded until core-api connectivity and freshness recover.",
+    ],
     providers: [],
     supervisor_loops: [],
     recent_workflows: [],

@@ -4,29 +4,42 @@ import re
 
 from quant_evo_nextgen.contracts.dashboard import DashboardOverview
 from quant_evo_nextgen.contracts.intents import IntentClassification, IntentType
+from quant_evo_nextgen.services.deploy_fields import find_deploy_field, normalize_deploy_field_alias
 
 
 APPROVAL_ID_RE = re.compile(r"\b([a-zA-Z0-9-]{8,})\b")
 ROLLBACK_RE = re.compile(
-    r"(?:回滚(?:到)?|rollback(?:\s+to)?)\s*(?:配置|config)?\s*(?:(?:版本|revision)\s+)?(?P<revision>[a-zA-Z0-9-]{8,})$"
+    "(?:\u56de\u6eda|rollback(?:\\s+to)?)\\s*(?:\u914d\u7f6e|config)?\\s*(?:(?:\u7248\u672c|revision)\\s+)?(?P<revision>[a-zA-Z0-9-]{8,})$",
+    re.IGNORECASE,
 )
 DEPLOY_BOOTSTRAP_RE = re.compile(
-    r"(?:开始|初始化|bootstrap|setup)\s*(?P<role>core|worker|research)?\s*(?:部署|deploy|引导|onboarding)?$"
+    "(?:\u5f00\u59cb|\u521d\u59cb\u5316|bootstrap|setup)\\s*(?P<role>core|worker|research)?\\s*(?:\u90e8\u7f72|deploy|\u5f15\u5bfc|onboarding)?$",
+    re.IGNORECASE,
 )
 DEPLOY_STATUS_RE = re.compile(
-    r"(?:(?:查看|显示|列出|show)\s*)?(?P<role>core|worker|research)?\s*(?:部署状态|部署预检|deploy status|preflight)$"
+    "(?:(?:\u67e5\u770b|\u663e\u793a|\u5217\u51fa|show)\\s*)?(?P<role>core|worker|research)?\\s*(?:\u90e8\u7f72\u72b6\u6001|\u90e8\u7f72\u9884\u68c0|deploy status|preflight)$",
+    re.IGNORECASE,
 )
 DEPLOY_SET_RE = re.compile(
-    r"(?:设置|set|update)\s*(?:(?P<role>core|worker|research)\s+)?(?P<field>[^=]{1,80}?)\s*(?:为|成|to|=)\s*(?P<value>.+)$"
+    "(?:\u8bbe\u7f6e|set|update)\\s*(?:(?P<role>core|worker|research)\\s+)?(?P<field>[^=]{1,80}?)\\s*(?:\u4e3a|to|=)\\s*(?P<value>.+)$",
+    re.IGNORECASE,
 )
-LOOP_ENABLE_RE = re.compile(r"(?:启用|打开|enable)\s+(?:loop\s*)?(?P<loop>[a-z0-9_-]+)(?:\s*loop)?$")
-LOOP_DISABLE_RE = re.compile(r"(?:禁用|停用|关闭|disable)\s+(?:loop\s*)?(?P<loop>[a-z0-9_-]+)(?:\s*loop)?$")
+LOOP_ENABLE_RE = re.compile(
+    "(?:\u542f\u7528|\u6253\u5f00|enable)\\s+(?:loop\\s*)?(?P<loop>[a-z0-9_-]+)(?:\\s*loop)?$",
+    re.IGNORECASE,
+)
+LOOP_DISABLE_RE = re.compile(
+    "(?:\u7981\u7528|\u505c\u7528|\u5173\u95ed|disable)\\s+(?:loop\\s*)?(?P<loop>[a-z0-9_-]+)(?:\\s*loop)?$",
+    re.IGNORECASE,
+)
 LOOP_CADENCE_RE = re.compile(
-    r"(?:把|将|set|change|update)?\s*(?P<loop>[a-z0-9_-]+)\s*(?:loop\s*)?(?:间隔|cadence|频率)"
-    r"\s*(?:改成|设置为|设为|to|=)\s*(?P<value>.+)$"
+    "(?:\u628a|set|change|update)?\\s*(?P<loop>[a-z0-9_-]+)\\s*(?:loop\\s*)?(?:\u95f4\u9694|cadence|\u9891\u7387)"
+    "\\s*(?:\u6539\u6210|\u8bbe\u7f6e\u4e3a|to|=)\\s*(?P<value>.+)$",
+    re.IGNORECASE,
 )
 SETTING_RE = re.compile(
-    r"(?:把|将|set|change|update|modify)\s*(?P<target>[^=]{1,80}?)\s*(?:改成|设置为|设为|to|=)\s*(?P<value>.+)$"
+    "(?:\u628a|set|change|update|modify)\\s*(?P<target>[^=]{1,80}?)\\s*(?:\u6539\u6210|\u8bbe\u7f6e\u4e3a|to|=)\\s*(?P<value>.+)$",
+    re.IGNORECASE,
 )
 
 KNOWN_LOOP_KEYS = {
@@ -41,64 +54,6 @@ KNOWN_LOOP_KEYS = {
     "council-reflection",
     "owner-absence-safe-mode",
     "evolution-governance-sync",
-}
-KNOWN_DEPLOY_FIELD_ALIASES = {
-    "中转地址",
-    "relaybaseurl",
-    "openaibaseurl",
-    "中转key",
-    "relaykey",
-    "openaiapikey",
-    "postgres密码",
-    "postgrespassword",
-    "discordtoken",
-    "机器人token",
-    "guildid",
-    "服务器id",
-    "控制频道id",
-    "controlchannelid",
-    "审批频道id",
-    "approvalschannelid",
-    "告警频道id",
-    "alertschannelid",
-    "允许用户id",
-    "alloweduserids",
-    "brokermode",
-    "券商模式",
-    "alpacapaperkey",
-    "alpacapapersecret",
-    "alpacalivekey",
-    "alpacalivesecret",
-    "dashboard用户名",
-    "dashboardusername",
-    "dashboard密码",
-    "dashboardpassword",
-    "dashboardapitoken",
-    "dashboardtoken",
-    "dashboard域名",
-    "edgepublichost",
-    "acmeemail",
-    "postgresurl",
-    "数据库url",
-}
-SENSITIVE_DEPLOY_FIELDS = {
-    "中转key",
-    "relaykey",
-    "openaiapikey",
-    "postgres密码",
-    "postgrespassword",
-    "discordtoken",
-    "机器人token",
-    "alpacapaperkey",
-    "alpacapapersecret",
-    "alpacalivekey",
-    "alpacalivesecret",
-    "dashboard密码",
-    "dashboardpassword",
-    "dashboardapitoken",
-    "dashboardtoken",
-    "postgresurl",
-    "数据库url",
 }
 
 
@@ -120,14 +75,14 @@ class NaturalLanguageRouter:
         if deploy_set is not None:
             return deploy_set
 
-        if _contains_any(normalized, ("待审批", "待处理审批", "approvals", "pending approvals")):
+        if _contains_any(normalized, ("\u5f85\u5ba1\u6279", "\u5f85\u5904\u7406\u5ba1\u6279", "approvals", "pending approvals")):
             return IntentClassification(
                 intent_type=IntentType.LIST_APPROVALS,
                 proposed_action="List pending approvals in the control plane.",
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("批准", "通过", "approve")):
+        if _contains_any(normalized, ("\u6279\u51c6", "\u901a\u8fc7", "approve")):
             return IntentClassification(
                 intent_type=IntentType.APPROVE_REQUEST,
                 reference_id=reference_id,
@@ -135,7 +90,7 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("拒绝", "驳回", "reject")):
+        if _contains_any(normalized, ("\u62d2\u7edd", "\u9a73\u56de", "reject")):
             return IntentClassification(
                 intent_type=IntentType.REJECT_REQUEST,
                 reference_id=reference_id,
@@ -158,14 +113,14 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("状态", "现状", "概况", "总览", "status", "system status")):
+        if _contains_any(normalized, ("\u72b6\u6001", "\u73b0\u72b6", "\u6982\u51b5", "\u603b\u89c8", "status", "system status")):
             return IntentClassification(
                 intent_type=IntentType.STATUS,
                 proposed_action="Summarize the current system status.",
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("风险", "风控", "risk")):
+        if _contains_any(normalized, ("\u98ce\u9669", "\u98ce\u63a7", "risk")):
             return IntentClassification(
                 intent_type=IntentType.RISK_STATUS,
                 target_domain="trading",
@@ -173,7 +128,7 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("学到", "学习", "研究进展", "learning")):
+        if _contains_any(normalized, ("\u5b66\u5230", "\u5b66\u4e60", "\u7814\u7a76\u8fdb\u5c55", "learning")):
             return IntentClassification(
                 intent_type=IntentType.LEARNING_SUMMARY,
                 target_domain="learning",
@@ -181,9 +136,9 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("暂停", "停掉", "停止", "pause")) and _contains_any(
+        if _contains_any(normalized, ("\u6682\u505c", "\u505c\u6b62", "pause")) and _contains_any(
             normalized,
-            ("进化", "自进化", "evolution"),
+            ("\u8fdb\u5316", "\u81ea\u8fdb\u5316", "evolution"),
         ):
             return IntentClassification(
                 intent_type=IntentType.PAUSE_EVOLUTION,
@@ -193,9 +148,9 @@ class NaturalLanguageRouter:
                 proposed_action="Pause the auto-evolution domain.",
             )
 
-        if _contains_any(normalized, ("暂停", "停掉", "停止", "pause")) and _contains_any(
+        if _contains_any(normalized, ("\u6682\u505c", "\u505c\u6b62", "pause")) and _contains_any(
             normalized,
-            ("交易", "自动交易", "live", "trading"),
+            ("\u4ea4\u6613", "\u81ea\u52a8\u4ea4\u6613", "live", "trading"),
         ):
             return IntentClassification(
                 intent_type=IntentType.PAUSE_TRADING,
@@ -205,7 +160,7 @@ class NaturalLanguageRouter:
                 proposed_action="Pause auto-trading or live execution.",
             )
 
-        if _contains_any(normalized, ("恢复", "继续", "resume")):
+        if _contains_any(normalized, ("\u6062\u590d", "\u7ee7\u7eed", "resume")):
             return IntentClassification(
                 intent_type=IntentType.RESUME_DOMAIN,
                 target_domain=_resume_target_domain(normalized),
@@ -214,9 +169,9 @@ class NaturalLanguageRouter:
                 proposed_action="Resume a previously paused domain.",
             )
 
-        if _contains_any(normalized, ("为什么", "原因", "解释", "explain")) and _contains_any(
+        if _contains_any(normalized, ("\u4e3a\u4ec0\u4e48", "\u539f\u56e0", "\u89e3\u91ca", "explain")) and _contains_any(
             normalized,
-            ("策略", "strategy"),
+            ("\u7b56\u7565", "strategy"),
         ):
             return IntentClassification(
                 intent_type=IntentType.EXPLAIN_STRATEGY,
@@ -238,60 +193,62 @@ class NaturalLanguageRouter:
         if intent.intent_type is IntentType.STATUS:
             return (
                 f"{overview.headline}\n"
-                f"当前模式：{mode_label}；风险状态：{risk_label}；"
-                f"生产策略数量：{overview.strategy.production}。"
+                f"\u5f53\u524d\u6a21\u5f0f: {mode_label}\uff1b\u98ce\u9669\u72b6\u6001: {risk_label}\uff1b"
+                f"\u751f\u4ea7\u7b56\u7565\u6570\u91cf: {overview.strategy.production}\u3002"
             )
 
         if intent.intent_type is IntentType.RISK_STATUS:
             return (
-                f"当前风险状态为 {risk_label}。\n"
-                f"生产策略数量：{overview.strategy.production}；"
-                f"未关闭事件：{overview.system.open_incidents}；"
-                f"活跃目标：{overview.system.active_goals}。"
+                f"\u5f53\u524d\u98ce\u9669\u72b6\u6001\u4e3a {risk_label}\u3002\n"
+                f"\u751f\u4ea7\u7b56\u7565\u6570\u91cf: {overview.strategy.production}\uff1b"
+                f"\u672a\u5173\u95ed\u4e8b\u4ef6: {overview.system.open_incidents}\uff1b"
+                f"\u6d3b\u8dc3\u76ee\u6807: {overview.system.active_goals}\u3002"
             )
 
         if intent.intent_type is IntentType.LEARNING_SUMMARY:
             return (
-                f"当前长期原则记忆 {overview.learning.principles} 条，"
-                f"因果案例 {overview.learning.causal_cases} 条，"
-                f"特征图已占用 {overview.learning.occupied_feature_cells} 个格子。"
+                f"\u5f53\u524d\u957f\u671f\u539f\u5219\u8bb0\u5fc6 {overview.learning.principles} \u6761\uff0c"
+                f"\u56e0\u679c\u6848\u4f8b {overview.learning.causal_cases} \u6761\uff0c"
+                f"\u7279\u5f81\u56fe\u5df2\u5360\u7528 {overview.learning.occupied_feature_cells} \u4e2a\u683c\u5b50\u3002"
             )
 
         if intent.intent_type is IntentType.EXPLAIN_STRATEGY:
             return (
-                "策略解释链路已经预留，但要回答到某个具体策略，"
-                "还需要接入回测、评审和 promotion 记录。"
+                "\u7b56\u7565\u89e3\u91ca\u94fe\u8def\u5df2\u9884\u7559\uff0c"
+                "\u4f46\u8981\u56de\u7b54\u5230\u67d0\u4e2a\u5177\u4f53\u7b56\u7565\uff0c"
+                "\u8fd8\u9700\u8981\u63a5\u5165\u56de\u6d4b\u3001\u8bc4\u5ba1\u548c promotion \u8bb0\u5f55\u3002"
             )
 
         if intent.intent_type is IntentType.LIST_RUNTIME_CONFIG:
-            return "我会读取当前运行时配置、待处理配置提案和最近配置版本。"
+            return "\u6211\u4f1a\u8bfb\u53d6\u5f53\u524d\u8fd0\u884c\u65f6\u914d\u7f6e\u3001\u5f85\u5904\u7406\u914d\u7f6e\u63d0\u6848\u548c\u6700\u8fd1\u914d\u7f6e\u7248\u672c\u3002"
 
         if intent.intent_type is IntentType.PROPOSE_CONFIG_CHANGE:
-            return "我识别到这是一次运行时配置调整请求，会先走提案与治理路径。"
+            return "\u6211\u8bc6\u522b\u5230\u8fd9\u662f\u4e00\u6b21\u8fd0\u884c\u65f6\u914d\u7f6e\u8c03\u6574\u8bf7\u6c42\uff0c\u4f1a\u5148\u8d70\u63d0\u6848\u4e0e\u6cbb\u7406\u8def\u5f84\u3002"
 
         if intent.intent_type is IntentType.ROLLBACK_RUNTIME_CONFIG:
-            return "我识别到这是一次运行时配置回滚请求，会先生成受治理的回滚提案。"
+            return "\u6211\u8bc6\u522b\u5230\u8fd9\u662f\u4e00\u6b21\u8fd0\u884c\u65f6\u914d\u7f6e\u56de\u6eda\u8bf7\u6c42\uff0c\u4f1a\u5148\u751f\u6210\u53d7\u6cbb\u7406\u7684\u56de\u6eda\u63d0\u6848\u3002"
 
         if intent.intent_type is IntentType.DEPLOY_BOOTSTRAP:
             role = intent.deploy_role or "core"
-            return f"我会先为 `{role}` 生成部署配置草稿，并返回当前预检状态。"
+            return f"\u6211\u4f1a\u5148\u4e3a `{role}` \u751f\u6210\u90e8\u7f72\u8349\u7a3f\uff0c\u5e76\u8fd4\u56de\u5f53\u524d\u9884\u68c0\u72b6\u6001\u3002"
 
         if intent.intent_type is IntentType.DEPLOY_STATUS:
             role = intent.deploy_role or "core"
-            return f"我会读取 `{role}` 的部署草稿并返回预检结果。"
+            return f"\u6211\u4f1a\u8bfb\u53d6 `{role}` \u7684\u90e8\u7f72\u8349\u7a3f\uff0c\u5e76\u8fd4\u56de\u9884\u68c0\u7ed3\u679c\u3002"
 
         if intent.intent_type is IntentType.DEPLOY_SET:
             role = intent.deploy_role or "core"
-            field_label = intent.deploy_field_alias or "部署字段"
-            return f"我会更新 `{role}` 的 `{field_label}`，并重新跑一次部署预检。"
+            field_label = intent.deploy_field_alias or "\u90e8\u7f72\u5b57\u6bb5"
+            return f"\u6211\u4f1a\u66f4\u65b0 `{role}` \u7684 `{field_label}`\uff0c\u5e76\u91cd\u65b0\u8dd1\u4e00\u6b21\u90e8\u7f72\u9884\u68c0\u3002"
 
         if intent.requires_confirmation:
             return (
-                "我识别到这是一个需要治理确认的控制意图。"
-                "系统会先创建审批对象，再由审批流决定是否真正切换状态。"
+                "\u6211\u8bc6\u522b\u5230\u8fd9\u662f\u4e00\u4e2a\u9700\u8981\u6cbb\u7406\u786e\u8ba4\u7684\u63a7\u5236\u610f\u56fe\u3002"
+                "\u7cfb\u7edf\u4f1a\u5148\u521b\u5efa\u5ba1\u6279\u5bf9\u8c61\uff0c"
+                "\u518d\u7531 owner \u5ba1\u6279\u6d41\u51b3\u5b9a\u662f\u5426\u771f\u6b63\u5207\u6362\u72b6\u6001\u3002"
             )
 
-        return "我理解到你在查询系统，但当前语义还不够具体。你可以直接发送“状态”，或使用 `/status`。"
+        return "\u8fd9\u6761\u6307\u4ee4\u8fd8\u4e0d\u591f\u5177\u4f53\u3002\u4f60\u53ef\u4ee5\u76f4\u63a5\u53d1\u9001\u201c\u72b6\u6001\u201d\uff0c\u6216\u4f7f\u7528 `/status`\u3002"
 
 
 def _contains_any(message: str, keywords: tuple[str, ...]) -> bool:
@@ -304,9 +261,9 @@ def _extract_reference_id(message: str) -> str | None:
 
 
 def _resume_target_domain(message: str) -> str:
-    if "进化" in message or "evolution" in message:
+    if "\u8fdb\u5316" in message or "evolution" in message:
         return "evolution"
-    if "交易" in message or "trading" in message:
+    if "\u4ea4\u6613" in message or "trading" in message:
         return "trading"
     return "governance"
 
@@ -330,16 +287,16 @@ def _format_risk_state(risk_state: str) -> str:
 
 
 def _is_runtime_config_query(message: str) -> bool:
-    return _contains_any(message, ("配置", "设定", "settings", "runtime config", "config")) and _contains_any(
+    return _contains_any(message, ("\u914d\u7f6e", "\u8bbe\u5b9a", "settings", "runtime config", "config")) and _contains_any(
         message,
-        ("查看", "显示", "列出", "show", "list", "当前", "现在", "版本", "revision"),
+        ("\u67e5\u770b", "\u663e\u793a", "\u5217\u51fa", "show", "list", "\u5f53\u524d", "\u73b0\u5728", "\u7248\u672c", "revision"),
     )
 
 
 def _parse_runtime_config_rollback(message: str, reference_id: str | None) -> IntentClassification | None:
     match = ROLLBACK_RE.match(message)
     revision_id = match.group("revision") if match else None
-    if revision_id is None and _contains_any(message, ("回滚配置", "rollback config", "回滚 revision", "rollback revision")):
+    if revision_id is None and _contains_any(message, ("\u56de\u6eda\u914d\u7f6e", "rollback config", "\u56de\u6eda revision", "rollback revision")):
         revision_id = reference_id
     if revision_id is None:
         return None
@@ -410,19 +367,19 @@ def _parse_runtime_config_change(message: str) -> IntentClassification | None:
 
 def _parse_named_setting(target: str, value: str) -> IntentClassification | None:
     alias_map = {
-        "心跳": ("system_policy", "heartbeat_runtime", "interval_seconds"),
-        "心跳间隔": ("system_policy", "heartbeat_runtime", "interval_seconds"),
+        "\u5fc3\u8df3": ("system_policy", "heartbeat_runtime", "interval_seconds"),
+        "\u5fc3\u8df3\u95f4\u9694": ("system_policy", "heartbeat_runtime", "interval_seconds"),
         "heartbeat": ("system_policy", "heartbeat_runtime", "interval_seconds"),
-        "语言": ("owner_preference", "interaction_language", "operator_language"),
-        "owner语言": ("owner_preference", "interaction_language", "operator_language"),
+        "\u8bed\u8a00": ("owner_preference", "interaction_language", "operator_language"),
+        "owner\u8bed\u8a00": ("owner_preference", "interaction_language", "operator_language"),
         "interaction language": ("owner_preference", "interaction_language", "operator_language"),
-        "控制频道": ("owner_preference", "discord_channels", "control_channel"),
+        "\u63a7\u5236\u9891\u9053": ("owner_preference", "discord_channels", "control_channel"),
         "control channel": ("owner_preference", "discord_channels", "control_channel"),
-        "审批频道": ("owner_preference", "discord_channels", "approvals_channel"),
+        "\u5ba1\u6279\u9891\u9053": ("owner_preference", "discord_channels", "approvals_channel"),
         "approvals channel": ("owner_preference", "discord_channels", "approvals_channel"),
-        "告警频道": ("owner_preference", "discord_channels", "alerts_channel"),
+        "\u544a\u8b66\u9891\u9053": ("owner_preference", "discord_channels", "alerts_channel"),
         "alerts channel": ("owner_preference", "discord_channels", "alerts_channel"),
-        "codex模型": ("system_policy", "codex_runtime", "default_model"),
+        "codex\u6a21\u578b": ("system_policy", "codex_runtime", "default_model"),
         "codex model": ("system_policy", "codex_runtime", "default_model"),
     }
 
@@ -460,9 +417,9 @@ def _parse_duration_seconds(value: str) -> int | None:
     if match is None:
         return None
     quantity = int(match.group(1))
-    if any(unit in candidate for unit in ("小时", "hour", "hours", "hr", "hrs")):
+    if any(unit in candidate for unit in ("\u5c0f\u65f6", "hour", "hours", "hr", "hrs")):
         return quantity * 3600
-    if any(unit in candidate for unit in ("分钟", "分", "minute", "minutes", "min", "mins")):
+    if any(unit in candidate for unit in ("\u5206\u949f", "\u5206", "minute", "minutes", "min", "mins")):
         return quantity * 60
     return quantity
 
@@ -482,7 +439,7 @@ def _parse_deploy_bootstrap(message: str) -> IntentClassification | None:
 
 def _parse_deploy_status(message: str) -> IntentClassification | None:
     match = DEPLOY_STATUS_RE.match(message)
-    if match is None and _contains_any(message, ("部署状态", "部署预检", "deploy status", "preflight")):
+    if match is None and _contains_any(message, ("\u90e8\u7f72\u72b6\u6001", "\u90e8\u7f72\u9884\u68c0", "deploy status", "preflight")):
         role = "worker" if "worker" in message or "research" in message else "core"
     elif match is not None:
         role = (match.group("role") or "core").lower()
@@ -503,10 +460,10 @@ def _parse_deploy_setting(message: str) -> IntentClassification | None:
     role = (match.group("role") or "core").lower()
     field = match.group("field").strip()
     value = match.group("value").strip()
-    normalized_field = _normalize_deploy_field_alias(field)
-    if normalized_field not in KNOWN_DEPLOY_FIELD_ALIASES:
+    spec = find_deploy_field(field)
+    if spec is None:
         return None
-    sensitive = normalized_field in SENSITIVE_DEPLOY_FIELDS
+    sensitive = spec.secret
     return IntentClassification(
         intent_type=IntentType.DEPLOY_SET,
         deploy_role=role,
@@ -514,7 +471,9 @@ def _parse_deploy_setting(message: str) -> IntentClassification | None:
         deploy_value=value,
         contains_sensitive_value=sensitive,
         sanitized_message_summary=(
-            f"设置 {role} 的 {field}（已脱敏）" if sensitive else f"设置 {role} 的 {field} 为 {value}"
+            f"\u8bbe\u7f6e {role} \u7684 {spec.label}\uff08\u5df2\u8131\u654f\uff09"
+            if sensitive
+            else f"\u8bbe\u7f6e {role} \u7684 {spec.label} \u4e3a {value}"
         ),
         proposed_action="Update the deployment draft field for the requested node role.",
         execution_supported=True,
@@ -522,4 +481,4 @@ def _parse_deploy_setting(message: str) -> IntentClassification | None:
 
 
 def _normalize_deploy_field_alias(field: str) -> str:
-    return field.strip().lower().replace(" ", "").replace("_", "").replace("-", "")
+    return normalize_deploy_field_alias(field)

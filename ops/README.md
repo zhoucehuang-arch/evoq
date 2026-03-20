@@ -6,7 +6,9 @@ This folder contains the deploy and operations tooling for the recommended Core 
 
 ### First-time host setup
 
+- `./ops/bin/quickstart-single-vps.sh`
 - `sudo ./ops/bin/install-host-deps.sh`
+- `./ops/bin/onboard-single-vps.sh`
 - `./ops/bin/bootstrap-node.sh core`
 - `./ops/bin/bootstrap-node.sh worker`
 
@@ -43,6 +45,7 @@ This folder contains the deploy and operations tooling for the recommended Core 
 
 If you want the explicit path instead of the guided bootstrap wrapper:
 
+- `./ops/bin/onboard-single-vps.sh --no-start`
 - `./ops/bin/host-preflight.sh core`
 - `./ops/bin/deploy-config.sh init core`
 - `./ops/bin/deploy-config.sh preflight core ops/production/core/core.env`

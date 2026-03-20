@@ -1,12 +1,12 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import select
 
 from quant_evo_nextgen.config import Settings
 from quant_evo_nextgen.services.broker import BrokerAccountState, BrokerSyncRequest, BrokerSyncResult
-from quant_evo_nextgen.db.models import CodexRunModel, SupervisorLoopModel
+from quant_evo_nextgen.db.models import CodexRunModel, EvolutionImprovementProposalModel, SupervisorLoopModel
 from quant_evo_nextgen.db.session import Database
 from quant_evo_nextgen.services.codex_fabric import CodexFabricService
 from quant_evo_nextgen.services.dashboard import DashboardService
@@ -276,6 +276,133 @@ def test_supervisor_syncs_completed_codex_runs_into_evolution_proposals(tmp_path
     assert canary_runs[0].status == "passed"
 
 
+def test_supervisor_capability_review_opens_recovery_goal_and_queues_replan(tmp_path: Path) -> None:
+    _seed_repo_state(tmp_path)
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'supervisor-capability-review.db'}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'supervisor-capability-review.db'}",
+        db_bootstrap_on_start=True,
+        openai_api_key="relay-key",
+        openai_base_url="https://relay.example.com/v1",
+    )
+    state_store = StateStore(database.session_factory)
+    state_store.bootstrap_reference_data(settings)
+    codex_fabric_service = CodexFabricService(database.session_factory, settings)
+    evolution_service = EvolutionService(database.session_factory)
+    dashboard_service = DashboardService(
+        RepoStateService(tmp_path),
+        state_store,
+        codex_fabric_service,
+        evolution_service=evolution_service,
+    )
+    supervisor = SupervisorService(
+        state_store=state_store,
+        dashboard_service=dashboard_service,
+        settings=settings,
+        codex_fabric_service=codex_fabric_service,
+        evolution_service=evolution_service,
+    )
+    _insert_completed_codex_runs(
+        database=database,
+        repo_root=tmp_path,
+        supervisor_loop_key="strategy-evaluation",
+        count=3,
+    )
+    _activate_single_loop(database, "capability-review")
+
+    results = supervisor.run_due_loops(max_loops=1)
+    goals = state_store.list_goals(statuses=("active",))
+    incidents = state_store.list_incidents(open_only=True)
+    queued_runs = codex_fabric_service.list_runs(supervisor_loop_key="capability-review", limit=5)
+
+    assert results
+    assert results[0].loop_key == "capability-review"
+    assert results[0].payload["stall_state"] == "warning"
+    assert results[0].payload["created_goal_id"] is not None
+    assert results[0].payload["created_incident_id"] is None
+    assert results[0].payload["queued_replan"]["status"] == "queued"
+    assert any(goal.title == "Evolution anti-stall recovery" for goal in goals)
+    assert not incidents
+    assert queued_runs[0].status == "queued"
+
+
+def test_supervisor_capability_review_creates_incident_for_critical_stall(tmp_path: Path) -> None:
+    _seed_repo_state(tmp_path)
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'supervisor-capability-critical.db'}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'supervisor-capability-critical.db'}",
+        db_bootstrap_on_start=True,
+        openai_api_key="relay-key",
+        openai_base_url="https://relay.example.com/v1",
+    )
+    state_store = StateStore(database.session_factory)
+    state_store.bootstrap_reference_data(settings)
+    codex_fabric_service = CodexFabricService(database.session_factory, settings)
+    evolution_service = EvolutionService(database.session_factory)
+    dashboard_service = DashboardService(
+        RepoStateService(tmp_path),
+        state_store,
+        codex_fabric_service,
+        evolution_service=evolution_service,
+    )
+    supervisor = SupervisorService(
+        state_store=state_store,
+        dashboard_service=dashboard_service,
+        settings=settings,
+        codex_fabric_service=codex_fabric_service,
+        evolution_service=evolution_service,
+    )
+
+    first = evolution_service.create_improvement_proposal(
+        {
+            "title": "Blocked review path 1",
+            "summary": "Repeatedly blocked proposal.",
+            "target_surface": "system",
+            "proposal_kind": "workflow_tuning",
+            "change_scope": ["docs/next-gen/"],
+            "proposal_state": "blocked",
+            "created_by": "tester",
+        }
+    )
+    second = evolution_service.create_improvement_proposal(
+        {
+            "title": "Blocked review path 2",
+            "summary": "Repeatedly rolled back proposal.",
+            "target_surface": "system",
+            "proposal_kind": "workflow_tuning",
+            "change_scope": ["docs/next-gen/"],
+            "proposal_state": "rolled_back",
+            "created_by": "tester",
+        }
+    )
+    with database.session_scope() as session:
+        for proposal_id in (first.id, second.id):
+            proposal = session.get(EvolutionImprovementProposalModel, proposal_id)
+            assert proposal is not None
+            proposal.created_at = datetime.now(tz=UTC) - timedelta(hours=2)
+
+    _activate_single_loop(database, "capability-review")
+    results = supervisor.run_due_loops(max_loops=1)
+    goals = state_store.list_goals(statuses=("active",))
+    incidents = state_store.list_incidents(open_only=True)
+    queued_runs = codex_fabric_service.list_runs(supervisor_loop_key="capability-review", limit=5)
+
+    assert results
+    assert results[0].payload["stall_state"] == "critical"
+    assert results[0].payload["created_goal_id"] is not None
+    assert results[0].payload["created_incident_id"] is not None
+    assert results[0].payload["queued_replan"]["status"] == "queued"
+    assert any(goal.title == "Evolution anti-stall recovery" for goal in goals)
+    assert any(incident.title == "Evolution anti-stall escalation" for incident in incidents)
+    assert queued_runs[0].status == "queued"
+
+
 def _activate_single_loop(database: Database, loop_key: str) -> None:
     with database.session_scope() as session:
         loops = session.scalars(select(SupervisorLoopModel)).all()
@@ -305,6 +432,50 @@ def _seed_repo_state(repo_root: Path) -> None:
         json.dumps({"stats": {"occupied_cells": 4, "coverage_pct": 0.2, "total_generations": 9}}),
         encoding="utf-8",
     )
+
+
+def _insert_completed_codex_runs(
+    *,
+    database: Database,
+    repo_root: Path,
+    supervisor_loop_key: str,
+    count: int,
+) -> None:
+    current_time = datetime.now(tz=UTC)
+    with database.session_scope() as session:
+        for index in range(count):
+            session.add(
+                CodexRunModel(
+                    id=f"{supervisor_loop_key}-fixture-{index}",
+                    workflow_run_id=f"wf-{supervisor_loop_key}-{index}",
+                    supervisor_loop_key=supervisor_loop_key,
+                    worker_class="analysis_worker",
+                    execution_mode="local_exec",
+                    strategy_mode="ralph_style",
+                    objective="Bounded reflection cycle.",
+                    context_summary="Capability review fixture.",
+                    repo_path=str(repo_root),
+                    workspace_path=str(repo_root),
+                    write_scope=["docs/next-gen/"],
+                    allowed_tools=["shell"],
+                    search_enabled=False,
+                    risk_tier="R2",
+                    max_duration_sec=300,
+                    max_token_budget=45000,
+                    max_iterations=2,
+                    review_required=True,
+                    eval_required=True,
+                    request_payload={},
+                    result_payload={"structured_output": {"outcome": "completed"}},
+                    queued_at=current_time - timedelta(hours=6 - index),
+                    started_at=current_time - timedelta(hours=5 - index),
+                    completed_at=current_time - timedelta(hours=4 - index),
+                    created_by="tester",
+                    origin_type="test",
+                    origin_id=supervisor_loop_key,
+                    status="completed",
+                )
+            )
 
 
 class ScriptedSyncBrokerAdapter:

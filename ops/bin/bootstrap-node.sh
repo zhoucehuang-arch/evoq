@@ -1,21 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -lt 1 || $# -gt 2 ]]; then
-  echo "Usage: bootstrap-node.sh core|worker [--overwrite]" >&2
+if [[ $# -lt 1 || $# -gt 3 ]]; then
+  echo "Usage: bootstrap-node.sh core|worker [--single-vps] [--overwrite]" >&2
   exit 1
 fi
 
 ROLE="$1"
-OVERWRITE_FLAG="${2:-}"
+shift
+
+SINGLE_VPS=false
+OVERWRITE=false
+for arg in "$@"; do
+  case "${arg}" in
+    --single-vps)
+      SINGLE_VPS=true
+      ;;
+    --overwrite)
+      OVERWRITE=true
+      ;;
+    *)
+      echo "Unsupported argument: ${arg}" >&2
+      echo "Usage: bootstrap-node.sh core|worker [--single-vps] [--overwrite]" >&2
+      exit 1
+      ;;
+  esac
+done
 
 if [[ "${ROLE}" != "core" && "${ROLE}" != "worker" ]]; then
   echo "Role must be core or worker." >&2
   exit 1
 fi
 
-if [[ -n "${OVERWRITE_FLAG}" && "${OVERWRITE_FLAG}" != "--overwrite" ]]; then
-  echo "Only --overwrite is supported as the optional second argument." >&2
+if [[ "${ROLE}" == "worker" && "${SINGLE_VPS}" == "true" ]]; then
+  echo "Worker bootstrap is not used for the single-VPS profile. Bootstrap only the core role." >&2
   exit 1
 fi
 
@@ -33,17 +51,20 @@ else
 fi
 
 echo "Running host prerequisite checks for role=${ROLE}..."
-if [[ ! -f "${ENV_FILE}" || "${OVERWRITE_FLAG}" == "--overwrite" ]]; then
+if [[ ! -f "${ENV_FILE}" || "${OVERWRITE}" == "true" ]]; then
   QE_SKIP_ENV_PREFLIGHT=1 "${HOST_PREFLIGHT_SH}" "${ROLE}" "${ENV_FILE}"
 else
   "${HOST_PREFLIGHT_SH}" "${ROLE}" "${ENV_FILE}"
 fi
 
-if [[ ! -f "${ENV_FILE}" || "${OVERWRITE_FLAG}" == "--overwrite" ]]; then
+if [[ ! -f "${ENV_FILE}" || "${OVERWRITE}" == "true" ]]; then
   echo "Bootstrapping env file at ${ENV_FILE}..."
   INIT_ARGS=("init" "${ROLE}")
-  if [[ "${OVERWRITE_FLAG}" == "--overwrite" ]]; then
+  if [[ "${OVERWRITE}" == "true" ]]; then
     INIT_ARGS+=("--overwrite")
+  fi
+  if [[ "${SINGLE_VPS}" == "true" ]]; then
+    INIT_ARGS+=("--topology" "single_vps_compact")
   fi
   "${DEPLOY_CONFIG_SH}" "${INIT_ARGS[@]}"
 else
@@ -56,3 +77,6 @@ echo "Running final env preflight..."
 
 echo "Bootstrap completed for role=${ROLE}."
 echo "Next step: ${NEXT_STEP}"
+if [[ "${SINGLE_VPS}" == "true" ]]; then
+  echo "Single-VPS profile selected: the Core stack will also host the Codex worker runtime on this machine."
+fi

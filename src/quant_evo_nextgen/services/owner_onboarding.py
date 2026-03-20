@@ -3,16 +3,39 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from quant_evo_nextgen.services.deploy_config import DeployConfigService, normalize_deploy_role
+from quant_evo_nextgen.services.deploy_config import (
+    DeployConfigService,
+    SUPPORTED_DEPLOYMENT_TOPOLOGIES,
+    normalize_deploy_role,
+)
+from quant_evo_nextgen.services.deploy_fields import (
+    DeployFieldSpec,
+    resolve_deploy_field,
+)
 
 
-@dataclass(frozen=True, slots=True)
-class OnboardingField:
-    label: str
-    env_key: str | None = None
-    secret: bool = False
-    roles: tuple[str, ...] = ("core", "worker")
-    broker_mode: bool = False
+SUPPORTED_BROKER_MODES = {
+    "paper": "paper_sim",
+    "paper_sim": "paper_sim",
+    "alpaca_paper": "alpaca_paper",
+    "alpaca_live": "alpaca_live",
+}
+SUPPORTED_BOOLEAN_TRUE = {"1", "true", "yes", "on", "enable", "enabled", "\u542f\u7528", "\u6253\u5f00"}
+SUPPORTED_BOOLEAN_FALSE = {"0", "false", "no", "off", "disable", "disabled", "\u7981\u7528", "\u5173\u95ed"}
+SUPPORTED_TOPOLOGY_ALIASES = {
+    "singlevps": "single_vps_compact",
+    "singlevpscompact": "single_vps_compact",
+    "singlevpsfirst": "single_vps_compact",
+    "\u5355vps": "single_vps_compact",
+    "\u5355\u673avps": "single_vps_compact",
+    "\u5355\u673a\u90e8\u7f72": "single_vps_compact",
+    "single_vps_compact": "single_vps_compact",
+    "twovps": "two_vps_asymmetrical",
+    "twovpsasymmetrical": "two_vps_asymmetrical",
+    "\u53ccvps": "two_vps_asymmetrical",
+    "\u53cc\u673a\u90e8\u7f72": "two_vps_asymmetrical",
+    "two_vps_asymmetrical": "two_vps_asymmetrical",
+}
 
 
 @dataclass(slots=True)
@@ -25,47 +48,6 @@ class OwnerOnboardingResult:
     sensitive: bool
     preflight_status: str
     summary_text: str
-
-
-_FIELD_ALIASES: dict[str, OnboardingField] = {
-    "中转地址": OnboardingField("中转地址", env_key="QE_OPENAI_BASE_URL"),
-    "relaybaseurl": OnboardingField("中转地址", env_key="QE_OPENAI_BASE_URL"),
-    "openaibaseurl": OnboardingField("中转地址", env_key="QE_OPENAI_BASE_URL"),
-    "中转key": OnboardingField("中转 Key", env_key="QE_OPENAI_API_KEY", secret=True),
-    "relaykey": OnboardingField("中转 Key", env_key="QE_OPENAI_API_KEY", secret=True),
-    "openaiapikey": OnboardingField("中转 Key", env_key="QE_OPENAI_API_KEY", secret=True),
-    "postgres密码": OnboardingField("Postgres 密码", env_key="QE_POSTGRES_PASSWORD", secret=True, roles=("core",)),
-    "postgrespassword": OnboardingField("Postgres 密码", env_key="QE_POSTGRES_PASSWORD", secret=True, roles=("core",)),
-    "discordtoken": OnboardingField("Discord Bot Token", env_key="QE_DISCORD_TOKEN", secret=True, roles=("core",)),
-    "机器人token": OnboardingField("Discord Bot Token", env_key="QE_DISCORD_TOKEN", secret=True, roles=("core",)),
-    "guildid": OnboardingField("Discord Guild ID", env_key="QE_DISCORD_GUILD_ID", roles=("core",)),
-    "服务器id": OnboardingField("Discord Guild ID", env_key="QE_DISCORD_GUILD_ID", roles=("core",)),
-    "控制频道id": OnboardingField("控制频道 ID", env_key="QE_DISCORD_CONTROL_CHANNEL_ID", roles=("core",)),
-    "controlchannelid": OnboardingField("控制频道 ID", env_key="QE_DISCORD_CONTROL_CHANNEL_ID", roles=("core",)),
-    "审批频道id": OnboardingField("审批频道 ID", env_key="QE_DISCORD_APPROVALS_CHANNEL_ID", roles=("core",)),
-    "approvalschannelid": OnboardingField("审批频道 ID", env_key="QE_DISCORD_APPROVALS_CHANNEL_ID", roles=("core",)),
-    "告警频道id": OnboardingField("告警频道 ID", env_key="QE_DISCORD_ALERTS_CHANNEL_ID", roles=("core",)),
-    "alertschannelid": OnboardingField("告警频道 ID", env_key="QE_DISCORD_ALERTS_CHANNEL_ID", roles=("core",)),
-    "允许用户id": OnboardingField("允许控制的 Discord 用户 ID", env_key="QE_DISCORD_ALLOWED_USER_IDS", roles=("core",)),
-    "alloweduserids": OnboardingField("允许控制的 Discord 用户 ID", env_key="QE_DISCORD_ALLOWED_USER_IDS", roles=("core",)),
-    "brokermode": OnboardingField("券商模式", roles=("core",), broker_mode=True),
-    "券商模式": OnboardingField("券商模式", roles=("core",), broker_mode=True),
-    "alpacapaperkey": OnboardingField("Alpaca Paper Key", env_key="QE_ALPACA_PAPER_API_KEY", secret=True, roles=("core",)),
-    "alpacapapersecret": OnboardingField("Alpaca Paper Secret", env_key="QE_ALPACA_PAPER_API_SECRET", secret=True, roles=("core",)),
-    "alpacalivekey": OnboardingField("Alpaca Live Key", env_key="QE_ALPACA_LIVE_API_KEY", secret=True, roles=("core",)),
-    "alpacalivesecret": OnboardingField("Alpaca Live Secret", env_key="QE_ALPACA_LIVE_API_SECRET", secret=True, roles=("core",)),
-    "dashboard用户名": OnboardingField("Dashboard 用户名", env_key="QE_DASHBOARD_ACCESS_USERNAME", roles=("core",)),
-    "dashboardusername": OnboardingField("Dashboard 用户名", env_key="QE_DASHBOARD_ACCESS_USERNAME", roles=("core",)),
-    "dashboard密码": OnboardingField("Dashboard 密码", env_key="QE_DASHBOARD_ACCESS_PASSWORD", secret=True, roles=("core",)),
-    "dashboardpassword": OnboardingField("Dashboard 密码", env_key="QE_DASHBOARD_ACCESS_PASSWORD", secret=True, roles=("core",)),
-    "dashboardapitoken": OnboardingField("Dashboard API Token", env_key="QE_DASHBOARD_API_TOKEN", secret=True, roles=("core",)),
-    "dashboardtoken": OnboardingField("Dashboard API Token", env_key="QE_DASHBOARD_API_TOKEN", secret=True, roles=("core",)),
-    "dashboard域名": OnboardingField("Dashboard 公网域名", env_key="QE_EDGE_PUBLIC_HOST", roles=("core",)),
-    "edgepublichost": OnboardingField("Dashboard 公网域名", env_key="QE_EDGE_PUBLIC_HOST", roles=("core",)),
-    "acmeemail": OnboardingField("ACME 邮箱", env_key="QE_EDGE_ACME_EMAIL", roles=("core",)),
-    "postgresurl": OnboardingField("Worker Postgres URL", env_key="QE_POSTGRES_URL", secret=True, roles=("worker",)),
-    "数据库url": OnboardingField("Worker Postgres URL", env_key="QE_POSTGRES_URL", secret=True, roles=("worker",)),
-}
 
 
 class OwnerOnboardingService:
@@ -81,10 +63,16 @@ class OwnerOnboardingService:
             output_path=self._env_path_for_role(normalized),
         )
         report = self.deploy_config.run_preflight(role=normalized, env_path=env_path)
-        summary = (
-            f"已为 `{normalized}` 生成或确认部署配置草稿：`{env_path}`。\n"
-            f"当前预检状态：{report['status']}。{self._top_preflight_message(report)}\n"
-            "说明：这是部署草稿更新，相关服务通常需要重启后才会读取新值。"
+        lines = [
+            f"\u5df2\u4e3a `{normalized}` \u51c6\u5907\u90e8\u7f72\u8349\u7a3f\u3002",
+            f"\u914d\u7f6e\u6587\u4ef6: `{env_path}`",
+            f"\u9884\u68c0\u72b6\u6001: {report['status']}",
+        ]
+        top_message = self._top_preflight_message(report)
+        if top_message:
+            lines.append(top_message)
+        lines.append(
+            "\u8bf4\u660e: \u8fd9\u662f\u90e8\u7f72\u8349\u7a3f\u66f4\u65b0\uff0c\u76f8\u5173\u670d\u52a1\u901a\u5e38\u9700\u8981\u91cd\u542f\u540e\u624d\u4f1a\u8bfb\u53d6\u65b0\u503c\u3002"
         )
         return OwnerOnboardingResult(
             role=normalized,
@@ -94,7 +82,7 @@ class OwnerOnboardingService:
             masked_value=None,
             sensitive=False,
             preflight_status=report["status"],
-            summary_text=summary,
+            summary_text="\n".join(lines),
         )
 
     def status(self, role: str) -> OwnerOnboardingResult:
@@ -104,10 +92,13 @@ class OwnerOnboardingService:
             output_path=self._env_path_for_role(normalized),
         )
         report = self.deploy_config.run_preflight(role=normalized, env_path=env_path)
-        summary = (
-            f"`{normalized}` 当前部署预检状态：{report['status']}。\n"
-            f"配置文件：`{env_path}`。{self._top_preflight_message(report)}"
-        )
+        lines = [
+            f"`{normalized}` \u5f53\u524d\u90e8\u7f72\u72b6\u6001: {report['status']}",
+            f"\u914d\u7f6e\u6587\u4ef6: `{env_path}`",
+        ]
+        top_message = self._top_preflight_message(report)
+        if top_message:
+            lines.append(top_message)
         return OwnerOnboardingResult(
             role=normalized,
             env_path=str(env_path),
@@ -116,7 +107,7 @@ class OwnerOnboardingService:
             masked_value=None,
             sensitive=False,
             preflight_status=report["status"],
-            summary_text=summary,
+            summary_text="\n".join(lines),
         )
 
     def set_field(
@@ -127,13 +118,12 @@ class OwnerOnboardingService:
         value: str,
     ) -> OwnerOnboardingResult:
         normalized = normalize_deploy_role(role)
-        field = self.resolve_field(field_alias, role=normalized)
+        field = resolve_deploy_field(field_alias, role=normalized)
         env_path = self._env_path_for_role(normalized)
-        changed_keys: list[str]
-        if field.broker_mode:
-            broker_mode = value.strip().lower()
-            if broker_mode not in {"paper_sim", "alpaca_paper", "alpaca_live"}:
-                raise ValueError("券商模式只支持 `paper_sim`、`alpaca_paper` 或 `alpaca_live`。")
+        masked_value: str
+
+        if field.kind == "broker_mode":
+            broker_mode = self._normalize_broker_mode(value)
             updated = self.deploy_config.update_env_file(
                 role=normalized,
                 output_path=env_path,
@@ -148,20 +138,27 @@ class OwnerOnboardingService:
             masked_value = broker_mode
         else:
             if field.env_key is None:
-                raise ValueError(f"字段 `{field_alias}` 还没有映射到部署配置。")
+                raise ValueError(f"Field `{field_alias}` has no env mapping yet.")
+            normalized_value = self._normalize_value(field, value)
             updated = self.deploy_config.update_env_file(
                 role=normalized,
                 output_path=env_path,
-                updates={field.env_key: value.strip()},
+                updates={field.env_key: normalized_value},
             )
             changed_keys = [field.env_key]
-            masked_value = self._mask_value(value.strip(), secret=field.secret)
+            masked_value = self._mask_value(normalized_value, secret=field.secret)
 
         report = self.deploy_config.run_preflight(role=normalized, env_path=updated)
-        summary = (
-            f"已更新 `{normalized}` 的 {field.label}：{masked_value}。\n"
-            f"配置文件：`{updated}`。当前预检状态：{report['status']}。{self._top_preflight_message(report)}\n"
-            "说明：这是部署草稿更新，相关服务通常需要重启后才会读取新值。"
+        lines = [
+            f"\u5df2\u66f4\u65b0 `{normalized}` \u7684 {field.label}: {masked_value}",
+            f"\u914d\u7f6e\u6587\u4ef6: `{updated}`",
+            f"\u9884\u68c0\u72b6\u6001: {report['status']}",
+        ]
+        top_message = self._top_preflight_message(report)
+        if top_message:
+            lines.append(top_message)
+        lines.append(
+            "\u8bf4\u660e: \u8fd9\u662f\u90e8\u7f72\u8349\u7a3f\u66f4\u65b0\uff0c\u76f8\u5173\u670d\u52a1\u901a\u5e38\u9700\u8981\u91cd\u542f\u540e\u624d\u4f1a\u8bfb\u53d6\u65b0\u503c\u3002"
         )
         return OwnerOnboardingResult(
             role=normalized,
@@ -171,36 +168,55 @@ class OwnerOnboardingService:
             masked_value=masked_value,
             sensitive=field.secret,
             preflight_status=report["status"],
-            summary_text=summary,
+            summary_text="\n".join(lines),
         )
 
-    def resolve_field(self, field_alias: str, *, role: str) -> OnboardingField:
-        normalized = self._normalize_alias(field_alias)
-        field = _FIELD_ALIASES.get(normalized)
-        if field is None:
-            raise ValueError(f"还不支持通过 IM 设置字段 `{field_alias}`。")
-        if role not in field.roles:
-            raise ValueError(f"字段 `{field_alias}` 不适用于 `{role}`。")
-        return field
+    def resolve_field(self, field_alias: str, *, role: str) -> DeployFieldSpec:
+        return resolve_deploy_field(field_alias, role=normalize_deploy_role(role))
 
     def redact_secret_message(self, role: str, field_alias: str) -> str:
         normalized = normalize_deploy_role(role)
         field = self.resolve_field(field_alias, role=normalized)
-        return f"设置 {normalized} 的 {field.label}（已脱敏）"
+        return f"\u8bbe\u7f6e {normalized} \u7684 {field.label}\uff08\u5df2\u8131\u654f\uff09"
 
     def _env_path_for_role(self, role: str) -> Path | None:
         if self.env_root is None:
             return None
         return self.env_root / f"{role}.env"
 
-    def _normalize_alias(self, field_alias: str) -> str:
-        return (
-            field_alias.strip()
-            .lower()
-            .replace(" ", "")
-            .replace("_", "")
-            .replace("-", "")
-        )
+    def _normalize_value(self, field: DeployFieldSpec, value: str) -> str:
+        stripped = value.strip()
+        if field.kind == "bool":
+            return self._normalize_bool_value(stripped)
+        if field.kind == "topology":
+            return self._normalize_topology(stripped)
+        return stripped
+
+    def _normalize_broker_mode(self, value: str) -> str:
+        normalized = value.strip().lower()
+        try:
+            return SUPPORTED_BROKER_MODES[normalized]
+        except KeyError as exc:
+            supported = ", ".join(sorted(set(SUPPORTED_BROKER_MODES.values())))
+            raise ValueError(f"Broker mode must be one of: {supported}.") from exc
+
+    def _normalize_bool_value(self, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized in SUPPORTED_BOOLEAN_TRUE:
+            return "true"
+        if normalized in SUPPORTED_BOOLEAN_FALSE:
+            return "false"
+        raise ValueError("Boolean field values must be true/false, yes/no, on/off, or 启用/禁用.")
+
+    def _normalize_topology(self, value: str) -> str:
+        normalized = value.strip().lower().replace(" ", "").replace("-", "").replace("_", "")
+        mapped = SUPPORTED_TOPOLOGY_ALIASES.get(normalized)
+        if mapped is None and value.strip() in SUPPORTED_DEPLOYMENT_TOPOLOGIES:
+            mapped = value.strip()
+        if mapped is None:
+            supported = ", ".join(sorted(SUPPORTED_DEPLOYMENT_TOPOLOGIES))
+            raise ValueError(f"Deployment topology must be one of: {supported}.")
+        return mapped
 
     def _mask_value(self, value: str, *, secret: bool) -> str:
         if not secret:
@@ -213,10 +229,14 @@ class OwnerOnboardingService:
         checks = report.get("checks", [])
         if not isinstance(checks, list):
             return ""
-        failures = [check for check in checks if isinstance(check, dict) and check.get("status") in {"fail", "warn"}]
+        failures = [
+            check
+            for check in checks
+            if isinstance(check, dict) and check.get("status") in {"fail", "warn"}
+        ]
         if not failures:
-            return "所有关键预检项都已通过。"
+            return "\u6240\u6709\u5173\u952e\u9884\u68c0\u9879\u90fd\u5df2\u901a\u8fc7\u3002"
         top = failures[0]
-        label = str(top.get("label") or top.get("key") or "预检项")
+        label = str(top.get("label") or top.get("key") or "Preflight Check")
         message = str(top.get("message") or "").strip()
-        return f"当前最重要的待处理项：{label}，{message}"
+        return f"\u5f53\u524d\u6700\u9700\u8981\u5904\u7406\u7684\u9879: {label} | {message}"

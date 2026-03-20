@@ -429,3 +429,18 @@
   This slice does not finish autonomous self-improvement, but it changes the shape of the system in an important way: completed bounded reflection can now become explicit governed work items automatically. That is a more honest foundation for unattended evolution than a dashboard page that only waits for manual proposal entry.
 - Next move:
   Keep pushing the same chain deeper: automatic proposal generation is now present, but automatic canary actuation, rollback execution, promotion gating, and objective-drift enforcement still need to be closed before Stage 10 can be called complete.
+
+## 2026-03-20 / Slice 28 / Capability Anti-Stall Closure And Owner-Entry Productization
+
+- Slice: Closed capability scorecards and anti-stall replanning, then repaired single-VPS-first owner-facing deployment surfaces
+- Date: 2026-03-20
+- What changed:
+  Added a dedicated evolution capability review service, extended the evolution dashboard with capability scorecards and capability gaps, activated a `capability-review` supervisor loop, and taught the supervisor to open bounded recovery goals, raise incidents on critical stalls, and queue Ralph-style replanning runs when self-improvement is warning or critical. Repaired SQLite datetime handling in the new stall logic so repository and API behavior stay stable across test databases. Added targeted tests for healthy, warning, and critical stall states plus supervisor and API coverage. After that closure, rewrote the owner-facing entry docs so the root README, GitHub-to-VPS guide, owner quickstart, and delivery-status page now present a clean single-VPS-first story and no longer contain broken Chinese text on the main path.
+- What was validated:
+  Passed targeted `py -m pytest -q tests/test_evolution_capability.py tests/test_supervisor.py tests/test_api_persistence.py -k "evolution or supervisor"` with `12` tests. Passed full `py -m pytest -q` with `113` tests. Passed `py -m compileall src tests`. Passed `npm run build` in `apps/dashboard-web`.
+- Issues found:
+  The first honest failure was not logic but time semantics: SQLite returned naive timestamps for evolution records, which crashed the new dashboard stall review until all comparisons were normalized to UTC. The second important issue was product trust. Several Chinese owner-entry docs still contained mojibake, which meant the repo could look technically mature while still being hard for a Chinese-speaking owner to deploy and operate confidently.
+- Reflection:
+  This slice mattered because the remaining gaps were no longer only backend gaps. A long-running autonomous system needs both anti-stall self-correction and a trustworthy owner entrypoint. Closing only one of those would still leave the product feeling incomplete.
+- Next move:
+  The main remaining work before real activation is now VPS-side truth: deploy on the target host, run smoke checks and doctor, verify relay and broker connectivity, and complete the first paper-mode operational rehearsal.

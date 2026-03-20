@@ -26,13 +26,13 @@ def test_control_plane_creates_and_executes_durable_approval_request(tmp_path) -
         ),
         actor="tester",
         source_channel="control",
-        raw_message="今天先暂停自动交易",
+        raw_message="\u4eca\u5929\u5148\u6682\u505c\u81ea\u52a8\u4ea4\u6613",
     )
 
     approvals = state_store.list_approval_requests(pending_only=True)
 
     assert create_result.created_record_id is not None
-    assert "已创建" in create_result.response_text
+    assert "\u5df2\u521b\u5efa" in create_result.response_text
     assert len(approvals) == 1
     assert approvals[0].approval_type == "pause_trading"
 
@@ -45,12 +45,12 @@ def test_control_plane_creates_and_executes_durable_approval_request(tmp_path) -
         ),
         actor="tester",
         source_channel="control",
-        raw_message=f"批准 {approvals[0].id}",
+        raw_message=f"\u6279\u51c6 {approvals[0].id}",
     )
 
     overrides = state_store.list_operator_overrides(active_only=True)
 
-    assert "已批准审批" in approve_result.response_text
+    assert "\u5df2\u6279\u51c6\u5ba1\u6279" in approve_result.response_text
     assert overrides[0].scope == "trading"
     assert overrides[0].action == "pause"
 
@@ -75,14 +75,14 @@ def test_control_plane_applies_low_risk_runtime_config_change_without_approval(t
         ),
         actor="tester",
         source_channel="control",
-        raw_message="把心跳间隔改成 120 秒",
+        raw_message="\u628a\u5fc3\u8df3\u95f4\u9694\u6539\u6210 120 \u79d2",
     )
 
     entries = state_store.list_runtime_config_entries()
     revisions = state_store.list_runtime_config_revisions()
 
     heartbeat_entry = next(entry for entry in entries if entry.target_key == "heartbeat_runtime")
-    assert "已直接应用配置提案" in result.response_text
+    assert "\u5df2\u76f4\u63a5\u5e94\u7528\u914d\u7f6e\u63d0\u6848" in result.response_text
     assert heartbeat_entry.value_json["interval_seconds"] == 120
     assert len(revisions) == 1
 
@@ -107,13 +107,13 @@ def test_control_plane_routes_risky_runtime_config_change_into_approval(tmp_path
         ),
         actor="tester",
         source_channel="control",
-        raw_message="把控制频道改成 owner-control",
+        raw_message="\u628a\u63a7\u5236\u9891\u9053\u6539\u6210 owner-control",
     )
 
     proposals = state_store.list_runtime_config_proposals()
     approvals = state_store.list_approval_requests(pending_only=True)
 
-    assert "已创建配置提案" in result.response_text
+    assert "\u5df2\u521b\u5efa\u914d\u7f6e\u63d0\u6848" in result.response_text
     assert len(proposals) == 1
     assert proposals[0].status == "awaiting_approval"
     assert len(approvals) == 1
@@ -140,7 +140,7 @@ def test_control_plane_can_roll_back_low_risk_runtime_config_revision(tmp_path) 
         ),
         actor="tester",
         source_channel="control",
-        raw_message="把心跳间隔改成 120 秒",
+        raw_message="\u628a\u5fc3\u8df3\u95f4\u9694\u6539\u6210 120 \u79d2",
     )
     latest_revision = state_store.list_runtime_config_revisions()[0]
 
@@ -153,14 +153,14 @@ def test_control_plane_can_roll_back_low_risk_runtime_config_revision(tmp_path) 
         ),
         actor="tester",
         source_channel="control",
-        raw_message=f"回滚配置 {latest_revision.id}",
+        raw_message=f"\u56de\u6eda\u914d\u7f6e {latest_revision.id}",
     )
 
     entries = state_store.list_runtime_config_entries()
     heartbeat_entry = next(entry for entry in entries if entry.target_key == "heartbeat_runtime")
 
-    assert "已直接应用配置提案" in forward_result.response_text
-    assert "已直接应用配置回滚提案" in rollback_result.response_text
+    assert "\u5df2\u76f4\u63a5\u5e94\u7528\u914d\u7f6e\u63d0\u6848" in forward_result.response_text
+    assert "\u5df2\u76f4\u63a5\u5e94\u7528\u914d\u7f6e\u56de\u6eda\u63d0\u6848" in rollback_result.response_text
     assert heartbeat_entry.value_json["interval_seconds"] == 60
 
 
@@ -178,16 +178,16 @@ def test_control_plane_updates_deploy_secret_without_persisting_raw_secret(tmp_p
         intent=IntentClassification(
             intent_type=IntentType.DEPLOY_SET,
             deploy_role="core",
-            deploy_field_alias="中转key",
+            deploy_field_alias="\u4e2d\u8f6ckey",
             deploy_value="sk-live-secret-1234",
             contains_sensitive_value=True,
-            sanitized_message_summary="设置 core 的 中转key（已脱敏）",
+            sanitized_message_summary="\u8bbe\u7f6e core \u7684 Relay API Key\uff08\u5df2\u8131\u654f\uff09",
             proposed_action="Update deployment draft field.",
             execution_supported=True,
         ),
         actor="tester",
         source_channel="control",
-        raw_message="设置 core 中转key 为 sk-live-secret-1234",
+        raw_message="\u8bbe\u7f6e core \u4e2d\u8f6ckey \u4e3a sk-live-secret-1234",
     )
 
     owner_presence = state_store.get_owner_preference("last_owner_interaction")
@@ -196,6 +196,6 @@ def test_control_plane_updates_deploy_secret_without_persisting_raw_secret(tmp_p
 
     assert "sk-live-secret-1234" not in owner_presence.value_json["message_summary"]
     assert "sk-live-secret-1234" in env_content
-    assert "已更新 `core` 的 中转 Key" in result.response_text
+    assert "\u5df2\u66f4\u65b0 `core` \u7684 Relay API Key" in result.response_text
     assert "***" in result.response_text
     assert workflow_runs[0].workflow_code == "WF-OPS-001"

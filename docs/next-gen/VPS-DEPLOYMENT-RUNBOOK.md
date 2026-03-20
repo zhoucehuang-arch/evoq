@@ -11,6 +11,12 @@ Recommended topology:
 - `VPS-A Core`
 - `VPS-B Worker`
 
+Simplest supported product path:
+
+- `1 VPS` using the `single_vps_compact` profile
+- bootstrap only the Core env
+- let the Core stack also host `codex-fabric-runner`
+
 Repo path on both machines:
 
 - `/opt/quant-evo-nextgen`
@@ -31,6 +37,42 @@ cd /opt/quant-evo-nextgen
 sudo ./ops/bin/install-host-deps.sh
 ```
 
+## 2.1 Simplest One-VPS Path
+
+If you want the shortest deploy path first, use the single-VPS profile:
+
+```bash
+cd /opt/quant-evo-nextgen
+chmod +x ops/bin/*.sh
+./ops/bin/quickstart-single-vps.sh
+```
+
+This keeps the authority model inside the Core runtime, but also starts the Codex worker runtime on the same host. It is the recommended first product path when you want one VPS only.
+
+If you prefer to separate host preparation from app onboarding, you can also use:
+
+```bash
+cd /opt/quant-evo-nextgen
+sudo ./ops/bin/install-host-deps.sh
+./ops/bin/onboard-single-vps.sh
+```
+
+If you prefer to prepare the draft first and start the services later, you can also use:
+
+```bash
+cd /opt/quant-evo-nextgen
+./ops/bin/onboard-single-vps.sh --no-start
+```
+
+If you prefer the lower-level owner CLI instead of the shell wrapper, use:
+
+```bash
+cd /opt/quant-evo-nextgen
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转地址 https://relay.example.com/v1
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转key <secret>
+```
+
 ## 3. Core VPS
 
 ### 3.1 Bootstrap the Core env file
@@ -42,6 +84,16 @@ chmod +x ops/bin/*.sh
 ```
 
 This guided path runs host prerequisite checks, creates the canonical env file if it does not exist yet, and reruns env preflight before Docker bring-up.
+
+If you want a friendlier owner-facing bootstrap path on the VPS, the same draft can be managed with:
+
+```bash
+cd /opt/quant-evo-nextgen
+./ops/bin/onboard-single-vps.sh --no-start
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . status core
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转key <secret>
+```
 
 If you want the explicit step-by-step path instead, use:
 
@@ -84,6 +136,9 @@ Recommended defaults for the first VPS bring-up:
 - `QE_POSTGRES_BIND_HOST=127.0.0.1`
 - `QE_API_BIND_HOST=127.0.0.1`
 - `QE_DASHBOARD_BIND_HOST=127.0.0.1`
+- `QE_SEARXNG_BASE_URL=` if you do not have a local metasearch node yet
+- `QE_RSSHUB_BASE_URL=` if you do not have a local feed router yet
+- `QE_PLAYWRIGHT_BROWSER_ENABLED=false` unless you have a Playwright endpoint ready
 
 Optional public dashboard edge:
 
@@ -94,6 +149,7 @@ Only switch the default broker to Alpaca after the first clean paper-mode deploy
 Only switch `QE_POSTGRES_BIND_HOST` away from `127.0.0.1` after you have a private-network address ready for the Worker VPS.
 `./ops/bin/core-up.sh` reruns preflight automatically and will stop before Docker bring-up if the env file is still invalid.
 If `QE_EDGE_PUBLIC_HOST` is set, `./ops/bin/core-up.sh` also starts the bundled Caddy reverse proxy from `ops/production/core/docker-compose.edge.yml`. Keep `QE_API_BIND_HOST=127.0.0.1` and `QE_DASHBOARD_BIND_HOST=127.0.0.1` in that mode so the edge proxy remains the only public surface.
+If `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`, `./ops/bin/core-up.sh` also starts `codex-fabric-runner` on the Core VPS so a second machine is not required.
 
 ## 4. Worker VPS
 
@@ -131,6 +187,7 @@ Rules:
 - Do not place broker credentials on the Worker VPS.
 - On the Core VPS, change `QE_POSTGRES_BIND_HOST` from `127.0.0.1` to the Core node's private-network IP or Tailscale IP before bringing the Worker online.
 `./ops/bin/worker-up.sh` reruns preflight automatically and will stop if the Worker env still points to `localhost`, `127.0.0.1`, `postgres`, or carries Core-only secrets.
+Do not bootstrap the Worker env when the topology is `single_vps_compact`; that profile is intentionally Core-only.
 
 ## 5. Bring Up Core
 

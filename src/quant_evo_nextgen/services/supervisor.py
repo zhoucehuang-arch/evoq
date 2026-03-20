@@ -15,6 +15,7 @@ from quant_evo_nextgen.services.acquisition import AcquisitionStackService
 from quant_evo_nextgen.services.codex_fabric import CodexFabricService
 from quant_evo_nextgen.services.dashboard import DashboardService
 from quant_evo_nextgen.services.evolution import EvolutionService
+from quant_evo_nextgen.services.evolution_capability import EvolutionCapabilityService
 from quant_evo_nextgen.services.execution import ExecutionService
 from quant_evo_nextgen.services.learning import LearningService
 from quant_evo_nextgen.services.state_store import StateStore
@@ -63,6 +64,7 @@ class SupervisorService:
             "broker_state_sync": self._broker_state_sync,
             "strategy_evaluation": self._strategy_evaluation,
             "evolution_governance_sync": self._evolution_governance_sync,
+            "capability_review": self._capability_review,
             "council_reflection": self._council_reflection,
             "owner_absence_watch": self._owner_absence_watch,
         }
@@ -441,6 +443,14 @@ class SupervisorService:
     ) -> dict[str, Any]:
         overview = self.dashboard_service.build_overview()
         recent_workflows = self.state_store.list_workflow_runs(limit=6, families=("evolution", "strategy", "learning"))
+        capability_review = EvolutionCapabilityService(
+            state_store=self.state_store,
+            learning_service=self.learning_service,
+            strategy_service=self.strategy_service,
+            execution_service=self.execution_service,
+            evolution_service=self.evolution_service,
+            codex_fabric_service=self.codex_fabric_service,
+        ).build_review()
         return self._queue_loop_codex_run(
             loop=loop,
             workflow_run=workflow_run,
@@ -449,7 +459,8 @@ class SupervisorService:
             context_summary=(
                 f"Mode={overview.system.mode}, risk_state={overview.system.risk_state}, "
                 f"pending_approvals={overview.system.pending_approvals}, active_goals={overview.system.active_goals}, "
-                f"recent_relevant_workflows={len(recent_workflows)}."
+                f"recent_relevant_workflows={len(recent_workflows)}, "
+                f"capability_score={capability_review.overall_score_pct}, stall_state={capability_review.stall_state}."
             ),
             write_scope=["docs/next-gen/", "memory/", "knowledge/"],
             allowed_tools=["shell", "web"],
@@ -465,12 +476,130 @@ class SupervisorService:
             ],
             prompt_appendix=(
                 "Simulate a governed council: include distinct planner, skeptic, builder, guardian, and judge viewpoints "
-                "before reaching a final recommendation. Keep the loop bounded and efficiency-aware."
+                "before reaching a final recommendation. Keep the loop bounded and efficiency-aware. "
+                f"Prioritize these current gaps when relevant: {[gap.summary for gap in capability_review.capability_gaps[:4]]}"
             ),
             citation_requirements=[
                 "Cite external evidence for any recommendation involving provider behavior, market structure, or external tooling.",
             ],
         )
+
+    def _capability_review(
+        self,
+        loop: SupervisorLoopSummary,
+        workflow_run: WorkflowRunSummary,
+    ) -> dict[str, Any]:
+        review = EvolutionCapabilityService(
+            state_store=self.state_store,
+            learning_service=self.learning_service,
+            strategy_service=self.strategy_service,
+            execution_service=self.execution_service,
+            evolution_service=self.evolution_service,
+            codex_fabric_service=self.codex_fabric_service,
+        ).build_review()
+
+        created_goal_id: str | None = None
+        created_incident_id: str | None = None
+        existing_recovery_goal = next(
+            (
+                goal
+                for goal in self.state_store.list_goals(statuses=("active", "proposed"))
+                if goal.title == "Evolution anti-stall recovery"
+            ),
+            None,
+        )
+        if review.stall_state in {"warning", "critical"} and existing_recovery_goal is None:
+            goal = self.state_store.create_goal(
+                {
+                    "title": "Evolution anti-stall recovery",
+                    "description": (
+                        review.stall_summary
+                        or "Capability review detected stalled self-improvement progress that needs bounded replanning."
+                    ),
+                    "mission_domain": "evolution",
+                    "success_metrics": {
+                        "target_stall_state": "healthy",
+                        "target_capability_score": max(70, review.overall_score_pct + 10),
+                    },
+                    "failure_metrics": {"stall_state": review.stall_state},
+                    "budget_scope": {"source_loop": "capability-review"},
+                    "time_horizon": "72h",
+                    "created_by": "supervisor",
+                    "origin_type": "workflow",
+                    "origin_id": workflow_run.id,
+                    "status": "active",
+                }
+            )
+            created_goal_id = goal.id
+
+        if review.stall_state == "critical":
+            existing_incident = next(
+                (
+                    incident
+                    for incident in self.state_store.list_incidents(open_only=True, limit=20)
+                    if incident.title == "Evolution anti-stall escalation"
+                ),
+                None,
+            )
+            if existing_incident is None:
+                incident = self.state_store.create_incident(
+                    {
+                        "title": "Evolution anti-stall escalation",
+                        "summary": review.stall_summary
+                        or "Capability review detected repeated stalled or blocked self-improvement behavior.",
+                        "severity": "SEV-2",
+                        "created_by": "supervisor",
+                        "origin_type": "workflow",
+                        "origin_id": workflow_run.id,
+                        "related_workflow_run_id": workflow_run.id,
+                    }
+                )
+                created_incident_id = incident.id
+
+        queue_result: dict[str, Any] | None = None
+        if review.should_queue_replan:
+            queue_result = self._queue_loop_codex_run(
+                loop=loop,
+                workflow_run=workflow_run,
+                worker_class="analysis_worker",
+                objective="Run a bounded Ralph-style anti-stall replanning cycle and produce the next governed recovery plan for the autonomous investment system.",
+                context_summary=(
+                    f"Capability_score={review.overall_score_pct}, stall_state={review.stall_state}, "
+                    f"top_gaps={[gap.summary for gap in review.capability_gaps[:3]]}."
+                ),
+                write_scope=["docs/next-gen/", "memory/", "knowledge/"],
+                allowed_tools=["shell", "web"],
+                search_enabled=True,
+                risk_tier="R2",
+                review_required=True,
+                eval_required=True,
+                acceptance_criteria=[
+                    "Use the mission priority order as a hard constraint.",
+                    "Rank the top recovery actions by marginal utility, cost, and regression risk.",
+                    "Do not propose uncontrolled autonomy expansion.",
+                    "Leave a bounded recovery plan with explicit stop conditions and follow-up tasks.",
+                ],
+                prompt_appendix=(
+                    "This is an anti-stall replanning run. Work in Ralph-style bounded outer-loop mode. "
+                    f"Current capability gaps: {[gap.summary for gap in review.capability_gaps[:5]]}"
+                ),
+                citation_requirements=[
+                    "Cite any external claim that materially changes the recovery plan.",
+                ],
+            )
+
+        return {
+            "status": "completed",
+            "workflow_run_id": workflow_run.id,
+            "overall_score_pct": review.overall_score_pct,
+            "review_status": review.status,
+            "stall_state": review.stall_state,
+            "stall_summary": review.stall_summary,
+            "capability_gaps": [gap.summary for gap in review.capability_gaps[:5]],
+            "created_goal_id": created_goal_id,
+            "created_incident_id": created_incident_id,
+            "queued_replan": queue_result,
+        }
 
     def _evolution_governance_sync(
         self,

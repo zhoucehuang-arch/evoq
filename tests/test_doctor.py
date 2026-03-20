@@ -161,3 +161,33 @@ def test_doctor_fails_when_public_dashboard_surface_lacks_auth(tmp_path: Path) -
     assert profiles["node_vps_deploy"]["status"] == "fail"
 
     database.dispose()
+
+
+def test_doctor_surfaces_acquisition_probe_details(monkeypatch, tmp_path: Path) -> None:
+    database_path = tmp_path / "doctor-acquisition.db"
+    database = Database(f"sqlite+pysqlite:///{database_path}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{database_path}",
+        openai_api_key="relay-key",
+        searxng_base_url="http://searxng:8080",
+    )
+    store = StateStore(database.session_factory)
+    store.bootstrap_reference_data(settings)
+
+    def _raise_probe(*args, **kwargs):
+        raise OSError("probe down")
+
+    monkeypatch.setattr("quant_evo_nextgen.services.acquisition.urlopen", _raise_probe)
+    report = DoctorService(database.session_factory, settings).run()
+
+    acquisition_check = next(check for check in report["checks"] if check["key"] == "acquisition_stack")
+    search_scrape_layer = next(layer for layer in acquisition_check["details"]["layers"] if layer["key"] == "search_scrape")
+
+    assert acquisition_check["details"]["probe_endpoints"] is True
+    assert search_scrape_layer["status"] == "warn"
+    assert search_scrape_layer["details"]["probed"] is True
+
+    database.dispose()

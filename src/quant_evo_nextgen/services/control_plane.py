@@ -85,11 +85,14 @@ class ControlPlaneService:
             if intent.intent_type is IntentType.DEPLOY_SET:
                 return self._set_deploy_field(intent, actor, source_channel)
         except ValueError as exc:
-            return ControlPlaneResult(created_record_id=None, response_text=f"控制面未能执行该请求：{exc}")
+            return ControlPlaneResult(
+                created_record_id=None,
+                response_text=f"\u63a7\u5236\u9762\u672a\u80fd\u6267\u884c\u8be5\u8bf7\u6c42: {exc}",
+            )
 
         return ControlPlaneResult(
             created_record_id=None,
-            response_text="当前这条消息不需要写入控制平面。",
+            response_text="\u5f53\u524d\u8fd9\u6761\u6d88\u606f\u4e0d\u9700\u8981\u5199\u5165\u63a7\u5236\u5e73\u9762\u3002",
         )
 
     def _create_approval_for_intent(
@@ -121,15 +124,16 @@ class ControlPlaneService:
         )
 
         action_label = {
-            "pause_trading": "暂停自动交易",
-            "pause_evolution": "暂停自动进化",
-            "resume_domain": f"恢复域 `{target_domain}`",
+            "pause_trading": "\u6682\u505c\u81ea\u52a8\u4ea4\u6613",
+            "pause_evolution": "\u6682\u505c\u81ea\u52a8\u8fdb\u5316",
+            "resume_domain": f"\u6062\u590d `{target_domain}`",
         }[approval_type]
         return ControlPlaneResult(
             created_record_id=approval.id,
             response_text=(
-                f"已创建 `{action_label}` 的审批请求，编号 `{approval.id}`。\n"
-                "在真正执行状态切换前，系统会先等待 owner 批准，并把审批与后续动作都写入持久化状态。"
+                f"\u5df2\u521b\u5efa `{action_label}` \u7684\u5ba1\u6279\u8bf7\u6c42\uff0c\u7f16\u53f7 `{approval.id}`\u3002\n"
+                "\u5728\u771f\u6b63\u6267\u884c\u72b6\u6001\u5207\u6362\u524d\uff0c\u7cfb\u7edf\u4f1a\u5148\u7b49\u5f85 owner \u6279\u51c6\uff0c"
+                "\u5e76\u628a\u5ba1\u6279\u4e0e\u540e\u7eed\u52a8\u4f5c\u90fd\u5199\u5165\u6301\u4e45\u5316\u72b6\u6001\u3002"
             ),
         )
 
@@ -138,15 +142,15 @@ class ControlPlaneService:
         if not approvals:
             return ControlPlaneResult(
                 created_record_id=None,
-                response_text="当前没有待处理的审批请求。",
+                response_text="\u5f53\u524d\u6ca1\u6709\u5f85\u5904\u7406\u7684\u5ba1\u6279\u8bf7\u6c42\u3002",
             )
 
-        lines = ["当前待处理审批："]
+        lines = ["\u5f53\u524d\u5f85\u5904\u7406\u5ba1\u6279:"]
         for approval in approvals:
             lines.append(
-                f"- `{approval.id}` | {approval.approval_type} | 域 `{approval.subject_id}` | 风险 {approval.risk_level}"
+                f"- `{approval.id}` | {approval.approval_type} | \u57df `{approval.subject_id}` | \u98ce\u9669 {approval.risk_level}"
             )
-        lines.append("你可以直接发送“批准 <编号>”或“拒绝 <编号>”。")
+        lines.append("\u4f60\u53ef\u4ee5\u76f4\u63a5\u53d1\u9001\u201c\u6279\u51c6 <\u7f16\u53f7>\u201d\u6216\u201c\u62d2\u7edd <\u7f16\u53f7>\u201d\u3002")
         return ControlPlaneResult(created_record_id=None, response_text="\n".join(lines))
 
     def _render_runtime_config_overview(self) -> ControlPlaneResult:
@@ -157,29 +161,29 @@ class ControlPlaneService:
         )
         revisions = self.state_store.list_runtime_config_revisions(limit=3)
 
-        lines = ["当前运行时配置摘要："]
+        lines = ["\u5f53\u524d\u8fd0\u884c\u65f6\u914d\u7f6e\u6458\u8981:"]
         for entry in entries:
             lines.append(
-                f"- `{entry.target_type}:{entry.target_key}` | {entry.display_name} | 风险 {entry.risk_level} | 当前值 {entry.value_json}"
+                f"- `{entry.target_type}:{entry.target_key}` | {entry.display_name} | \u98ce\u9669 {entry.risk_level} | \u5f53\u524d\u503c {entry.value_json}"
             )
 
         if proposals:
-            lines.append("待处理配置提案：")
+            lines.append("\u5f85\u5904\u7406\u914d\u7f6e\u63d0\u6848:")
             for proposal in proposals:
-                suffix = f" | 审批 `{proposal.approval_request_id}`" if proposal.approval_request_id else ""
+                suffix = f" | \u5ba1\u6279 `{proposal.approval_request_id}`" if proposal.approval_request_id else ""
                 lines.append(
                     f"- `{proposal.id}` | {proposal.display_name} | {proposal.status} | {proposal.change_summary}{suffix}"
                 )
         else:
-            lines.append("当前没有待处理的配置提案。")
+            lines.append("\u5f53\u524d\u6ca1\u6709\u5f85\u5904\u7406\u7684\u914d\u7f6e\u63d0\u6848\u3002")
 
         if revisions:
-            lines.append("最近配置版本：")
+            lines.append("\u6700\u8fd1\u914d\u7f6e\u7248\u672c:")
             for revision in revisions:
                 lines.append(
                     f"- `{revision.id}` | {revision.display_name} | {revision.change_summary} | by {revision.applied_by}"
                 )
-            lines.append("如需回滚，可发送“回滚配置 <版本号>”。")
+            lines.append("\u5982\u9700\u56de\u6eda\uff0c\u53ef\u53d1\u9001\u201c\u56de\u6eda\u914d\u7f6e <\u7248\u672c\u53f7>\u201d\u3002")
 
         return ControlPlaneResult(created_record_id=None, response_text="\n".join(lines))
 
@@ -194,8 +198,8 @@ class ControlPlaneService:
             return ControlPlaneResult(
                 created_record_id=None,
                 response_text=(
-                    "我识别到你想改配置，但还没能确定目标项和值。"
-                    "请再具体一点，比如“把心跳间隔改成 120 秒”。"
+                    "\u6211\u8bc6\u522b\u5230\u4f60\u60f3\u6539\u914d\u7f6e\uff0c\u4f46\u8fd8\u6ca1\u80fd\u786e\u5b9a\u76ee\u6807\u9879\u548c\u503c\u3002"
+                    "\u8bf7\u518d\u5177\u4f53\u4e00\u70b9\uff0c\u6bd4\u5982\u201c\u628a heartbeat \u6539\u6210 120 \u79d2\u201d\u3002"
                 ),
             )
 
@@ -216,8 +220,8 @@ class ControlPlaneService:
             proposal=proposal,
             actor=actor,
             source_channel=source_channel,
-            create_prefix="已创建配置提案",
-            apply_prefix="已直接应用配置提案",
+            create_prefix="\u5df2\u521b\u5efa\u914d\u7f6e\u63d0\u6848",
+            apply_prefix="\u5df2\u76f4\u63a5\u5e94\u7528\u914d\u7f6e\u63d0\u6848",
         )
 
     def _propose_runtime_config_rollback(
@@ -230,7 +234,7 @@ class ControlPlaneService:
         if not intent.reference_id:
             return ControlPlaneResult(
                 created_record_id=None,
-                response_text="没有识别到要回滚的配置版本号。你可以发送“回滚配置 <版本号>”。",
+                response_text="\u6ca1\u6709\u8bc6\u522b\u5230\u8981\u56de\u6eda\u7684\u914d\u7f6e\u7248\u672c\u53f7\u3002\u4f60\u53ef\u4ee5\u53d1\u9001\u201c\u56de\u6eda\u914d\u7f6e <\u7248\u672c\u53f7>\u201d\u3002",
             )
 
         proposal = self.state_store.create_runtime_config_rollback_proposal(
@@ -242,8 +246,8 @@ class ControlPlaneService:
             proposal=proposal,
             actor=actor,
             source_channel=source_channel,
-            create_prefix="已创建配置回滚提案",
-            apply_prefix="已直接应用配置回滚提案",
+            create_prefix="\u5df2\u521b\u5efa\u914d\u7f6e\u56de\u6eda\u63d0\u6848",
+            apply_prefix="\u5df2\u76f4\u63a5\u5e94\u7528\u914d\u7f6e\u56de\u6eda\u63d0\u6848",
         )
 
     def _finalize_runtime_config_proposal(
@@ -259,9 +263,9 @@ class ControlPlaneService:
             return ControlPlaneResult(
                 created_record_id=proposal.id,
                 response_text=(
-                    f"{create_prefix} `{proposal.id}`：{proposal.change_summary}\n"
-                    f"该变更风险级别为 {proposal.risk_level}，已挂起审批 `{proposal.approval_request_id}`。"
-                    "你可以发送“批准 <审批编号>”继续执行。"
+                    f"{create_prefix} `{proposal.id}`\uff1a{proposal.change_summary}\n"
+                    f"\u8be5\u53d8\u66f4\u98ce\u9669\u7ea7\u522b\u4e3a {proposal.risk_level}\uff0c\u5df2\u6302\u8d77\u5ba1\u6279 `{proposal.approval_request_id}`\u3002"
+                    "\u4f60\u53ef\u4ee5\u53d1\u9001\u201c\u6279\u51c6 <\u5ba1\u6279\u7f16\u53f7>\u201d\u7ee7\u7eed\u6267\u884c\u3002"
                 ),
             )
 
@@ -293,8 +297,8 @@ class ControlPlaneService:
         return ControlPlaneResult(
             created_record_id=proposal.id,
             response_text=(
-                f"{apply_prefix} `{proposal.id}`：{proposal.change_summary}\n"
-                f"新版本号为 `{revision.id}`。"
+                f"{apply_prefix} `{proposal.id}`\uff1a{proposal.change_summary}\n"
+                f"\u65b0\u7248\u672c\u53f7: `{revision.id}`\u3002"
             ),
         )
 
@@ -310,7 +314,7 @@ class ControlPlaneService:
         if not approval_id:
             return ControlPlaneResult(
                 created_record_id=None,
-                response_text="没有识别到审批编号。你可以直接发送“批准 <编号>”或“拒绝 <编号>”。",
+                response_text="\u6ca1\u6709\u8bc6\u522b\u5230\u5ba1\u6279\u7f16\u53f7\u3002\u4f60\u53ef\u4ee5\u76f4\u63a5\u53d1\u9001\u201c\u6279\u51c6 <\u7f16\u53f7>\u201d\u6216\u201c\u62d2\u7edd <\u7f16\u53f7>\u201d\u3002",
             )
 
         approval = self.state_store.get_approval_request(approval_id)
@@ -358,12 +362,12 @@ class ControlPlaneService:
                 created_by=actor,
             )
 
-        verb = "已批准审批" if decision == "approved" else "已拒绝审批"
+        verb = "\u5df2\u6279\u51c6\u5ba1\u6279" if decision == "approved" else "\u5df2\u62d2\u7edd\u5ba1\u6279"
         return ControlPlaneResult(
             created_record_id=decision_summary.id,
             response_text=(
-                f"{verb} `{approval.id}`，类型 `{approval.approval_type}`。\n"
-                f"{decision_summary.effect_summary or '审批结果已记录。'}"
+                f"{verb} `{approval.id}`\uff0c\u7c7b\u578b `{approval.approval_type}`\u3002\n"
+                f"{decision_summary.effect_summary or '\u5ba1\u6279\u7ed3\u679c\u5df2\u8bb0\u5f55\u3002'}"
             ),
         )
 
@@ -412,7 +416,7 @@ class ControlPlaneService:
         role = intent.deploy_role or "core"
         field_alias = intent.deploy_field_alias or ""
         if not field_alias or intent.deploy_value is None:
-            raise ValueError("没有识别到要更新的部署字段和值。")
+            raise ValueError("\u6ca1\u6709\u8bc6\u522b\u5230\u8981\u66f4\u65b0\u7684\u90e8\u7f72\u5b57\u6bb5\u548c\u503c\u3002")
         result = onboarding.set_field(role=role, field_alias=field_alias, value=intent.deploy_value)
         workflow = self.state_store.start_workflow_run(
             workflow_code="WF-OPS-001",
@@ -455,7 +459,7 @@ class ControlPlaneService:
 
     def _require_onboarding_service(self) -> OwnerOnboardingService:
         if self.onboarding_service is None:
-            raise ValueError("部署引导服务尚未配置到当前控制平面。")
+            raise ValueError("\u90e8\u7f72\u5f15\u5bfc\u670d\u52a1\u5c1a\u672a\u914d\u7f6e\u5230\u5f53\u524d\u63a7\u5236\u5e73\u9762\u3002")
         return self.onboarding_service
 
 

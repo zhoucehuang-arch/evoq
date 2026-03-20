@@ -8,6 +8,8 @@ from quant_evo_nextgen.contracts.dashboard import (
     BacktestRunCard,
     BrokerAccountSnapshotCard,
     BrokerSyncRunCard,
+    CapabilityGapCard,
+    CapabilityScorecardCard,
     CodexRunCard,
     DashboardEvolution,
     DashboardIncidents,
@@ -53,6 +55,7 @@ from quant_evo_nextgen.contracts.dashboard import (
 )
 from quant_evo_nextgen.services.codex_fabric import CodexFabricService
 from quant_evo_nextgen.services.evolution import EvolutionService
+from quant_evo_nextgen.services.evolution_capability import EvolutionCapabilityService
 from quant_evo_nextgen.services.execution import ExecutionService
 from quant_evo_nextgen.services.learning import LearningService
 from quant_evo_nextgen.services.repo_state import RepoStateService
@@ -454,6 +457,18 @@ class DashboardService:
             self.evolution_service.list_promotion_decisions(limit=6) if self.evolution_service else []
         )
         evolution_loops = [loop for loop in loops if loop.domain in {"evolution", "strategy"}]
+        capability_review = (
+            EvolutionCapabilityService(
+                state_store=self.state_store,
+                learning_service=self.learning_service,
+                strategy_service=self.strategy_service,
+                execution_service=self.execution_service,
+                evolution_service=self.evolution_service,
+                codex_fabric_service=self.codex_fabric_service,
+            ).build_review()
+            if self.state_store is not None
+            else None
+        )
 
         return DashboardEvolution(
             generated_at=overview.generated_at,
@@ -488,6 +503,15 @@ class DashboardService:
                     value=str(overview.strategy.production),
                     tone="good" if overview.strategy.production else "warn",
                 ),
+                SummaryCard(
+                    label="Capability score",
+                    value=str(capability_review.overall_score_pct if capability_review is not None else 0),
+                    tone=(
+                        "good"
+                        if capability_review is not None and capability_review.status == "ok"
+                        else "warn"
+                    ),
+                ),
             ],
             highlights=[
                 "Evolution must flow through workflow, review, and evaluation gates before higher-authority environments are touched.",
@@ -498,7 +522,22 @@ class DashboardService:
                     if evolution_metrics is not None
                     else "Evolution governance records are not available on this node yet."
                 ),
+                (
+                    capability_review.stall_summary
+                    if capability_review is not None and capability_review.stall_summary
+                    else "Capability scorecards track where self-improvement is strong, weak, or stalled."
+                ),
             ],
+            capability_scorecards=[
+                _capability_scorecard_card(item)
+                for item in (capability_review.scorecards if capability_review is not None else [])
+            ],
+            capability_gaps=[
+                _capability_gap_card(item)
+                for item in (capability_review.capability_gaps if capability_review is not None else [])
+            ],
+            stall_state=capability_review.stall_state if capability_review is not None else "healthy",
+            stall_summary=capability_review.stall_summary if capability_review is not None else None,
             recent_proposals=[_evolution_proposal_card(item) for item in recent_proposals],
             recent_canary_runs=[_evolution_canary_run_card(item) for item in recent_canary_runs],
             recent_promotion_decisions=[
@@ -885,6 +924,28 @@ def _evolution_promotion_decision_card(decision) -> EvolutionPromotionDecisionCa
         decided_by=decision.decided_by,
         rationale=decision.rationale,
         decided_at=decision.decided_at,
+    )
+
+
+def _capability_scorecard_card(scorecard) -> CapabilityScorecardCard:
+    return CapabilityScorecardCard(
+        capability_key=scorecard.capability_key,
+        label=scorecard.label,
+        score_pct=scorecard.score_pct,
+        status=scorecard.status,
+        evidence_count=scorecard.evidence_count,
+        summary=scorecard.summary,
+        gaps=list(scorecard.gaps),
+    )
+
+
+def _capability_gap_card(gap) -> CapabilityGapCard:
+    return CapabilityGapCard(
+        gap_key=gap.gap_key,
+        label=gap.label,
+        severity=gap.severity,
+        summary=gap.summary,
+        recommended_action=gap.recommended_action,
     )
 
 

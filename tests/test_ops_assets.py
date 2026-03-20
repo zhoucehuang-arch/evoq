@@ -12,7 +12,9 @@ def test_core_and_worker_ops_assets_exist() -> None:
         repo_root / "ops" / "production" / "worker" / "docker-compose.worker.yml",
         repo_root / "ops" / "production" / "worker" / "worker.env.example",
         repo_root / "ops" / "bin" / "install-host-deps.sh",
+        repo_root / "ops" / "bin" / "quickstart-single-vps.sh",
         repo_root / "ops" / "bin" / "bootstrap-node.sh",
+        repo_root / "ops" / "bin" / "onboard-single-vps.sh",
         repo_root / "ops" / "bin" / "core-up.sh",
         repo_root / "ops" / "bin" / "core-down.sh",
         repo_root / "ops" / "bin" / "core-smoke.sh",
@@ -39,9 +41,13 @@ def test_ops_scripts_use_repo_local_deploy_wrapper() -> None:
     deploy_wrapper = (repo_root / "ops" / "bin" / "deploy-config.sh").read_text(encoding="utf-8")
     host_preflight = (repo_root / "ops" / "bin" / "host-preflight.sh").read_text(encoding="utf-8")
     bootstrap_node = (repo_root / "ops" / "bin" / "bootstrap-node.sh").read_text(encoding="utf-8")
+    quickstart_single_vps = (repo_root / "ops" / "bin" / "quickstart-single-vps.sh").read_text(encoding="utf-8")
+    onboard_single_vps = (repo_root / "ops" / "bin" / "onboard-single-vps.sh").read_text(encoding="utf-8")
     core_up = (repo_root / "ops" / "bin" / "core-up.sh").read_text(encoding="utf-8")
     worker_up = (repo_root / "ops" / "bin" / "worker-up.sh").read_text(encoding="utf-8")
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
+    ops_readme = (repo_root / "ops" / "README.md").read_text(encoding="utf-8")
+    github_to_vps = (repo_root / "docs" / "next-gen" / "GITHUB-TO-VPS-DEPLOYMENT.md").read_text(encoding="utf-8")
 
     assert "PYTHONPATH" in deploy_wrapper
     assert 'DEPLOY_CONFIG_SH' in core_up
@@ -54,8 +60,19 @@ def test_ops_scripts_use_repo_local_deploy_wrapper() -> None:
     assert 'HOST_PREFLIGHT_SH' in bootstrap_node
     assert 'QE_SKIP_ENV_PREFLIGHT=1' in bootstrap_node
     assert 'deploy-config.sh' in bootstrap_node
-    assert "./ops/bin/install-host-deps.sh" in readme
+    assert 'install-host-deps.sh' in quickstart_single_vps
+    assert 'onboard-single-vps.sh' in quickstart_single_vps
+    assert 'docker compose version' in quickstart_single_vps
+    assert 'sg docker -c' in quickstart_single_vps
+    assert 'onboard-single-vps' in onboard_single_vps
+    assert 'core-up.sh' in onboard_single_vps
+    assert 'core-smoke.sh' in onboard_single_vps
+    assert "./ops/bin/quickstart-single-vps.sh" in readme
+    assert "./ops/bin/onboard-single-vps.sh" in readme
     assert "./ops/bin/bootstrap-node.sh core" in readme
     assert "./ops/bin/bootstrap-node.sh worker" in readme
-    assert "./ops/bin/deploy-config.sh init core" in readme
-    assert "./ops/bin/deploy-config.sh init worker" in readme
+    assert "./ops/bin/quickstart-single-vps.sh" in ops_readme
+    assert "./ops/bin/install-host-deps.sh" in github_to_vps
+    assert "./ops/bin/onboard-single-vps.sh --no-start" in ops_readme
+    assert "./ops/bin/deploy-config.sh init core" in ops_readme
+    assert "./ops/bin/deploy-config.sh init worker" in ops_readme
