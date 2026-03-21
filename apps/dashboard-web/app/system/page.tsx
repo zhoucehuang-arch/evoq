@@ -1,4 +1,5 @@
 import { fetchSystem } from "@/lib/dashboard";
+import type { DashboardFrontendStatus } from "@/lib/types";
 
 function toneClass(tone: string): string {
   switch (tone) {
@@ -13,9 +14,31 @@ function toneClass(tone: string): string {
   }
 }
 
+function statusLabel(status?: DashboardFrontendStatus): string {
+  switch (status?.error_kind) {
+    case "auth":
+      return "Dashboard Auth Failed";
+    case "unavailable":
+      return "Backend Unavailable";
+    case "server":
+      return "Backend Error";
+    case "http":
+      return "Unexpected API Response";
+    case "network":
+      return "Network Path Broken";
+    default:
+      return "Degraded Dashboard";
+  }
+}
+
+function previewLines(lines: string[], fallback: string): string[] {
+  return lines.length > 0 ? lines : [fallback];
+}
+
 export default async function SystemPage() {
   const system = await fetchSystem();
   const isDegraded = system.freshness.state === "broken" || system.freshness.state === "stale";
+  const frontendStatus = system.frontend_status;
   const operatorShortcuts = [
     {
       title: "Fast health check",
@@ -61,6 +84,16 @@ export default async function SystemPage() {
             ))}
           </ul>
           {system.freshness.note ? <p className="callout">Freshness note: {system.freshness.note}</p> : null}
+          {frontendStatus ? (
+            <article className="stack-card">
+              <strong>{statusLabel(frontendStatus)}</strong>
+              <span>
+                {frontendStatus.status_code ? `HTTP ${frontendStatus.status_code}` : "No HTTP status"} | {frontendStatus.error_kind}
+              </span>
+              <p className="callout">{frontendStatus.detail}</p>
+              <p className="callout">{frontendStatus.operator_action}</p>
+            </article>
+          ) : null}
         </article>
       </section>
 
@@ -233,7 +266,14 @@ export default async function SystemPage() {
                   <span>
                     {entry.target_type} | {entry.category} | {entry.risk_level}
                   </span>
-                  <p className="callout">{JSON.stringify(entry.value_json)}</p>
+                  {previewLines(entry.preview_lines, entry.value_preview).map((line, index) => (
+                    <p key={`${entry.target_type}:${entry.target_key}:${index}`} className="callout">
+                      {line}
+                    </p>
+                  ))}
+                  {entry.contains_sensitive_fields ? (
+                    <p className="callout">Sensitive fields are masked on the dashboard preview.</p>
+                  ) : null}
                 </article>
               ))
             )}
@@ -297,7 +337,14 @@ export default async function SystemPage() {
                 <article key={preference.preference_key} className="stack-card">
                   <strong>{preference.display_name}</strong>
                   <span>{preference.updated_by}</span>
-                  <p className="callout">{JSON.stringify(preference.value_json)}</p>
+                  {previewLines(preference.preview_lines, preference.value_preview).map((line, index) => (
+                    <p key={`${preference.preference_key}:${index}`} className="callout">
+                      {line}
+                    </p>
+                  ))}
+                  {preference.contains_sensitive_fields ? (
+                    <p className="callout">Sensitive fields are masked on the dashboard preview.</p>
+                  ) : null}
                 </article>
               ))
             )}

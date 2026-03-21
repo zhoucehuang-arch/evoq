@@ -59,6 +59,12 @@ If you want the shortest supported path first, start with one VPS:
 
 That single-VPS mode keeps the same Discord and dashboard operating model. When you want stronger isolation later, you can move to `Core + Worker` without changing the product surface.
 
+Typical one-line bring-up on a Debian or Ubuntu VPS:
+
+```bash
+sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> quant-evo-nextgen && sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen && cd /opt/quant-evo-nextgen && ./ops/bin/quickstart-single-vps.sh
+```
+
 ### Architecture At A Glance
 
 ```mermaid
@@ -145,48 +151,23 @@ When you use a relay, configure these values on both Core and Worker nodes:
 
 ## 中文
 
-Quant Evo Next-Gen 是一套面向 VPS 长期运行的自治投资系统。
+Quant Evo Next-Gen 是一套面向 VPS 长期运行的自治投资系统。它把研究采集、多 agent 讨论、策略开发、受治理的执行、风控、审批、监控和运维入口整合到同一套系统里。主要交互方式是 `Discord + Dashboard`，目标是让 owner 主要通过自然语言和网页完成操作，而不是长期停留在终端里盯脚本。
 
-它把研究获取、多角色审议、策略研发、受治理的交易执行、风控、审批、监控和运维入口整合到同一套系统里。整个产品的核心交互方式是 `Discord + Dashboard`，目标是让 owner 主要通过自然语言和网页完成操作，而不是长期停留在终端里盯脚本。
-
-### 为什么做这个项目
+### 这个项目解决什么问题
 
 很多“自动投资”系统最后都会退化成：
 
 - 需要人长期盯 prompt 和日志
 - 需要人手动拼命令和脚本
 - 一旦故障就只能 SSH 上去硬查
-- 一碰到 live 就很难治理、很难回滚、很难审计
+- 一切到 live 阶段就很难治理、回滚和审计
 
-Quant Evo Next-Gen 想解决的是这些根问题：
+Quant Evo Next-Gen 试图把这些问题系统化解决：
 
 - 用持久化状态替代 prompt 残留
 - 用受治理的工作流替代随意的 agent 对话
 - 用 Discord 和 Dashboard 替代终端优先的操作方式
 - 用 paper-first、审批、回滚和风控替代盲目切到 live
-
-这个项目不是为了堆更多 agent，而是为了让研究、学习、自进化和交易都能持续推进，同时仍然可治理、可审计、可恢复。
-
-### 适合谁
-
-- 希望主要通过 Discord 控制系统、通过 Dashboard 观察系统的人
-- 希望用 Codex 驱动 worker，但不希望把交易权下放给 worker 的人
-- 重视 paper-first、审批、审计和回滚纪律的个人或小团队
-
-### 不适合谁
-
-- 想要零运维、一键即用、单脚本 retail bot 的用户
-- 希望第一天就无治理地直接 live 的用户
-- 不愿意管理 Linux 主机、密钥和部署姿态的用户
-
-### 这个项目能做什么
-
-- 持续收集和组织市场研究与外部信息
-- 通过多角色 agent 进行讨论、质疑、评审和交叉校验
-- 将研究结果推进为策略假设、规格、回测、纸面运行和生产决策
-- 在审批、回滚、风控和审计边界内执行交易工作流
-- 通过 Discord 和 Dashboard 暴露系统状态
-- 支持长期运行在 VPS 上，并具备升级、恢复、备份和 break-glass 路径
 
 ### 推荐部署形态
 
@@ -194,15 +175,13 @@ Quant Evo Next-Gen 想解决的是这些根问题：
 - `1 Core VPS`
 - `1 Worker VPS`
 - `Postgres` 作为运行时事实来源
-- 第一次先以 `paper` 模式运行，再逐步推进到受控 live
+- 第一阶段先用 `paper` 模式，再逐步推进到受控 live
 
-如果你想先走最简单的产品路径，也支持：
+如果你想先用最短路径跑通，也支持：
 
 - `1 VPS`
 - `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`
 - Core 同时承载 `codex-fabric-runner`
-
-这条路径非常适合第一次部署、单机验证和 owner 熟悉整套系统。
 
 ### 最简单的首次部署
 
@@ -216,9 +195,9 @@ Quant Evo Next-Gen 想解决的是这些根问题：
 6. 如果使用了 `--no-start`，再手动运行 `./ops/bin/core-smoke.sh`；否则让 quickstart 路径自动完成验证。
 7. 第一阶段保持 `paper` 模式。
 
-如果后续需要更稳的长期运行，再扩展为 `Core + Worker` 两台 VPS。
+后续如果需要更强隔离和更高吞吐，再扩展为 `Core + Worker` 两台 VPS。
 
-### 文档入口
+### 中文阅读入口
 
 建议按这个顺序阅读：
 

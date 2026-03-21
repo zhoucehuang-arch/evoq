@@ -43,7 +43,6 @@ If you want the shortest deploy path first, use the single-VPS profile:
 
 ```bash
 cd /opt/quant-evo-nextgen
-chmod +x ops/bin/*.sh
 ./ops/bin/quickstart-single-vps.sh
 ```
 
@@ -69,8 +68,8 @@ If you prefer the lower-level owner CLI instead of the shell wrapper, use:
 ```bash
 cd /opt/quant-evo-nextgen
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转地址 https://relay.example.com/v1
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转key <secret>
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaybaseurl https://relay.example.com/v1
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
 ```
 
 ## 3. Core VPS
@@ -79,7 +78,6 @@ py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转
 
 ```bash
 cd /opt/quant-evo-nextgen
-chmod +x ops/bin/*.sh
 ./ops/bin/bootstrap-node.sh core
 ```
 
@@ -92,14 +90,13 @@ cd /opt/quant-evo-nextgen
 ./ops/bin/onboard-single-vps.sh --no-start
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . status core
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转key <secret>
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
 ```
 
 If you want the explicit step-by-step path instead, use:
 
 ```bash
 cd /opt/quant-evo-nextgen
-chmod +x ops/bin/*.sh
 ./ops/bin/host-preflight.sh core
 ./ops/bin/deploy-config.sh init core
 ./ops/bin/deploy-config.sh preflight core ops/production/core/core.env
@@ -157,7 +154,6 @@ If `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`, `./ops/bin/core-up.sh` also star
 
 ```bash
 cd /opt/quant-evo-nextgen
-chmod +x ops/bin/*.sh
 ./ops/bin/bootstrap-node.sh worker
 ```
 
@@ -165,7 +161,6 @@ If you want the explicit step-by-step path instead, use:
 
 ```bash
 cd /opt/quant-evo-nextgen
-chmod +x ops/bin/*.sh
 ./ops/bin/host-preflight.sh worker
 ./ops/bin/deploy-config.sh init worker
 ./ops/bin/deploy-config.sh preflight worker ops/production/worker/worker.env

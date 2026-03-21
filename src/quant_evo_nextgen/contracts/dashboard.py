@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FreshnessState(str, Enum):
@@ -191,7 +191,9 @@ class OwnerPreferenceCard(BaseModel):
     scope: str
     updated_by: str
     updated_at: datetime
-    value_json: dict[str, object]
+    value_preview: str
+    preview_lines: list[str] = Field(default_factory=list)
+    contains_sensitive_fields: bool = False
 
 
 class RuntimeConfigCard(BaseModel):
@@ -204,7 +206,9 @@ class RuntimeConfigCard(BaseModel):
     requires_restart: bool
     updated_at: datetime
     updated_by: str | None = None
-    value_json: dict[str, object]
+    value_preview: str
+    preview_lines: list[str] = Field(default_factory=list)
+    contains_sensitive_fields: bool = False
 
 
 class RuntimeConfigProposalCard(BaseModel):

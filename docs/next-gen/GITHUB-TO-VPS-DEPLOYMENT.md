@@ -52,7 +52,6 @@ cd /opt
 sudo git clone <your-github-repo-url> quant-evo-nextgen
 sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen
 cd /opt/quant-evo-nextgen
-chmod +x ops/bin/*.sh
 ./ops/bin/quickstart-single-vps.sh
 ```
 
@@ -63,6 +62,12 @@ This creates the simplest supported product shape:
 - Discord bot
 - Postgres
 - Codex runner on the same host
+
+If you want the practical one-liner first-deploy path on a Debian or Ubuntu VPS, use:
+
+```bash
+sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> quant-evo-nextgen && sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen && cd /opt/quant-evo-nextgen && ./ops/bin/quickstart-single-vps.sh
+```
 
 ### 3. Fill the Core Env File
 
@@ -99,7 +104,8 @@ Recommended safe first-boot values:
 If you prefer to separate host preparation from app onboarding, use:
 
 ```bash
-./ops/bin/quickstart-single-vps.sh
+sudo ./ops/bin/install-host-deps.sh
+./ops/bin/onboard-single-vps.sh
 ```
 
 If you prefer to prepare the single-VPS draft first and start the stack later, use:
@@ -113,9 +119,9 @@ If you want the lower-level owner CLI instead of the shell wrapper, use:
 ```bash
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . status core
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转地址 https://relay.example.com/v1
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转key <secret>
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core Playwright启用 true
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaybaseurl https://relay.example.com/v1
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwrightenabled true
 ```
 
 ### 5. Start and Verify
@@ -274,7 +280,6 @@ cd /opt
 sudo git clone <your-github-repo-url> quant-evo-nextgen
 sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen
 cd /opt/quant-evo-nextgen
-chmod +x ops/bin/*.sh
 sudo ./ops/bin/install-host-deps.sh
 ./ops/bin/onboard-single-vps.sh
 ```

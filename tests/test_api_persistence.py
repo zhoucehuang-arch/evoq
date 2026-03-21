@@ -348,10 +348,25 @@ def test_api_exposes_runtime_config_registry_and_system_dashboard_cards(tmp_path
         system_dashboard_payload = system_dashboard_response.json()
 
         heartbeat_entry = next(entry for entry in config_payload if entry["target_key"] == "heartbeat_runtime")
+        dashboard_heartbeat_entry = next(
+            entry for entry in system_dashboard_payload["runtime_config"] if entry["target_key"] == "heartbeat_runtime"
+        )
+        discord_access_entry = next(
+            entry
+            for entry in system_dashboard_payload["owner_preferences"]
+            if entry["preference_key"] == "discord_access"
+        )
         assert heartbeat_entry["value_json"]["interval_seconds"] == 240
         assert revisions_payload[0]["target_key"] == "heartbeat_runtime"
         assert system_dashboard_payload["runtime_config"]
         assert system_dashboard_payload["recent_config_revisions"][0]["target_key"] == "heartbeat_runtime"
+        assert all(entry["target_type"] != "owner_preference" for entry in system_dashboard_payload["runtime_config"])
+        assert "value_json" not in dashboard_heartbeat_entry
+        assert dashboard_heartbeat_entry["contains_sensitive_fields"] is False
+        assert "Interval seconds: 240" in dashboard_heartbeat_entry["preview_lines"]
+        assert "value_json" not in discord_access_entry
+        assert discord_access_entry["contains_sensitive_fields"] is True
+        assert any("not configured" in line or "configured" in line for line in discord_access_entry["preview_lines"])
 
 
 def test_api_exposes_system_doctor_report(tmp_path: Path) -> None:

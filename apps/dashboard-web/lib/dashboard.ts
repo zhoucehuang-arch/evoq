@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   DashboardEvolution,
+  DashboardFrontendStatus,
   DashboardIncidents,
   DashboardLearning,
   DashboardOverview,
@@ -37,7 +38,14 @@ export async function fetchIncidents(): Promise<DashboardIncidents> {
   return fetchJson("/api/v1/dashboard/incidents", buildFallbackIncidents);
 }
 
-async function fetchJson<T>(path: string, fallback: (reason: string) => T): Promise<T> {
+type DashboardFetchFailure = {
+  kind: DashboardFrontendStatus["error_kind"];
+  detail: string;
+  operator_action: string;
+  status_code?: number | null;
+};
+
+async function fetchJson<T>(path: string, fallback: (failure: DashboardFetchFailure) => T): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       cache: "no-store",
@@ -45,20 +53,21 @@ async function fetchJson<T>(path: string, fallback: (reason: string) => T): Prom
     });
 
     if (!response.ok) {
-      throw new Error(`API returned ${response.status}`);
+      return fallback(await classifyHttpFailure(response));
     }
 
     return (await response.json()) as T;
   } catch (error) {
-    return fallback(error instanceof Error ? error.message : "Dashboard API unavailable");
+    return fallback(classifyThrownFailure(error));
   }
 }
 
-function buildFallbackOverview(reason: string): DashboardOverview {
+function buildFallbackOverview(failure: DashboardFetchFailure): DashboardOverview {
   const generatedAt = new Date().toISOString();
   return {
     generated_at: generatedAt,
-    freshness: buildBrokenFreshness(generatedAt, reason),
+    freshness: buildBrokenFreshness(generatedAt, failure),
+    frontend_status: buildFrontendStatus(failure),
     headline: "Dashboard API is unavailable, so the frontend is showing a degraded fallback view.",
     summary_cards: [
       { label: "Production strategies", value: "0", tone: "warn", hint: "Waiting for API" },
@@ -97,11 +106,12 @@ function buildFallbackOverview(reason: string): DashboardOverview {
   };
 }
 
-function buildFallbackTrading(reason: string): DashboardTrading {
+function buildFallbackTrading(failure: DashboardFetchFailure): DashboardTrading {
   const generatedAt = new Date().toISOString();
   return {
     generated_at: generatedAt,
-    freshness: buildBrokenFreshness(generatedAt, reason),
+    freshness: buildBrokenFreshness(generatedAt, failure),
+    frontend_status: buildFrontendStatus(failure),
     strategy_lab: {
       hypothesis_count: 0,
       spec_count: 0,
@@ -146,11 +156,12 @@ function buildFallbackTrading(reason: string): DashboardTrading {
   };
 }
 
-function buildFallbackLearning(reason: string): DashboardLearning {
+function buildFallbackLearning(failure: DashboardFetchFailure): DashboardLearning {
   const generatedAt = new Date().toISOString();
   return {
     generated_at: generatedAt,
-    freshness: buildBrokenFreshness(generatedAt, reason),
+    freshness: buildBrokenFreshness(generatedAt, failure),
+    frontend_status: buildFrontendStatus(failure),
     metrics: {
       document_count: 0,
       insight_count: 0,
@@ -166,11 +177,12 @@ function buildFallbackLearning(reason: string): DashboardLearning {
   };
 }
 
-function buildFallbackEvolution(reason: string): DashboardEvolution {
+function buildFallbackEvolution(failure: DashboardFetchFailure): DashboardEvolution {
   const generatedAt = new Date().toISOString();
   return {
     generated_at: generatedAt,
-    freshness: buildBrokenFreshness(generatedAt, reason),
+    freshness: buildBrokenFreshness(generatedAt, failure),
+    frontend_status: buildFrontendStatus(failure),
     metrics: {
       proposal_count: 0,
       ready_for_review_count: 0,
@@ -189,11 +201,12 @@ function buildFallbackEvolution(reason: string): DashboardEvolution {
   };
 }
 
-function buildFallbackSystem(reason: string): DashboardSystem {
+function buildFallbackSystem(failure: DashboardFetchFailure): DashboardSystem {
   const generatedAt = new Date().toISOString();
   return {
     generated_at: generatedAt,
-    freshness: buildBrokenFreshness(generatedAt, reason),
+    freshness: buildBrokenFreshness(generatedAt, failure),
+    frontend_status: buildFrontendStatus(failure),
     summary_cards: [
       { label: "Providers", value: "unknown", tone: "warn", hint: "Waiting for API" },
       { label: "Supervisor loops", value: "unknown", tone: "warn", hint: "Waiting for API" },
@@ -201,7 +214,8 @@ function buildFallbackSystem(reason: string): DashboardSystem {
       { label: "Owner preferences", value: "unknown", tone: "neutral", hint: "Waiting for API" },
     ],
     highlights: [
-      "System view is waiting for backend authority-core state.",
+      buildFailureHeadline(failure),
+      failure.operator_action,
       "Treat this as degraded until core-api connectivity and freshness recover.",
     ],
     providers: [],
@@ -215,11 +229,12 @@ function buildFallbackSystem(reason: string): DashboardSystem {
   };
 }
 
-function buildFallbackIncidents(reason: string): DashboardIncidents {
+function buildFallbackIncidents(failure: DashboardFetchFailure): DashboardIncidents {
   const generatedAt = new Date().toISOString();
   return {
     generated_at: generatedAt,
-    freshness: buildBrokenFreshness(generatedAt, reason),
+    freshness: buildBrokenFreshness(generatedAt, failure),
+    frontend_status: buildFrontendStatus(failure),
     summary_cards: [],
     highlights: ["Incident view is waiting for backend incident state."],
     active_incidents: [],
@@ -228,11 +243,111 @@ function buildFallbackIncidents(reason: string): DashboardIncidents {
   };
 }
 
-function buildBrokenFreshness(generatedAt: string, reason: string): FreshnessPayload {
+async function classifyHttpFailure(response: Response): Promise<DashboardFetchFailure> {
+  const detail = await extractFailureDetail(response);
+  if (response.status === 401 || response.status === 403) {
+    return {
+      kind: "auth",
+      detail,
+      status_code: response.status,
+      operator_action: "Check QE_DASHBOARD_API_TOKEN on the dashboard and verify the backend dashboard token setting.",
+    };
+  }
+  if ([502, 503, 504].includes(response.status)) {
+    return {
+      kind: "unavailable",
+      detail,
+      status_code: response.status,
+      operator_action: "Confirm core-api is up, reachable from the dashboard host, and not blocked by the reverse proxy.",
+    };
+  }
+  if (response.status >= 500) {
+    return {
+      kind: "server",
+      detail,
+      status_code: response.status,
+      operator_action: "Inspect core-api logs and the doctor endpoint before trusting any dashboard state.",
+    };
+  }
+  return {
+    kind: "http",
+    detail,
+    status_code: response.status,
+    operator_action: "Inspect the failing API route and backend response before using this view for decisions.",
+  };
+}
+
+function classifyThrownFailure(error: unknown): DashboardFetchFailure {
+  if (error instanceof Error) {
+    const message = error.message || "Dashboard API unavailable";
+    return {
+      kind: error.name === "TypeError" ? "network" : "unknown",
+      detail: message,
+      operator_action:
+        error.name === "TypeError"
+          ? "Check NEXT_PUBLIC_API_BASE_URL, local network reachability, and whether core-api is listening."
+          : "Inspect the dashboard host logs and retry after confirming backend reachability.",
+    };
+  }
+  return {
+    kind: "unknown",
+    detail: "Dashboard API unavailable",
+    operator_action: "Inspect dashboard and backend logs before trusting this view.",
+  };
+}
+
+async function extractFailureDetail(response: Response): Promise<string> {
+  const fallback = `API returned ${response.status}`;
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      const payload = (await response.json()) as { detail?: unknown; message?: unknown };
+      const detail = typeof payload.detail === "string" ? payload.detail : typeof payload.message === "string" ? payload.message : undefined;
+      return detail ? `${fallback}: ${detail}` : fallback;
+    }
+
+    const text = (await response.text()).trim();
+    if (!text) {
+      return fallback;
+    }
+    return `${fallback}: ${text.slice(0, 160)}`;
+  } catch {
+    return fallback;
+  }
+}
+
+function buildFailureHeadline(failure: DashboardFetchFailure): string {
+  switch (failure.kind) {
+    case "auth":
+      return "System view could not authenticate to the dashboard API.";
+    case "unavailable":
+      return "System view could not reach the backend authority-core API.";
+    case "server":
+      return "System view reached the backend, but the backend returned a server error.";
+    case "http":
+      return "System view received an unexpected HTTP response from the backend API.";
+    case "network":
+      return "System view could not establish a network path to the backend API.";
+    default:
+      return "System view is waiting for backend authority-core state.";
+  }
+}
+
+function buildFrontendStatus(failure: DashboardFetchFailure): DashboardFrontendStatus {
+  return {
+    degraded: true,
+    error_kind: failure.kind,
+    detail: failure.detail,
+    operator_action: failure.operator_action,
+    status_code: failure.status_code ?? null,
+  };
+}
+
+function buildBrokenFreshness(generatedAt: string, failure: DashboardFetchFailure): FreshnessPayload {
   return {
     state: "broken",
     age_seconds: 0,
     generated_at: generatedAt,
-    note: reason,
+    note: failure.detail,
   };
 }

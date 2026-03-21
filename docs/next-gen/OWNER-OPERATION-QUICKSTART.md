@@ -27,9 +27,9 @@ Use these commands before the Discord bot is fully configured, or when you want 
 ./ops/bin/onboard-single-vps.sh --no-start
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . status core
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转地址 https://relay.example.com/v1
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core 中转key <secret>
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core Playwright启用 true
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaybaseurl https://relay.example.com/v1
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwrightenabled true
 ```
 
 ## Daily Rhythm

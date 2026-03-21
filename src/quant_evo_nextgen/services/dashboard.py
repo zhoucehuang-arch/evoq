@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from quant_evo_nextgen.contracts.dashboard import (
     AllocationPolicyCard,
@@ -61,6 +62,32 @@ from quant_evo_nextgen.services.learning import LearningService
 from quant_evo_nextgen.services.repo_state import RepoStateService
 from quant_evo_nextgen.services.state_store import RuntimeSnapshot, StateStore
 from quant_evo_nextgen.services.strategy_lab import StrategyLabService
+
+
+_DASHBOARD_PREVIEW_MAX_LINES = 4
+_SENSITIVE_VALUE_EXACT_KEYS = {
+    "access_token",
+    "allowed_user_ids",
+    "api_key",
+    "channel_id",
+    "channel_ids",
+    "client_secret",
+    "private_key",
+    "secret_key",
+    "user_id",
+    "user_ids",
+}
+_SENSITIVE_VALUE_TOKENS = {
+    "authorization",
+    "cookie",
+    "credential",
+    "credentials",
+    "password",
+    "secret",
+    "token",
+}
+_SENSITIVE_VALUE_SUFFIXES = tuple(sorted(_SENSITIVE_VALUE_EXACT_KEYS | _SENSITIVE_VALUE_TOKENS))
+_SENSITIVE_VALUE_PREFIXES = ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "xoxb-", "xoxp-", "discord.")
 
 
 class DashboardService:
@@ -554,7 +581,7 @@ class DashboardService:
         loops = self.state_store.list_supervisor_loops() if self.state_store else []
         recent_workflows = self.state_store.list_workflow_runs(limit=10) if self.state_store else []
         codex_runs = self.codex_fabric_service.list_runs(limit=10) if self.codex_fabric_service else []
-        runtime_config = self.state_store.list_runtime_config_entries(limit=10) if self.state_store else []
+        runtime_config = self.state_store.list_runtime_config_entries(limit=20) if self.state_store else []
         config_proposals = (
             self.state_store.list_runtime_config_proposals(statuses=("proposed", "awaiting_approval"), limit=8)
             if self.state_store
@@ -562,6 +589,7 @@ class DashboardService:
         )
         config_revisions = self.state_store.list_runtime_config_revisions(limit=8) if self.state_store else []
         owner_preferences = self.state_store.list_owner_preferences(limit=6) if self.state_store else []
+        runtime_config = [entry for entry in runtime_config if entry.target_type != "owner_preference"]
 
         return DashboardSystem(
             generated_at=overview.generated_at,
@@ -833,17 +861,21 @@ def _incident_card(incident) -> IncidentCard:
 
 
 def _owner_preference_card(preference) -> OwnerPreferenceCard:
+    preview = _dashboard_value_preview(preference.value_json)
     return OwnerPreferenceCard(
         preference_key=preference.preference_key,
         display_name=preference.display_name,
         scope=preference.scope,
         updated_by=preference.updated_by,
         updated_at=preference.updated_at,
-        value_json=preference.value_json,
+        value_preview=preview["value_preview"],
+        preview_lines=preview["preview_lines"],
+        contains_sensitive_fields=preview["contains_sensitive_fields"],
     )
 
 
 def _runtime_config_card(entry) -> RuntimeConfigCard:
+    preview = _dashboard_value_preview(entry.value_json)
     return RuntimeConfigCard(
         target_type=entry.target_type,
         target_key=entry.target_key,
@@ -854,7 +886,9 @@ def _runtime_config_card(entry) -> RuntimeConfigCard:
         requires_restart=entry.requires_restart,
         updated_at=entry.updated_at,
         updated_by=entry.updated_by,
-        value_json=entry.value_json,
+        value_preview=preview["value_preview"],
+        preview_lines=preview["preview_lines"],
+        contains_sensitive_fields=preview["contains_sensitive_fields"],
     )
 
 
@@ -951,6 +985,119 @@ def _capability_gap_card(gap) -> CapabilityGapCard:
 
 def snapshot_now() -> datetime:
     return datetime.now(tz=UTC)
+
+
+def _dashboard_value_preview(value_json: dict[str, object] | None) -> dict[str, object]:
+    payload = dict(value_json or {})
+    if not payload:
+        return {
+            "value_preview": "No fields configured.",
+            "preview_lines": ["No fields configured."],
+            "contains_sensitive_fields": False,
+        }
+
+    lines: list[str] = []
+    contains_sensitive_fields = False
+    for key, value in payload.items():
+        display_value, redacted = _format_dashboard_preview_value(key, value)
+        lines.append(f"{_humanize_dashboard_key(key)}: {display_value}")
+        contains_sensitive_fields = contains_sensitive_fields or redacted
+
+    if len(lines) > _DASHBOARD_PREVIEW_MAX_LINES:
+        remaining = len(lines) - _DASHBOARD_PREVIEW_MAX_LINES
+        lines = lines[:_DASHBOARD_PREVIEW_MAX_LINES]
+        lines.append(f"+{remaining} more fields")
+
+    return {
+        "value_preview": "; ".join(lines[:2]),
+        "preview_lines": lines,
+        "contains_sensitive_fields": contains_sensitive_fields,
+    }
+
+
+def _format_dashboard_preview_value(key: str, value: object) -> tuple[str, bool]:
+    if _is_sensitive_dashboard_field(key, value):
+        return _redacted_dashboard_value_summary(value), True
+
+    if value is None:
+        return "not set", False
+    if isinstance(value, bool):
+        return ("yes" if value else "no"), False
+    if isinstance(value, int):
+        return str(value), False
+    if isinstance(value, float):
+        return f"{value:g}", False
+    if isinstance(value, str):
+        normalized = value.strip()
+        return (normalized[:77] + "...") if len(normalized) > 80 else (normalized or "not set"), False
+    if isinstance(value, list):
+        if not value:
+            return "none", False
+        rendered_items = [_dashboard_scalar_preview(item) for item in value[:3]]
+        if len(value) > 3:
+            rendered_items.append(f"+{len(value) - 3} more")
+        return ", ".join(rendered_items), False
+    if isinstance(value, dict):
+        if not value:
+            return "no nested fields", False
+        return f"{len(value)} nested fields", False
+    return _dashboard_scalar_preview(value), False
+
+
+def _dashboard_scalar_preview(value: object) -> str:
+    if value is None:
+        return "not set"
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return f"{value:g}"
+    if isinstance(value, str):
+        normalized = value.strip()
+        return (normalized[:37] + "...") if len(normalized) > 40 else (normalized or "not set")
+    return str(value)
+
+
+def _redacted_dashboard_value_summary(value: object) -> str:
+    if value in (None, "", [], {}):
+        return "not configured"
+    if isinstance(value, list):
+        return f"{len(value)} configured"
+    if isinstance(value, dict):
+        return f"{len(value)} configured fields"
+    if isinstance(value, bool):
+        return "configured" if value else "not configured"
+    return "configured"
+
+
+def _is_sensitive_dashboard_field(key: str, value: object) -> bool:
+    normalized = key.strip().lower()
+    if normalized in _SENSITIVE_VALUE_EXACT_KEYS:
+        return True
+    if any(normalized.endswith(sensitive_suffix) for sensitive_suffix in _SENSITIVE_VALUE_SUFFIXES):
+        return True
+    key_tokens = {token for token in normalized.replace("-", "_").split("_") if token}
+    if key_tokens & _SENSITIVE_VALUE_TOKENS:
+        return True
+    if isinstance(value, str):
+        return _looks_like_secret_value(value)
+    if isinstance(value, list):
+        return any(isinstance(item, str) and _looks_like_secret_value(item) for item in value)
+    return False
+
+
+def _looks_like_secret_value(value: str) -> bool:
+    normalized = value.strip()
+    if not normalized:
+        return False
+    if normalized.startswith(_SENSITIVE_VALUE_PREFIXES):
+        return True
+    return normalized.lower().startswith("bearer ")
+
+
+def _humanize_dashboard_key(key: str) -> str:
+    return key.replace("_", " ").strip().capitalize()
 
 
 def _strategy_spec_card(spec) -> StrategySpecCard:

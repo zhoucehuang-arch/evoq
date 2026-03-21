@@ -512,6 +512,12 @@ OWNER_PREFERENCE_METADATA: dict[str, dict[str, Any]] = {
         "is_mutable": True,
         "requires_restart": True,
     },
+    "discord_access": {
+        "category": "owner-experience",
+        "risk_level": "R2",
+        "is_mutable": True,
+        "requires_restart": True,
+    },
 }
 
 

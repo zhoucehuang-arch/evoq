@@ -7,6 +7,16 @@ export interface FreshnessPayload {
   note?: string | null;
 }
 
+export type DashboardFrontendErrorKind = "auth" | "unavailable" | "server" | "http" | "network" | "unknown";
+
+export interface DashboardFrontendStatus {
+  degraded: boolean;
+  error_kind: DashboardFrontendErrorKind;
+  detail: string;
+  operator_action: string;
+  status_code?: number | null;
+}
+
 export interface SummaryCard {
   label: string;
   value: string;
@@ -43,6 +53,7 @@ export interface SystemSummary {
 export interface DashboardOverview {
   generated_at: string;
   freshness: FreshnessPayload;
+  frontend_status?: DashboardFrontendStatus;
   headline: string;
   summary_cards: SummaryCard[];
   highlights: string[];
@@ -178,7 +189,9 @@ export interface OwnerPreferenceCard {
   scope: string;
   updated_by: string;
   updated_at: string;
-  value_json: Record<string, unknown>;
+  value_preview: string;
+  preview_lines: string[];
+  contains_sensitive_fields: boolean;
 }
 
 export interface RuntimeConfigCard {
@@ -191,7 +204,9 @@ export interface RuntimeConfigCard {
   requires_restart: boolean;
   updated_at: string;
   updated_by?: string | null;
-  value_json: Record<string, unknown>;
+  value_preview: string;
+  preview_lines: string[];
+  contains_sensitive_fields: boolean;
 }
 
 export interface RuntimeConfigProposalCard {
@@ -457,6 +472,7 @@ export interface ExpiringOptionPositionCard {
 export interface DashboardTrading {
   generated_at: string;
   freshness: FreshnessPayload;
+  frontend_status?: DashboardFrontendStatus;
   strategy_lab: StrategyLabMetrics;
   execution_readiness: ExecutionReadinessCard;
   allocation_policy?: AllocationPolicyCard | null;
@@ -488,6 +504,7 @@ export interface LearningGateMetrics {
 export interface DashboardLearning {
   generated_at: string;
   freshness: FreshnessPayload;
+  frontend_status?: DashboardFrontendStatus;
   metrics: LearningGateMetrics;
   summary_cards: SummaryCard[];
   highlights: string[];
@@ -542,6 +559,7 @@ export interface EvolutionPromotionDecisionCard {
 export interface DashboardEvolution {
   generated_at: string;
   freshness: FreshnessPayload;
+  frontend_status?: DashboardFrontendStatus;
   metrics: EvolutionGovernanceMetrics;
   summary_cards: SummaryCard[];
   highlights: string[];
@@ -556,6 +574,7 @@ export interface DashboardEvolution {
 export interface DashboardSystem {
   generated_at: string;
   freshness: FreshnessPayload;
+  frontend_status?: DashboardFrontendStatus;
   summary_cards: SummaryCard[];
   highlights: string[];
   providers: ProviderProfileCard[];
@@ -571,6 +590,7 @@ export interface DashboardSystem {
 export interface DashboardIncidents {
   generated_at: string;
   freshness: FreshnessPayload;
+  frontend_status?: DashboardFrontendStatus;
   summary_cards: SummaryCard[];
   highlights: string[];
   active_incidents: IncidentCard[];
