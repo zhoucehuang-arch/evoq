@@ -34,11 +34,11 @@ EvoQ 把问题当作“运行时系统”来解决：
 
 概览页面：
 
-![EvoQ dashboard overview](docs/assets/dashboard-overview-en-v2.png)
+![EvoQ dashboard overview](docs/assets/dashboard-overview-evoq.png)
 
 移动端页面：
 
-![EvoQ dashboard mobile](docs/assets/dashboard-mobile-en-v2.png)
+![EvoQ dashboard mobile](docs/assets/dashboard-mobile-evoq.png)
 
 ## 你会得到什么
 

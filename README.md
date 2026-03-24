@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml"><img src="https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/zhoucehuang-arch/evoq/actions/workflows/ci.yml"><img src="https://github.com/zhoucehuang-arch/evoq/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" /></a>
 </p>
 
@@ -23,10 +23,10 @@
 <table>
   <tr>
     <td width="76%">
-      <img src="docs/assets/dashboard-overview-en-v2.png" alt="EvoQ Terminal overview dashboard" width="100%" />
+      <img src="docs/assets/dashboard-overview-evoq.png" alt="EvoQ Terminal overview dashboard" width="100%" />
     </td>
     <td width="24%">
-      <img src="docs/assets/dashboard-mobile-en-v2.png" alt="EvoQ Terminal mobile dashboard" width="100%" />
+      <img src="docs/assets/dashboard-mobile-evoq.png" alt="EvoQ Terminal mobile dashboard" width="100%" />
     </td>
   </tr>
 </table>
