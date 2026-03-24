@@ -87,12 +87,12 @@ class ControlPlaneService:
         except ValueError as exc:
             return ControlPlaneResult(
                 created_record_id=None,
-                response_text=f"\u63a7\u5236\u9762\u672a\u80fd\u6267\u884c\u8be5\u8bf7\u6c42: {exc}",
+                response_text=f"Control plane could not execute this request: {exc}",
             )
 
         return ControlPlaneResult(
             created_record_id=None,
-            response_text="\u5f53\u524d\u8fd9\u6761\u6d88\u606f\u4e0d\u9700\u8981\u5199\u5165\u63a7\u5236\u5e73\u9762\u3002",
+            response_text="This message does not require a control-plane write.",
         )
 
     def _create_approval_for_intent(
@@ -124,16 +124,15 @@ class ControlPlaneService:
         )
 
         action_label = {
-            "pause_trading": "\u6682\u505c\u81ea\u52a8\u4ea4\u6613",
-            "pause_evolution": "\u6682\u505c\u81ea\u52a8\u8fdb\u5316",
-            "resume_domain": f"\u6062\u590d `{target_domain}`",
+            "pause_trading": "pause auto-trading",
+            "pause_evolution": "pause auto-evolution",
+            "resume_domain": f"resume `{target_domain}`",
         }[approval_type]
         return ControlPlaneResult(
             created_record_id=approval.id,
             response_text=(
-                f"\u5df2\u521b\u5efa `{action_label}` \u7684\u5ba1\u6279\u8bf7\u6c42\uff0c\u7f16\u53f7 `{approval.id}`\u3002\n"
-                "\u5728\u771f\u6b63\u6267\u884c\u72b6\u6001\u5207\u6362\u524d\uff0c\u7cfb\u7edf\u4f1a\u5148\u7b49\u5f85 owner \u6279\u51c6\uff0c"
-                "\u5e76\u628a\u5ba1\u6279\u4e0e\u540e\u7eed\u52a8\u4f5c\u90fd\u5199\u5165\u6301\u4e45\u5316\u72b6\u6001\u3002"
+                f"Created approval request for `{action_label}` as `{approval.id}`.\n"
+                "The system will wait for owner approval before changing state, and both the approval and follow-up action are written to durable state."
             ),
         )
 
@@ -142,15 +141,15 @@ class ControlPlaneService:
         if not approvals:
             return ControlPlaneResult(
                 created_record_id=None,
-                response_text="\u5f53\u524d\u6ca1\u6709\u5f85\u5904\u7406\u7684\u5ba1\u6279\u8bf7\u6c42\u3002",
+                response_text="There are no pending approval requests right now.",
             )
 
-        lines = ["\u5f53\u524d\u5f85\u5904\u7406\u5ba1\u6279:"]
+        lines = ["Pending approvals:"]
         for approval in approvals:
             lines.append(
-                f"- `{approval.id}` | {approval.approval_type} | \u57df `{approval.subject_id}` | \u98ce\u9669 {approval.risk_level}"
+                f"- `{approval.id}` | {approval.approval_type} | domain `{approval.subject_id}` | risk {approval.risk_level}"
             )
-        lines.append("\u4f60\u53ef\u4ee5\u76f4\u63a5\u53d1\u9001\u201c\u6279\u51c6 <\u7f16\u53f7>\u201d\u6216\u201c\u62d2\u7edd <\u7f16\u53f7>\u201d\u3002")
+        lines.append("Reply with `approve <id>` or `reject <id>`.")
         return ControlPlaneResult(created_record_id=None, response_text="\n".join(lines))
 
     def _render_runtime_config_overview(self) -> ControlPlaneResult:
@@ -161,29 +160,29 @@ class ControlPlaneService:
         )
         revisions = self.state_store.list_runtime_config_revisions(limit=3)
 
-        lines = ["\u5f53\u524d\u8fd0\u884c\u65f6\u914d\u7f6e\u6458\u8981:"]
+        lines = ["Current runtime configuration summary:"]
         for entry in entries:
             lines.append(
-                f"- `{entry.target_type}:{entry.target_key}` | {entry.display_name} | \u98ce\u9669 {entry.risk_level} | \u5f53\u524d\u503c {entry.value_json}"
+                f"- `{entry.target_type}:{entry.target_key}` | {entry.display_name} | risk {entry.risk_level} | current value {entry.value_json}"
             )
 
         if proposals:
-            lines.append("\u5f85\u5904\u7406\u914d\u7f6e\u63d0\u6848:")
+            lines.append("Pending config proposals:")
             for proposal in proposals:
-                suffix = f" | \u5ba1\u6279 `{proposal.approval_request_id}`" if proposal.approval_request_id else ""
+                suffix = f" | approval `{proposal.approval_request_id}`" if proposal.approval_request_id else ""
                 lines.append(
                     f"- `{proposal.id}` | {proposal.display_name} | {proposal.status} | {proposal.change_summary}{suffix}"
                 )
         else:
-            lines.append("\u5f53\u524d\u6ca1\u6709\u5f85\u5904\u7406\u7684\u914d\u7f6e\u63d0\u6848\u3002")
+            lines.append("There are no pending config proposals right now.")
 
         if revisions:
-            lines.append("\u6700\u8fd1\u914d\u7f6e\u7248\u672c:")
+            lines.append("Recent config revisions:")
             for revision in revisions:
                 lines.append(
                     f"- `{revision.id}` | {revision.display_name} | {revision.change_summary} | by {revision.applied_by}"
                 )
-            lines.append("\u5982\u9700\u56de\u6eda\uff0c\u53ef\u53d1\u9001\u201c\u56de\u6eda\u914d\u7f6e <\u7248\u672c\u53f7>\u201d\u3002")
+            lines.append("To roll back, send `rollback config <revision-id>`.")
 
         return ControlPlaneResult(created_record_id=None, response_text="\n".join(lines))
 
@@ -198,8 +197,8 @@ class ControlPlaneService:
             return ControlPlaneResult(
                 created_record_id=None,
                 response_text=(
-                    "\u6211\u8bc6\u522b\u5230\u4f60\u60f3\u6539\u914d\u7f6e\uff0c\u4f46\u8fd8\u6ca1\u80fd\u786e\u5b9a\u76ee\u6807\u9879\u548c\u503c\u3002"
-                    "\u8bf7\u518d\u5177\u4f53\u4e00\u70b9\uff0c\u6bd4\u5982\u201c\u628a heartbeat \u6539\u6210 120 \u79d2\u201d\u3002"
+                    "I understood that you want to change runtime config, but I still could not determine the target field and value. "
+                    "Try something like `set heartbeat interval to 120 seconds`."
                 ),
             )
 
@@ -220,8 +219,8 @@ class ControlPlaneService:
             proposal=proposal,
             actor=actor,
             source_channel=source_channel,
-            create_prefix="\u5df2\u521b\u5efa\u914d\u7f6e\u63d0\u6848",
-            apply_prefix="\u5df2\u76f4\u63a5\u5e94\u7528\u914d\u7f6e\u63d0\u6848",
+            create_prefix="Created runtime config proposal",
+            apply_prefix="Applied runtime config proposal",
         )
 
     def _propose_runtime_config_rollback(
@@ -234,7 +233,7 @@ class ControlPlaneService:
         if not intent.reference_id:
             return ControlPlaneResult(
                 created_record_id=None,
-                response_text="\u6ca1\u6709\u8bc6\u522b\u5230\u8981\u56de\u6eda\u7684\u914d\u7f6e\u7248\u672c\u53f7\u3002\u4f60\u53ef\u4ee5\u53d1\u9001\u201c\u56de\u6eda\u914d\u7f6e <\u7248\u672c\u53f7>\u201d\u3002",
+                response_text="I could not determine which config revision to roll back. Try `rollback config <revision-id>`.",
             )
 
         proposal = self.state_store.create_runtime_config_rollback_proposal(
@@ -246,8 +245,8 @@ class ControlPlaneService:
             proposal=proposal,
             actor=actor,
             source_channel=source_channel,
-            create_prefix="\u5df2\u521b\u5efa\u914d\u7f6e\u56de\u6eda\u63d0\u6848",
-            apply_prefix="\u5df2\u76f4\u63a5\u5e94\u7528\u914d\u7f6e\u56de\u6eda\u63d0\u6848",
+            create_prefix="Created config rollback proposal",
+            apply_prefix="Applied config rollback proposal",
         )
 
     def _finalize_runtime_config_proposal(
@@ -263,9 +262,9 @@ class ControlPlaneService:
             return ControlPlaneResult(
                 created_record_id=proposal.id,
                 response_text=(
-                    f"{create_prefix} `{proposal.id}`\uff1a{proposal.change_summary}\n"
-                    f"\u8be5\u53d8\u66f4\u98ce\u9669\u7ea7\u522b\u4e3a {proposal.risk_level}\uff0c\u5df2\u6302\u8d77\u5ba1\u6279 `{proposal.approval_request_id}`\u3002"
-                    "\u4f60\u53ef\u4ee5\u53d1\u9001\u201c\u6279\u51c6 <\u5ba1\u6279\u7f16\u53f7>\u201d\u7ee7\u7eed\u6267\u884c\u3002"
+                    f"{create_prefix} `{proposal.id}`: {proposal.change_summary}\n"
+                    f"This change is rated {proposal.risk_level} and opened approval `{proposal.approval_request_id}`. "
+                    "Reply with `approve <approval-id>` to continue."
                 ),
             )
 
@@ -297,8 +296,8 @@ class ControlPlaneService:
         return ControlPlaneResult(
             created_record_id=proposal.id,
             response_text=(
-                f"{apply_prefix} `{proposal.id}`\uff1a{proposal.change_summary}\n"
-                f"\u65b0\u7248\u672c\u53f7: `{revision.id}`\u3002"
+                f"{apply_prefix} `{proposal.id}`: {proposal.change_summary}\n"
+                f"New revision id: `{revision.id}`."
             ),
         )
 
@@ -314,7 +313,7 @@ class ControlPlaneService:
         if not approval_id:
             return ControlPlaneResult(
                 created_record_id=None,
-                response_text="\u6ca1\u6709\u8bc6\u522b\u5230\u5ba1\u6279\u7f16\u53f7\u3002\u4f60\u53ef\u4ee5\u76f4\u63a5\u53d1\u9001\u201c\u6279\u51c6 <\u7f16\u53f7>\u201d\u6216\u201c\u62d2\u7edd <\u7f16\u53f7>\u201d\u3002",
+                response_text="I could not determine the approval id. Reply with `approve <id>` or `reject <id>`.",
             )
 
         approval = self.state_store.get_approval_request(approval_id)
@@ -362,12 +361,12 @@ class ControlPlaneService:
                 created_by=actor,
             )
 
-        verb = "\u5df2\u6279\u51c6\u5ba1\u6279" if decision == "approved" else "\u5df2\u62d2\u7edd\u5ba1\u6279"
+        verb = "Approved approval request" if decision == "approved" else "Rejected approval request"
         return ControlPlaneResult(
             created_record_id=decision_summary.id,
             response_text=(
-                f"{verb} `{approval.id}`\uff0c\u7c7b\u578b `{approval.approval_type}`\u3002\n"
-                f"{decision_summary.effect_summary or '\u5ba1\u6279\u7ed3\u679c\u5df2\u8bb0\u5f55\u3002'}"
+                f"{verb} `{approval.id}`, type `{approval.approval_type}`.\n"
+                f"{decision_summary.effect_summary or 'The approval decision has been recorded.'}"
             ),
         )
 
@@ -416,7 +415,7 @@ class ControlPlaneService:
         role = intent.deploy_role or "core"
         field_alias = intent.deploy_field_alias or ""
         if not field_alias or intent.deploy_value is None:
-            raise ValueError("\u6ca1\u6709\u8bc6\u522b\u5230\u8981\u66f4\u65b0\u7684\u90e8\u7f72\u5b57\u6bb5\u548c\u503c\u3002")
+            raise ValueError("I could not determine the deployment field and value to update.")
         result = onboarding.set_field(role=role, field_alias=field_alias, value=intent.deploy_value)
         workflow = self.state_store.start_workflow_run(
             workflow_code="WF-OPS-001",
@@ -459,7 +458,7 @@ class ControlPlaneService:
 
     def _require_onboarding_service(self) -> OwnerOnboardingService:
         if self.onboarding_service is None:
-            raise ValueError("\u90e8\u7f72\u5f15\u5bfc\u670d\u52a1\u5c1a\u672a\u914d\u7f6e\u5230\u5f53\u524d\u63a7\u5236\u5e73\u9762\u3002")
+            raise ValueError("Deployment onboarding service is not configured for this control plane.")
         return self.onboarding_service
 
 

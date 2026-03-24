@@ -1,6 +1,6 @@
 # Quant Evo Next-Gen
 
-[简体中文](README.zh-CN.md)
+[Chinese README](README.zh-CN.md)
 
 [![CI](https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml/badge.svg)](https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -87,6 +87,11 @@ Scale out later when needed:
 - keep `Core` as the authority node
 - add `1 Worker VPS` for Codex-heavy execution and research
 - keep broker-facing secrets on Core only
+
+Useful scale-out helpers:
+
+- `./ops/bin/bootstrap-node.sh core`
+- `./ops/bin/bootstrap-node.sh worker`
 
 ## Fastest First Deploy
 

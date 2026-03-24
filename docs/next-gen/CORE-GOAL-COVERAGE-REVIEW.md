@@ -1,47 +1,43 @@
-# CORE GOAL COVERAGE REVIEW
+# Core Goal Coverage Review
 
-## 1. Purpose
+## Purpose
 
-本文件专门检查下一代系统设计中最核心的两个目标是否已经被真正覆盖：
+This review checks whether the two deepest product goals are actually covered by the design:
 
-- `自动进化`
-- `自动交易`
+- `auto-evolution`
+- `auto-trading`
 
-这里不是检查“有没有提到”，而是检查是否已经形成完整闭环。
+The test is not whether these goals are mentioned. The test is whether each has a governed operating loop.
 
-## 2. Summary Verdict
+## Summary Verdict
 
-当前 `docs/next-gen/` 中，这两个核心目标都已经有了清晰骨架，但还需要进一步细化若干关键实现约束，才能避免再次出现“概念完整、运行失真”的情况。
+The current design gets the main direction right for both goals.
 
-结论如下：
+- `auto-evolution`: core loop exists, but measurement and promotion detail still matter
+- `auto-trading`: main loop exists, but production safety depends on explicit execution and broker edge rules
 
-- `自动进化`：方向正确，闭环基本成立，但还需补强评估、晋级梯度和能力量化。
-- `自动交易`：主链路正确，风险约束也已明确，但还需补强订单幂等、对账、市场时段和生产门槛细则。
+This means the design is no longer concept-only. It is mostly a closed-loop architecture that still benefits from clear edge constraints.
 
-## 3. Auto-Evolution Coverage Check
+## Auto-Evolution Coverage
 
-### 3.1 What is already covered
+### What is already covered
 
-当前设计中，自动进化已覆盖以下关键环节：
+- continuous intake of external information
+- evidence extraction and synthesis
+- capability-gap detection
+- improvement-goal creation
+- Codex execution cycles
+- review / eval / canary / rollback paths
+- memory updates after accepted change
 
-- 持续学习与外部资料摄入
-- 证据提取、洞察形成、原则晋升
-- 能力缺口挖掘
-- 改进目标提出
-- Codex build cycle
-- review / eval / shadow / canary
-- 风险治理与 rollback
-
-对应文档：
+Related documents:
 
 - [WORKFLOW-CATALOG.md](WORKFLOW-CATALOG.md)
 - [STATE-MODEL.md](STATE-MODEL.md)
 - [CODEX-WORKER-PROTOCOL.md](CODEX-WORKER-PROTOCOL.md)
 - [RISK-GOVERNANCE.md](RISK-GOVERNANCE.md)
 
-### 3.2 Why this is a real loop now
-
-自动进化闭环已经不是“agent 自己讨论一下”，而是：
+### Why this is now a real loop
 
 ```text
 learning
@@ -49,54 +45,47 @@ learning
   -> capability_gap
   -> improvement_goal
   -> codex_run
-  -> review/eval
-  -> shadow/canary
-  -> promote or rollback
+  -> review / eval
+  -> canary or rollback
   -> memory update
 ```
 
-这已经形成了一个真正的可治理回路。
+This is a governable loop, not just agents talking to themselves.
 
-### 3.3 Remaining gaps to close
-
-以下 6 个点仍建议补成明确规范：
+### Remaining clarifications worth keeping explicit
 
 1. `Capability scorecard`
-   需要定义系统能力维度和分数变化规则。
+   Define capability dimensions and how score changes are measured.
 2. `Evolution priority formula`
-   需要定义什么类型的能力缺口优先修。
+   Define which capability gaps outrank others.
 3. `Self-upgrade ladder`
-   需要把自我升级分成低、中、高影响三级。
+   Separate low-, medium-, and high-impact self-change.
 4. `Benchmark eval sets`
-   需要建立系统升级前后的固定评测集。
+   Keep fixed eval suites for before/after comparisons.
 5. `Source trust decay`
-   需要定义外部知识过期和降权机制。
+   Define expiration and down-weighting for stale outside knowledge.
 6. `Anti-stall replanning`
-   当自动进化持续无产出时，需要自动重规划。
+   If evolution produces no useful output for too long, force replanning.
 
-## 4. Auto-Trading Coverage Check
+## Auto-Trading Coverage
 
-### 4.1 What is already covered
+### What is already covered
 
-当前设计中，自动交易已覆盖：
-
-- 策略从 hypothesis 到 production 的生命周期
-- paper 与 limited live 分层
+- strategy path from hypothesis to production
+- paper to limited-live progression
 - deterministic risk engine
-- signal to order workflow
+- signal-to-order workflow
 - session boot
 - reconciliation
-- halt / freeze / safe mode
+- halt / freeze / safe mode behavior
 
-对应文档：
+Related documents:
 
 - [STATE-MODEL.md](STATE-MODEL.md)
 - [WORKFLOW-CATALOG.md](WORKFLOW-CATALOG.md)
 - [RISK-GOVERNANCE.md](RISK-GOVERNANCE.md)
 
-### 4.2 Why this is closer to a production loop
-
-自动交易闭环已被定义为：
+### Why this is closer to a production loop
 
 ```text
 hypothesis
@@ -109,78 +98,54 @@ hypothesis
   -> withdrawal / replacement
 ```
 
-并且在资金边界处明确要求“确定性执行 + 风控兜底”。
+The boundary near capital already assumes deterministic execution backed by hard risk rules.
 
-### 4.3 Remaining gaps to close
-
-以下 7 个点仍建议补成明确规范：
+### Remaining clarifications worth keeping explicit
 
 1. `Order idempotency policy`
-   需要明确重复下单防护键。
+   Define duplicate-order protection keys.
 2. `Broker reconciliation cadence`
-   需要明确盘中、收盘、重启后的对账节奏。
+   Define intraday, close, and restart reconciliation cadence.
 3. `Market calendar rules`
-   需要明确节假日、盘前盘后、异常停牌行为。
+   Define holiday, premarket, postmarket, and halt handling.
 4. `Position sizing policy`
-   需要明确策略级和组合级 sizing 公式。
+   Define strategy-level and portfolio-level sizing formulas.
 5. `Promotion thresholds`
-   需要明确 paper 到 live 的具体量化门槛。
+   Define paper-to-live thresholds in measurable terms.
 6. `Execution degradation logic`
-   需要明确在 broker 异常、数据异常时如何自动降级。
+   Define broker / data degradation fallbacks.
 7. `Strategy correlation budget`
-   需要明确多策略同向暴露预算。
+   Define same-direction portfolio overlap controls.
 
-## 5. Coverage Matrix
+## Coverage Matrix
 
 | Core Goal | Closed Loop Present | Governance Present | Risk Gate Present | Remaining Detail Work |
 |---|---|---|---|---|
-| 自动进化 | Yes | Yes | Yes | Medium |
-| 自动交易 | Yes | Yes | Yes | Medium |
+| Auto-evolution | Yes | Yes | Yes | Medium |
+| Auto-trading | Yes | Yes | Yes | Medium |
 
-## 6. Important Judgment
+## Important Judgment
 
-这意味着当前设计不是“没做好”，而是“主骨架已经做好，但还有几项必须写死的执行细则没有补完”。
+The system is not failing because the direction is wrong.
 
-换句话说：
+The more accurate judgment is:
 
-- 方向没偏
-- 核心闭环已经成立
-- 现在最该做的是把关键细则补全，而不是重新推翻路线
+- direction is right
+- the main loops exist
+- the work that still matters is explicit policy detail, not a ground-up rewrite
 
-## 7. Recommended Next Clarifications
+## Next Clarifications With Highest Value
 
-为了让这两个核心目标真正进入“可实施”状态，下一步最值得补的细化件是：
+- keep benchmark eval suites durable
+- keep promotion thresholds measurable
+- keep reconciliation and market-calendar behavior explicit
+- keep evolution priority and source-trust decay formalized
 
-1. `database schema`
-2. `service decomposition`
-3. `order execution contract`
-4. `promotion threshold policy`
-5. `capability scorecard`
-6. `dashboard data schema`
+## Final Acceptance Questions
 
-## 8. Acceptance Test for the Rebuild
+The system should eventually be judged by two questions:
 
-下一代系统最终要以这两个问题来验收：
+1. Can it identify capability gaps, learn, improve, evaluate, and update durable memory without constant owner steering?
+2. Can it progress strategies, execute safely, reconcile truth, and withdraw degraded paths without constant owner supervision?
 
-### 8.1 Auto-evolution acceptance
-
-系统是否能在没有人工持续指挥的情况下：
-
-- 发现能力短板
-- 联网学习相关内容
-- 提出改进计划
-- 调用 Codex 实施
-- 通过评估晋级或回滚
-- 更新长期记忆与操作规则
-
-### 8.2 Auto-trading acceptance
-
-系统是否能在没有人工持续盯盘的情况下：
-
-- 自动推进策略研究链
-- 自动执行 paper / limited live
-- 自动监控风险和状态
-- 自动对账和恢复
-- 自动撤退和冻结异常路径
-
-只有这两条都成立，系统才算达到你要的核心目标。
+Only when both answers are yes does the product fully satisfy the core mission.

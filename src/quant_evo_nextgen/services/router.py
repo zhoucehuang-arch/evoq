@@ -9,36 +9,36 @@ from quant_evo_nextgen.services.deploy_fields import find_deploy_field, normaliz
 
 APPROVAL_ID_RE = re.compile(r"\b([a-zA-Z0-9-]{8,})\b")
 ROLLBACK_RE = re.compile(
-    "(?:\u56de\u6eda|rollback(?:\\s+to)?)\\s*(?:\u914d\u7f6e|config)?\\s*(?:(?:\u7248\u672c|revision)\\s+)?(?P<revision>[a-zA-Z0-9-]{8,})$",
+    "(?:rollback(?:\\s+to)?)\\s*(?:config)?\\s*(?:(?:revision)\\s+)?(?P<revision>[a-zA-Z0-9-]{8,})$",
     re.IGNORECASE,
 )
 DEPLOY_BOOTSTRAP_RE = re.compile(
-    "(?:\u5f00\u59cb|\u521d\u59cb\u5316|bootstrap|setup)\\s*(?P<role>core|worker|research)?\\s*(?:\u90e8\u7f72|deploy|\u5f15\u5bfc|onboarding)?$",
+    "(?:bootstrap|setup|initialize)\\s*(?P<role>core|worker|research)?\\s*(?:deployment|deploy|onboarding)?$",
     re.IGNORECASE,
 )
 DEPLOY_STATUS_RE = re.compile(
-    "(?:(?:\u67e5\u770b|\u663e\u793a|\u5217\u51fa|show)\\s*)?(?P<role>core|worker|research)?\\s*(?:\u90e8\u7f72\u72b6\u6001|\u90e8\u7f72\u9884\u68c0|deploy status|preflight)$",
+    "(?:(?:show|list|check)\\s*)?(?P<role>core|worker|research)?\\s*(?:deployment status|deploy status|preflight)$",
     re.IGNORECASE,
 )
 DEPLOY_SET_RE = re.compile(
-    "(?:\u8bbe\u7f6e|set|update)\\s*(?:(?P<role>core|worker|research)\\s+)?(?P<field>[^=]{1,80}?)\\s*(?:\u4e3a|to|=)\\s*(?P<value>.+)$",
+    "(?:set|update)\\s*(?:(?P<role>core|worker|research)\\s+)?(?P<field>[^=]{1,80}?)\\s*(?:(?:to)\\s+|=\\s*)(?P<value>.+)$",
     re.IGNORECASE,
 )
 LOOP_ENABLE_RE = re.compile(
-    "(?:\u542f\u7528|\u6253\u5f00|enable)\\s+(?:loop\\s*)?(?P<loop>[a-z0-9_-]+)(?:\\s*loop)?$",
+    "(?:enable)\\s+(?:loop\\s*)?(?P<loop>[a-z0-9_-]+)(?:\\s*loop)?$",
     re.IGNORECASE,
 )
 LOOP_DISABLE_RE = re.compile(
-    "(?:\u7981\u7528|\u505c\u7528|\u5173\u95ed|disable)\\s+(?:loop\\s*)?(?P<loop>[a-z0-9_-]+)(?:\\s*loop)?$",
+    "(?:disable)\\s+(?:loop\\s*)?(?P<loop>[a-z0-9_-]+)(?:\\s*loop)?$",
     re.IGNORECASE,
 )
 LOOP_CADENCE_RE = re.compile(
-    "(?:\u628a|set|change|update)?\\s*(?P<loop>[a-z0-9_-]+)\\s*(?:loop\\s*)?(?:\u95f4\u9694|cadence|\u9891\u7387)"
-    "\\s*(?:\u6539\u6210|\u8bbe\u7f6e\u4e3a|to|=)\\s*(?P<value>.+)$",
+    "(?:set|change|update)?\\s*(?P<loop>[a-z0-9_-]+)\\s*(?:loop\\s*)?(?:interval|cadence|frequency)"
+    "\\s*(?:(?:to)\\s+|=\\s*)(?P<value>.+)$",
     re.IGNORECASE,
 )
 SETTING_RE = re.compile(
-    "(?:\u628a|set|change|update|modify)\\s*(?P<target>[^=]{1,80}?)\\s*(?:\u6539\u6210|\u8bbe\u7f6e\u4e3a|to|=)\\s*(?P<value>.+)$",
+    "(?:set|change|update|modify)\\s*(?P<target>[^=]{1,80}?)\\s*(?:(?:to)\\s+|=\\s*)(?P<value>.+)$",
     re.IGNORECASE,
 )
 
@@ -75,14 +75,14 @@ class NaturalLanguageRouter:
         if deploy_set is not None:
             return deploy_set
 
-        if _contains_any(normalized, ("\u5f85\u5ba1\u6279", "\u5f85\u5904\u7406\u5ba1\u6279", "approvals", "pending approvals")):
+        if _contains_any(normalized, ("approvals", "pending approvals")):
             return IntentClassification(
                 intent_type=IntentType.LIST_APPROVALS,
                 proposed_action="List pending approvals in the control plane.",
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("\u6279\u51c6", "\u901a\u8fc7", "approve")):
+        if _contains_any(normalized, ("approve",)):
             return IntentClassification(
                 intent_type=IntentType.APPROVE_REQUEST,
                 reference_id=reference_id,
@@ -90,7 +90,7 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("\u62d2\u7edd", "\u9a73\u56de", "reject")):
+        if _contains_any(normalized, ("reject",)):
             return IntentClassification(
                 intent_type=IntentType.REJECT_REQUEST,
                 reference_id=reference_id,
@@ -113,14 +113,14 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("\u72b6\u6001", "\u73b0\u72b6", "\u6982\u51b5", "\u603b\u89c8", "status", "system status")):
+        if _contains_any(normalized, ("status", "system status", "overview")):
             return IntentClassification(
                 intent_type=IntentType.STATUS,
                 proposed_action="Summarize the current system status.",
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("\u98ce\u9669", "\u98ce\u63a7", "risk")):
+        if _contains_any(normalized, ("risk", "risk status")):
             return IntentClassification(
                 intent_type=IntentType.RISK_STATUS,
                 target_domain="trading",
@@ -128,7 +128,7 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("\u5b66\u5230", "\u5b66\u4e60", "\u7814\u7a76\u8fdb\u5c55", "learning")):
+        if _contains_any(normalized, ("learning", "learned", "research progress")):
             return IntentClassification(
                 intent_type=IntentType.LEARNING_SUMMARY,
                 target_domain="learning",
@@ -136,9 +136,9 @@ class NaturalLanguageRouter:
                 execution_supported=True,
             )
 
-        if _contains_any(normalized, ("\u6682\u505c", "\u505c\u6b62", "pause")) and _contains_any(
+        if _contains_any(normalized, ("pause",)) and _contains_any(
             normalized,
-            ("\u8fdb\u5316", "\u81ea\u8fdb\u5316", "evolution"),
+            ("evolution", "auto-evolution"),
         ):
             return IntentClassification(
                 intent_type=IntentType.PAUSE_EVOLUTION,
@@ -148,9 +148,9 @@ class NaturalLanguageRouter:
                 proposed_action="Pause the auto-evolution domain.",
             )
 
-        if _contains_any(normalized, ("\u6682\u505c", "\u505c\u6b62", "pause")) and _contains_any(
+        if _contains_any(normalized, ("pause",)) and _contains_any(
             normalized,
-            ("\u4ea4\u6613", "\u81ea\u52a8\u4ea4\u6613", "live", "trading"),
+            ("trading", "auto-trading", "live"),
         ):
             return IntentClassification(
                 intent_type=IntentType.PAUSE_TRADING,
@@ -160,7 +160,7 @@ class NaturalLanguageRouter:
                 proposed_action="Pause auto-trading or live execution.",
             )
 
-        if _contains_any(normalized, ("\u6062\u590d", "\u7ee7\u7eed", "resume")):
+        if _contains_any(normalized, ("resume",)):
             return IntentClassification(
                 intent_type=IntentType.RESUME_DOMAIN,
                 target_domain=_resume_target_domain(normalized),
@@ -169,9 +169,9 @@ class NaturalLanguageRouter:
                 proposed_action="Resume a previously paused domain.",
             )
 
-        if _contains_any(normalized, ("\u4e3a\u4ec0\u4e48", "\u539f\u56e0", "\u89e3\u91ca", "explain")) and _contains_any(
+        if _contains_any(normalized, ("why", "reason", "explain")) and _contains_any(
             normalized,
-            ("\u7b56\u7565", "strategy"),
+            ("strategy",),
         ):
             return IntentClassification(
                 intent_type=IntentType.EXPLAIN_STRATEGY,
@@ -193,62 +193,60 @@ class NaturalLanguageRouter:
         if intent.intent_type is IntentType.STATUS:
             return (
                 f"{overview.headline}\n"
-                f"\u5f53\u524d\u6a21\u5f0f: {mode_label}\uff1b\u98ce\u9669\u72b6\u6001: {risk_label}\uff1b"
-                f"\u751f\u4ea7\u7b56\u7565\u6570\u91cf: {overview.strategy.production}\u3002"
+                f"Current mode: {mode_label}; risk state: {risk_label}; "
+                f"production strategies: {overview.strategy.production}."
             )
 
         if intent.intent_type is IntentType.RISK_STATUS:
             return (
-                f"\u5f53\u524d\u98ce\u9669\u72b6\u6001\u4e3a {risk_label}\u3002\n"
-                f"\u751f\u4ea7\u7b56\u7565\u6570\u91cf: {overview.strategy.production}\uff1b"
-                f"\u672a\u5173\u95ed\u4e8b\u4ef6: {overview.system.open_incidents}\uff1b"
-                f"\u6d3b\u8dc3\u76ee\u6807: {overview.system.active_goals}\u3002"
+                f"Current risk state is {risk_label}.\n"
+                f"Production strategies: {overview.strategy.production}; "
+                f"open incidents: {overview.system.open_incidents}; "
+                f"active goals: {overview.system.active_goals}."
             )
 
         if intent.intent_type is IntentType.LEARNING_SUMMARY:
             return (
-                f"\u5f53\u524d\u957f\u671f\u539f\u5219\u8bb0\u5fc6 {overview.learning.principles} \u6761\uff0c"
-                f"\u56e0\u679c\u6848\u4f8b {overview.learning.causal_cases} \u6761\uff0c"
-                f"\u7279\u5f81\u56fe\u5df2\u5360\u7528 {overview.learning.occupied_feature_cells} \u4e2a\u683c\u5b50\u3002"
+                f"Durable principle memory currently holds {overview.learning.principles} principles, "
+                f"{overview.learning.causal_cases} causal cases, and "
+                f"{overview.learning.occupied_feature_cells} occupied feature cells."
             )
 
         if intent.intent_type is IntentType.EXPLAIN_STRATEGY:
             return (
-                "\u7b56\u7565\u89e3\u91ca\u94fe\u8def\u5df2\u9884\u7559\uff0c"
-                "\u4f46\u8981\u56de\u7b54\u5230\u67d0\u4e2a\u5177\u4f53\u7b56\u7565\uff0c"
-                "\u8fd8\u9700\u8981\u63a5\u5165\u56de\u6d4b\u3001\u8bc4\u5ba1\u548c promotion \u8bb0\u5f55\u3002"
+                "The strategy explanation path is wired, but answering for a specific strategy "
+                "still requires linked backtest, review, and promotion records."
             )
 
         if intent.intent_type is IntentType.LIST_RUNTIME_CONFIG:
-            return "\u6211\u4f1a\u8bfb\u53d6\u5f53\u524d\u8fd0\u884c\u65f6\u914d\u7f6e\u3001\u5f85\u5904\u7406\u914d\u7f6e\u63d0\u6848\u548c\u6700\u8fd1\u914d\u7f6e\u7248\u672c\u3002"
+            return "I will read the current runtime configuration, pending config proposals, and recent revisions."
 
         if intent.intent_type is IntentType.PROPOSE_CONFIG_CHANGE:
-            return "\u6211\u8bc6\u522b\u5230\u8fd9\u662f\u4e00\u6b21\u8fd0\u884c\u65f6\u914d\u7f6e\u8c03\u6574\u8bf7\u6c42\uff0c\u4f1a\u5148\u8d70\u63d0\u6848\u4e0e\u6cbb\u7406\u8def\u5f84\u3002"
+            return "I recognized this as a runtime config change request and will route it through the proposal and governance path."
 
         if intent.intent_type is IntentType.ROLLBACK_RUNTIME_CONFIG:
-            return "\u6211\u8bc6\u522b\u5230\u8fd9\u662f\u4e00\u6b21\u8fd0\u884c\u65f6\u914d\u7f6e\u56de\u6eda\u8bf7\u6c42\uff0c\u4f1a\u5148\u751f\u6210\u53d7\u6cbb\u7406\u7684\u56de\u6eda\u63d0\u6848\u3002"
+            return "I recognized this as a runtime config rollback request and will create a governed rollback proposal first."
 
         if intent.intent_type is IntentType.DEPLOY_BOOTSTRAP:
             role = intent.deploy_role or "core"
-            return f"\u6211\u4f1a\u5148\u4e3a `{role}` \u751f\u6210\u90e8\u7f72\u8349\u7a3f\uff0c\u5e76\u8fd4\u56de\u5f53\u524d\u9884\u68c0\u72b6\u6001\u3002"
+            return f"I will prepare the deployment draft for `{role}` and return the current preflight state."
 
         if intent.intent_type is IntentType.DEPLOY_STATUS:
             role = intent.deploy_role or "core"
-            return f"\u6211\u4f1a\u8bfb\u53d6 `{role}` \u7684\u90e8\u7f72\u8349\u7a3f\uff0c\u5e76\u8fd4\u56de\u9884\u68c0\u7ed3\u679c\u3002"
+            return f"I will read the deployment draft for `{role}` and return its current preflight result."
 
         if intent.intent_type is IntentType.DEPLOY_SET:
             role = intent.deploy_role or "core"
-            field_label = intent.deploy_field_alias or "\u90e8\u7f72\u5b57\u6bb5"
-            return f"\u6211\u4f1a\u66f4\u65b0 `{role}` \u7684 `{field_label}`\uff0c\u5e76\u91cd\u65b0\u8dd1\u4e00\u6b21\u90e8\u7f72\u9884\u68c0\u3002"
+            field_label = intent.deploy_field_alias or "deployment field"
+            return f"I will update `{role}` field `{field_label}` and rerun deployment preflight."
 
         if intent.requires_confirmation:
             return (
-                "\u6211\u8bc6\u522b\u5230\u8fd9\u662f\u4e00\u4e2a\u9700\u8981\u6cbb\u7406\u786e\u8ba4\u7684\u63a7\u5236\u610f\u56fe\u3002"
-                "\u7cfb\u7edf\u4f1a\u5148\u521b\u5efa\u5ba1\u6279\u5bf9\u8c61\uff0c"
-                "\u518d\u7531 owner \u5ba1\u6279\u6d41\u51b3\u5b9a\u662f\u5426\u771f\u6b63\u5207\u6362\u72b6\u6001\u3002"
+                "I recognized this as a governed control intent. "
+                "The system will create an approval object first and wait for owner approval before changing state."
             )
 
-        return "\u8fd9\u6761\u6307\u4ee4\u8fd8\u4e0d\u591f\u5177\u4f53\u3002\u4f60\u53ef\u4ee5\u76f4\u63a5\u53d1\u9001\u201c\u72b6\u6001\u201d\uff0c\u6216\u4f7f\u7528 `/status`\u3002"
+        return "This instruction is not specific enough. You can send `status` directly or use `/status`."
 
 
 def _contains_any(message: str, keywords: tuple[str, ...]) -> bool:
@@ -261,9 +259,9 @@ def _extract_reference_id(message: str) -> str | None:
 
 
 def _resume_target_domain(message: str) -> str:
-    if "\u8fdb\u5316" in message or "evolution" in message:
+    if "evolution" in message:
         return "evolution"
-    if "\u4ea4\u6613" in message or "trading" in message:
+    if "trading" in message:
         return "trading"
     return "governance"
 
@@ -287,16 +285,16 @@ def _format_risk_state(risk_state: str) -> str:
 
 
 def _is_runtime_config_query(message: str) -> bool:
-    return _contains_any(message, ("\u914d\u7f6e", "\u8bbe\u5b9a", "settings", "runtime config", "config")) and _contains_any(
+    return _contains_any(message, ("settings", "runtime config", "config")) and _contains_any(
         message,
-        ("\u67e5\u770b", "\u663e\u793a", "\u5217\u51fa", "show", "list", "\u5f53\u524d", "\u73b0\u5728", "\u7248\u672c", "revision"),
+        ("show", "list", "current", "now", "revision"),
     )
 
 
 def _parse_runtime_config_rollback(message: str, reference_id: str | None) -> IntentClassification | None:
     match = ROLLBACK_RE.match(message)
     revision_id = match.group("revision") if match else None
-    if revision_id is None and _contains_any(message, ("\u56de\u6eda\u914d\u7f6e", "rollback config", "\u56de\u6eda revision", "rollback revision")):
+    if revision_id is None and _contains_any(message, ("rollback config", "rollback revision")):
         revision_id = reference_id
     if revision_id is None:
         return None
@@ -367,19 +365,13 @@ def _parse_runtime_config_change(message: str) -> IntentClassification | None:
 
 def _parse_named_setting(target: str, value: str) -> IntentClassification | None:
     alias_map = {
-        "\u5fc3\u8df3": ("system_policy", "heartbeat_runtime", "interval_seconds"),
-        "\u5fc3\u8df3\u95f4\u9694": ("system_policy", "heartbeat_runtime", "interval_seconds"),
         "heartbeat": ("system_policy", "heartbeat_runtime", "interval_seconds"),
-        "\u8bed\u8a00": ("owner_preference", "interaction_language", "operator_language"),
-        "owner\u8bed\u8a00": ("owner_preference", "interaction_language", "operator_language"),
+        "heartbeat interval": ("system_policy", "heartbeat_runtime", "interval_seconds"),
         "interaction language": ("owner_preference", "interaction_language", "operator_language"),
-        "\u63a7\u5236\u9891\u9053": ("owner_preference", "discord_channels", "control_channel"),
+        "owner language": ("owner_preference", "interaction_language", "operator_language"),
         "control channel": ("owner_preference", "discord_channels", "control_channel"),
-        "\u5ba1\u6279\u9891\u9053": ("owner_preference", "discord_channels", "approvals_channel"),
         "approvals channel": ("owner_preference", "discord_channels", "approvals_channel"),
-        "\u544a\u8b66\u9891\u9053": ("owner_preference", "discord_channels", "alerts_channel"),
         "alerts channel": ("owner_preference", "discord_channels", "alerts_channel"),
-        "codex\u6a21\u578b": ("system_policy", "codex_runtime", "default_model"),
         "codex model": ("system_policy", "codex_runtime", "default_model"),
     }
 
@@ -417,9 +409,9 @@ def _parse_duration_seconds(value: str) -> int | None:
     if match is None:
         return None
     quantity = int(match.group(1))
-    if any(unit in candidate for unit in ("\u5c0f\u65f6", "hour", "hours", "hr", "hrs")):
+    if any(unit in candidate for unit in ("hour", "hours", "hr", "hrs")):
         return quantity * 3600
-    if any(unit in candidate for unit in ("\u5206\u949f", "\u5206", "minute", "minutes", "min", "mins")):
+    if any(unit in candidate for unit in ("minute", "minutes", "min", "mins")):
         return quantity * 60
     return quantity
 
@@ -439,7 +431,7 @@ def _parse_deploy_bootstrap(message: str) -> IntentClassification | None:
 
 def _parse_deploy_status(message: str) -> IntentClassification | None:
     match = DEPLOY_STATUS_RE.match(message)
-    if match is None and _contains_any(message, ("\u90e8\u7f72\u72b6\u6001", "\u90e8\u7f72\u9884\u68c0", "deploy status", "preflight")):
+    if match is None and _contains_any(message, ("deployment status", "deploy status", "preflight")):
         role = "worker" if "worker" in message or "research" in message else "core"
     elif match is not None:
         role = (match.group("role") or "core").lower()
@@ -471,9 +463,9 @@ def _parse_deploy_setting(message: str) -> IntentClassification | None:
         deploy_value=value,
         contains_sensitive_value=sensitive,
         sanitized_message_summary=(
-            f"\u8bbe\u7f6e {role} \u7684 {spec.label}\uff08\u5df2\u8131\u654f\uff09"
+            f"Set {role} {spec.label} (redacted)"
             if sensitive
-            else f"\u8bbe\u7f6e {role} \u7684 {spec.label} \u4e3a {value}"
+            else f"Set {role} {spec.label} to {value}"
         ),
         proposed_action="Update the deployment draft field for the requested node role.",
         execution_supported=True,

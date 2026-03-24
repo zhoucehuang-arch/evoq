@@ -21,20 +21,15 @@ SUPPORTED_BROKER_MODES = {
     "alpaca_paper": "alpaca_paper",
     "alpaca_live": "alpaca_live",
 }
-SUPPORTED_BOOLEAN_TRUE = {"1", "true", "yes", "on", "enable", "enabled", "\u542f\u7528", "\u6253\u5f00"}
-SUPPORTED_BOOLEAN_FALSE = {"0", "false", "no", "off", "disable", "disabled", "\u7981\u7528", "\u5173\u95ed"}
+SUPPORTED_BOOLEAN_TRUE = {"1", "true", "yes", "on", "enable", "enabled"}
+SUPPORTED_BOOLEAN_FALSE = {"0", "false", "no", "off", "disable", "disabled"}
 SUPPORTED_TOPOLOGY_ALIASES = {
     "singlevps": "single_vps_compact",
     "singlevpscompact": "single_vps_compact",
     "singlevpsfirst": "single_vps_compact",
-    "\u5355vps": "single_vps_compact",
-    "\u5355\u673avps": "single_vps_compact",
-    "\u5355\u673a\u90e8\u7f72": "single_vps_compact",
     "single_vps_compact": "single_vps_compact",
     "twovps": "two_vps_asymmetrical",
     "twovpsasymmetrical": "two_vps_asymmetrical",
-    "\u53ccvps": "two_vps_asymmetrical",
-    "\u53cc\u673a\u90e8\u7f72": "two_vps_asymmetrical",
     "two_vps_asymmetrical": "two_vps_asymmetrical",
 }
 SUPPORTED_MARKET_MODE_ALIASES = {
@@ -42,14 +37,11 @@ SUPPORTED_MARKET_MODE_ALIASES = {
     "usa": "us",
     "usequities": "us",
     "usoptions": "us",
-    "\u7f8e\u80a1": "us",
-    "\u7f8e\u80a1\u671f\u6743": "us",
     "cn": "cn",
     "china": "cn",
     "ashares": "cn",
-    "\u4e2d\u56fd": "cn",
-    "a\u80a1": "cn",
-    "\u6caa\u6df1a\u80a1": "cn",
+    "ashare": "cn",
+    "a-share": "cn",
 }
 
 
@@ -79,15 +71,15 @@ class OwnerOnboardingService:
         )
         report = self.deploy_config.run_preflight(role=normalized, env_path=env_path)
         lines = [
-            f"\u5df2\u4e3a `{normalized}` \u51c6\u5907\u90e8\u7f72\u8349\u7a3f\u3002",
-            f"\u914d\u7f6e\u6587\u4ef6: `{env_path}`",
-            f"\u9884\u68c0\u72b6\u6001: {report['status']}",
+            f"Prepared the deployment draft for `{normalized}`.",
+            f"Config file: `{env_path}`",
+            f"Preflight status: {report['status']}",
         ]
         top_message = self._top_preflight_message(report)
         if top_message:
             lines.append(top_message)
         lines.append(
-            "\u8bf4\u660e: \u8fd9\u662f\u90e8\u7f72\u8349\u7a3f\u66f4\u65b0\uff0c\u76f8\u5173\u670d\u52a1\u901a\u5e38\u9700\u8981\u91cd\u542f\u540e\u624d\u4f1a\u8bfb\u53d6\u65b0\u503c\u3002"
+            "Note: this updates the deployment draft; related services usually need a restart before they read the new values."
         )
         return OwnerOnboardingResult(
             role=normalized,
@@ -108,8 +100,8 @@ class OwnerOnboardingService:
         )
         report = self.deploy_config.run_preflight(role=normalized, env_path=env_path)
         lines = [
-            f"`{normalized}` \u5f53\u524d\u90e8\u7f72\u72b6\u6001: {report['status']}",
-            f"\u914d\u7f6e\u6587\u4ef6: `{env_path}`",
+            f"`{normalized}` deployment status: {report['status']}",
+            f"Config file: `{env_path}`",
         ]
         top_message = self._top_preflight_message(report)
         if top_message:
@@ -178,15 +170,15 @@ class OwnerOnboardingService:
 
         report = self.deploy_config.run_preflight(role=normalized, env_path=updated)
         lines = [
-            f"\u5df2\u66f4\u65b0 `{normalized}` \u7684 {field.label}: {masked_value}",
-            f"\u914d\u7f6e\u6587\u4ef6: `{updated}`",
-            f"\u9884\u68c0\u72b6\u6001: {report['status']}",
+            f"Updated `{normalized}` {field.label}: {masked_value}",
+            f"Config file: `{updated}`",
+            f"Preflight status: {report['status']}",
         ]
         top_message = self._top_preflight_message(report)
         if top_message:
             lines.append(top_message)
         lines.append(
-            "\u8bf4\u660e: \u8fd9\u662f\u90e8\u7f72\u8349\u7a3f\u66f4\u65b0\uff0c\u76f8\u5173\u670d\u52a1\u901a\u5e38\u9700\u8981\u91cd\u542f\u540e\u624d\u4f1a\u8bfb\u53d6\u65b0\u503c\u3002"
+            "Note: this updates the deployment draft; related services usually need a restart before they read the new values."
         )
         return OwnerOnboardingResult(
             role=normalized,
@@ -205,7 +197,7 @@ class OwnerOnboardingService:
     def redact_secret_message(self, role: str, field_alias: str) -> str:
         normalized = normalize_deploy_role(role)
         field = self.resolve_field(field_alias, role=normalized)
-        return f"\u8bbe\u7f6e {normalized} \u7684 {field.label}\uff08\u5df2\u8131\u654f\uff09"
+        return f"Set {normalized} {field.label} (redacted)"
 
     def _env_path_for_role(self, role: str) -> Path | None:
         if self.env_root is None:
@@ -236,7 +228,7 @@ class OwnerOnboardingService:
             return "true"
         if normalized in SUPPORTED_BOOLEAN_FALSE:
             return "false"
-        raise ValueError("Boolean field values must be true/false, yes/no, on/off, or 启用/禁用.")
+        raise ValueError("Boolean field values must be true/false, yes/no, on/off, or enable/disable.")
 
     def _normalize_topology(self, value: str) -> str:
         normalized = value.strip().lower().replace(" ", "").replace("-", "").replace("_", "")
@@ -275,8 +267,8 @@ class OwnerOnboardingService:
             if isinstance(check, dict) and check.get("status") in {"fail", "warn"}
         ]
         if not failures:
-            return "\u6240\u6709\u5173\u952e\u9884\u68c0\u9879\u90fd\u5df2\u901a\u8fc7\u3002"
+            return "All key preflight checks passed."
         top = failures[0]
         label = str(top.get("label") or top.get("key") or "Preflight Check")
         message = str(top.get("message") or "").strip()
-        return f"\u5f53\u524d\u6700\u9700\u8981\u5904\u7406\u7684\u9879: {label} | {message}"
+        return f"Top preflight item to address: {label} | {message}"

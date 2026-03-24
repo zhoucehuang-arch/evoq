@@ -20,8 +20,8 @@ def test_owner_onboarding_sets_broker_mode_and_masks_secret_values(tmp_path: Pat
     repo_root = Path(__file__).resolve().parents[1]
     service = OwnerOnboardingService(repo_root, env_root=tmp_path)
 
-    mode_result = service.set_field(role="core", field_alias="\u5238\u5546\u6a21\u5f0f", value="alpaca_paper")
-    key_result = service.set_field(role="core", field_alias="\u4e2d\u8f6ckey", value="sk-super-secret-1234")
+    mode_result = service.set_field(role="core", field_alias="broker mode", value="alpaca_paper")
+    key_result = service.set_field(role="core", field_alias="relay key", value="sk-super-secret-1234")
     env_content = (tmp_path / "core.env").read_text(encoding="utf-8")
 
     assert "QE_DEFAULT_BROKER_ADAPTER=alpaca" in env_content
@@ -29,15 +29,15 @@ def test_owner_onboarding_sets_broker_mode_and_masks_secret_values(tmp_path: Pat
     assert "QE_OPENAI_API_KEY=sk-super-secret-1234" in env_content
     assert mode_result.masked_value == "alpaca_paper"
     assert key_result.masked_value.startswith("sk***")
-    assert "sk-super-secret-1234" not in service.redact_secret_message("core", "\u4e2d\u8f6ckey")
+    assert "sk-super-secret-1234" not in service.redact_secret_message("core", "relay key")
 
 
 def test_owner_onboarding_sets_single_vps_and_playwright_toggle(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     service = OwnerOnboardingService(repo_root, env_root=tmp_path)
 
-    topology_result = service.set_field(role="core", field_alias="\u90e8\u7f72\u6a21\u5f0f", value="\u5355vps")
-    browser_result = service.set_field(role="core", field_alias="playwright\u542f\u7528", value="\u542f\u7528")
+    topology_result = service.set_field(role="core", field_alias="deployment topology", value="single_vps")
+    browser_result = service.set_field(role="core", field_alias="playwright enabled", value="enable")
     env_content = (tmp_path / "core.env").read_text(encoding="utf-8")
 
     assert topology_result.masked_value == "single_vps_compact"
@@ -50,7 +50,7 @@ def test_owner_onboarding_sets_cn_market_mode(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     service = OwnerOnboardingService(repo_root, env_root=tmp_path)
 
-    market_result = service.set_field(role="core", field_alias="\u5e02\u573a\u6a21\u5f0f", value="A\u80a1")
+    market_result = service.set_field(role="core", field_alias="market mode", value="a-share")
     env_content = (tmp_path / "core.env").read_text(encoding="utf-8")
 
     assert market_result.masked_value == "cn"

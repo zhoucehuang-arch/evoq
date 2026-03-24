@@ -1,33 +1,33 @@
-# CODEX WORKER PROTOCOL
+# Codex Worker Protocol
 
-## 1. Purpose
+## Purpose
 
-本文件定义如何把 `Codex` 作为下一代系统的核心执行能力纳入自治架构。
+This document defines how `Codex` is integrated as the default execution engine inside Quant Evo Next-Gen.
 
-核心结论如下：
+Core conclusions:
 
-- `Codex` 适合作为默认执行 worker
-- `Codex` 不应成为唯一治理中心
-- `Codex` 的运行必须被 workflow、policy、budget、review 和 artifact 管理
+- `Codex` is the default worker for high-value implementation and analysis tasks.
+- `Codex` is not the sole governance center.
+- every Codex run must be wrapped by workflow, policy, budget, review, and artifact capture
 
-## 2. Why Codex Is First-Class
+## Why Codex Is First-Class
 
-系统下一代重构选择 `Codex` 作为核心执行器，原因包括：
+Codex is a strong fit because it is naturally good at:
 
-- 对 repo 和代码任务天然适配
-- 可用于分析、实现、重构、修复、补测试、写文档
-- 可通过 CLI 非交互执行
-- 可输出结构化结果
-- 可与 review、apply、cloud、MCP 等能力衔接
+- repository exploration
+- code implementation and refactoring
+- test creation and repair
+- deployment and operations scripting
+- structured execution through CLI-driven workflows
 
-系统中大多数高价值“复杂任务”都应默认尝试委派给 Codex worker，而不是让通用 agent 用长文本自行模拟执行。
+The system should prefer Codex for concrete execution instead of asking a general-purpose agent to simulate implementation in long-form chat.
 
-## 3. Worker Position in the Architecture
+## Architectural Position
 
 ```text
 Council / Planner / Governor
-  -> Task specification
-  -> Policy + budget + write scope
+  -> task specification
+  -> policy + budget + write scope
 
 Codex Fabric
   -> worker queue
@@ -43,102 +43,102 @@ Kernel
   -> metrics
 ```
 
-## 4. Supported Execution Modes
+## Supported Execution Modes
 
-### 4.1 `local_exec`
+### `local_exec`
 
-默认模式。通过本地 CLI 执行：
+Default mode for VPS operation:
 
 ```bash
 codex exec --json --output-schema <schema.json> -C <workspace> "<prompt>"
 ```
 
-适合：
+Use for:
 
-- 本地 VPS 持续运行
-- 仓库内任务
-- 受控写入工作区
+- long-running local VPS operation
+- repository tasks
+- controlled writes inside a bounded workspace
 
-### 4.2 `local_review`
+### `local_review`
 
-用于补丁或改动评审：
+Use for patch or diff review:
 
 ```bash
 codex review --uncommitted
 ```
 
-### 4.3 `local_apply`
+### `local_apply`
 
-用于将已生成的 patch 应用到目标工作区：
+Use to apply generated patches inside the target workspace:
 
 ```bash
 codex apply
 ```
 
-### 4.4 `cloud_exec`
+### `cloud_exec`
 
-作为未来可选模式，用于异步云执行或高峰期弹性。
+Optional future mode for bursty or asynchronous workloads.
 
-说明：
+Rules:
 
-- 该模式可选，不作为系统首要依赖
-- 所有云执行仍然必须回写本地状态与工件
+- cloud execution is optional, not a hard dependency
+- all cloud results must still write back local durable state and artifacts
 
-## 5. Worker Classes
+## Worker Classes
 
-建议按任务类别定义 worker class，而不是所有任务共用一套 prompt。
+Different task types should use different worker classes instead of one giant universal prompt.
 
-### 5.1 `analysis_worker`
+### `analysis_worker`
 
-适用：
+Use for:
 
-- repo 调研
-- 依赖对比
-- root cause analysis
-- 架构梳理
+- repo research
+- dependency comparisons
+- root-cause analysis
+- architecture mapping
 
-### 5.2 `implementation_worker`
+### `implementation_worker`
 
-适用：
+Use for:
 
-- 写代码
-- 改代码
-- 补测试
-- 搭脚本
-- 改配置
+- writing code
+- editing code
+- adding tests
+- creating scripts
+- updating configuration
 
-### 5.3 `review_worker`
+### `review_worker`
 
-适用：
+Use for:
 
-- diff 评审
-- 风险识别
-- 测试缺口审查
-- 回归风险提示
+- diff review
+- regression detection
+- risk spotting
+- test-gap review
 
-### 5.4 `strategy_worker`
+### `strategy_worker`
 
-适用：
+Use for:
 
-- 策略实现
-- 回测脚本生成
-- 指标统计
-- 研究工件生成
+- strategy implementation
+- backtest harness generation
+- metric extraction
+- research artifact generation
 
-### 5.5 `ops_worker`
+### `ops_worker`
 
-适用：
+Use for:
 
-- 部署脚本
-- 运维修复
-- incident 自动修复候选
-- 监控脚本更新
+- deployment scripts
+- maintenance repair
+- incident remediation candidates
+- monitoring updates
 
-## 6. Worker Request Object
+## Worker Request Object
 
-每次 Codex 运行都必须使用结构化请求对象。
+Every Codex run should receive a structured request object.
 
-### 6.1 Required fields
+Required fields:
 
 - `codex_run_id`
 - `goal_id`
@@ -146,266 +146,193 @@ codex apply
 - `worker_class`
 - `objective`
 - `context_summary`
-- `repo_path`
-- `workspace_path`
 - `write_scope`
-- `allowed_tools`
-- `search_enabled`
-- `risk_tier`
-- `max_duration_sec`
-- `max_token_budget`
-- `output_schema_path`
-- `acceptance_criteria`
+- `do_not_touch`
+- `success_criteria`
+- `risk_notes`
+- `output_schema`
+- `network_policy`
+- `token_budget`
+- `time_budget_sec`
 
-### 6.2 Optional fields
+## Workspace Isolation
 
-- `base_branch`
-- `comparison_ref`
-- `related_artifacts`
-- `memory_refs`
-- `citation_requirements`
-- `review_required`
-- `eval_required`
+Codex workers must run in isolated workspaces so concurrent tasks cannot corrupt each other.
 
-## 7. Workspace Isolation Model
+Recommended modes:
 
-为避免多任务互相污染，Codex worker 必须运行在隔离工作区中。
+- repo-local scratch workspace for bounded patch tasks
+- ephemeral temp workspace for high-risk experiments
+- read-only workspace for pure analysis and review
 
-### 7.1 Recommended modes
+Hard rules:
 
-- `git worktree`
-  推荐给仓库内补丁任务。
-- `ephemeral copy`
-  推荐给高风险实验或临时分析任务。
-- `read_only mirror`
-  推荐给纯分析和 review 任务。
+- each run writes only to its own workspace
+- no worker writes directly to the main tree without a review path
+- only reviewed artifacts may flow back into durable truth
 
-### 7.2 Isolation rules
+## Required Outputs
 
-- 每个 run 只能写自己的工作区
-- 不允许直接改主工作树
-- 只有通过审查与评估的工件才有资格回流
+Codex must return more than a natural-language summary.
 
-## 8. Output Contract
+Each run should produce:
 
-Codex 不是只返回自然语言总结，必须产出结构化结果。
+- structured result JSON
+- command log or execution summary
+- changed file list when code is modified
+- test / validation result summary
+- explicit failure reason when blocked
 
-### 8.1 Required output fields
+## Risk Tiers
 
-- `summary`
-- `outcome`
-- `files_changed`
-- `tests_run`
-- `test_results`
-- `artifacts_produced`
-- `followup_tasks`
-- `risks_found`
-- `citations`
-- `confidence`
+### `R1`
 
-### 8.2 Allowed outcomes
+Examples:
 
-- `completed`
-- `blocked`
-- `failed`
-- `needs_review`
-- `needs_eval`
-- `rejected`
+- reading docs
+- adding comments
+- tiny analysis scripts
 
-## 9. Artifact Policy
+Requirements:
 
-每次 run 的关键产物都必须存档：
+- structured output
+- basic logging
 
-- diff
-- patch bundle
-- test logs
-- benchmark or backtest outputs
-- generated reports
-- source citations
-- review notes
+### `R2`
 
-## 10. Review and Evaluation Gates
+Examples:
 
-不同风险等级对应不同门槛：
+- ordinary code changes
+- acquisition logic updates
+- strategy research script changes
 
-### 10.1 Low-risk tasks
+Requirements:
 
-示例：
+- review worker or `codex review`
+- at least one validation step
 
-- 读文档
-- 补注释
-- 小型分析脚本
+### `R3`
 
-要求：
+Examples:
 
-- 结构化输出
-- 基本日志留存
+- strategy implementation changes
+- state-machine changes
+- approval logic updates
 
-### 10.2 Medium-risk tasks
+Requirements:
 
-示例：
+- explicit review
+- stronger validation
+- promotion gate
 
-- 一般代码改动
-- 数据抓取逻辑改动
-- 策略研究脚本改动
+### `R4`
 
-要求：
+Examples:
 
-- `review_worker` 或 `codex review`
-- 至少一类验证
+- order-routing logic
+- risk thresholds
+- kill switch behavior
+- autonomy-level changes
 
-### 10.3 High-risk tasks
+Requirements:
 
-示例：
+- hard governance gate
+- mandatory review
+- eval before adoption
+- shadow or canary when applicable
 
-- 风控逻辑
-- 下单路径
-- 自治级别相关代码
-- 生产策略逻辑
+## Input Discipline
 
-要求：
+Codex should receive structured context, not raw chat history.
 
-- review
-- eval
-- 必要时 shadow / canary
-- 审批
+Include:
 
-## 11. Prompting Discipline
+- objective
+- current context summary
+- allowed write scope
+- forbidden scope
+- success criteria
+- explicit risks
+- output schema
 
-Codex worker 的输入应尽量结构化，而不是长段主观叙述。
+Avoid:
 
-### 11.1 Prompt template sections
+- dumping full historical chat into the worker
+- omitting success criteria
+- omitting write boundaries
+- combining unrelated risky tasks into one run
 
-- 任务目标
-- 当前上下文摘要
-- 允许修改范围
-- 禁止触碰范围
-- 成功标准
-- 风险提醒
-- 输出 schema
+## Governance Separation
 
-### 11.2 Prompt anti-patterns
+The relationship should be:
 
-- 把完整长历史聊天直接塞给 worker
-- 不给成功标准
-- 不限制写入范围
-- 不限制时间和预算
-- 一次请求要求做多个高风险不相关任务
+- council proposes and frames the task
+- Codex executes and returns artifacts
+- reviewers or governance layers decide whether to adopt the result
 
-## 12. Interaction with Councils
+Do not let one worker become proposer, approver, and deployer without separation.
 
-Codex 与 council 的关系应是：
+## Failure Model
 
-- council 负责提出问题、评估备选路径、形成任务规范
-- Codex 负责执行具体工作并返回工件
-- council 或 reviewer 再决定是否采纳结果
+Temporary failures:
 
-禁止把 Codex 既当提案者、又当审批者、又当部署者而没有隔离。
+- network issues
+- tool unavailability
+- workspace conflicts
+- transient test failures
 
-## 13. Failure Handling
+Hard failures:
 
-### 13.1 Retryable failures
+- unclear task definition
+- invalid write scope
+- exhausted budget
+- permission mismatch
+- impossible output schema
 
-- 临时网络问题
-- 工具不可用
-- 工作区冲突
-- 测试环境瞬时异常
+Even failures must report:
 
-### 13.2 Non-retryable failures
+- failure reason
+- completed work
+- blockers
+- recommended next step
 
-- 任务定义不清
-- write scope 不合法
-- 预算不足
-- 权限越界
-- 输出 schema 不可满足
+## Permissions
 
-### 13.3 Failure outputs
+Every Codex run must explicitly declare:
 
-失败时也必须输出：
+- whether network access is allowed
+- whether shell writes are allowed
+- whether secrets are accessible
+- whether broker credentials are accessible
+- whether production config is accessible
 
-- 失败原因
-- 已完成部分
-- 阻塞点
-- 建议下一步
+Defaults:
 
-## 14. Security and Tool Policy
+- no secrets by default
+- no production broker access by default
+- no direct deploy authority by default
 
-每个 Codex run 都必须明确：
+## Abstraction Layer
 
-- 是否允许联网
-- 是否允许 shell 写入
-- 是否允许读 secrets
-- 是否允许访问 broker 凭据
-- 是否允许访问生产配置
+The system should call an internal `codex worker protocol`, not depend on raw CLI details forever.
 
-默认原则：
+That keeps the top layer stable if the bottom layer later changes from CLI to SDK or another managed mode.
 
-- 默认不授予 secrets
-- 默认不授予生产 broker 权限
-- 默认不允许直接部署
+## Metrics
 
-## 15. Suggested DB Tables
+Track Codex fabric value over time:
 
-- `evo_codex_run`
-- `evo_codex_run_event`
-- `evo_codex_artifact`
-- `evo_codex_review`
-- `evo_codex_eval_link`
-- `evo_codex_merge_decision`
+- task completion rate
+- token cost by task class
+- latency by task class
+- review pass rate
+- eval pass rate
+- regression incident rate
+- human work saved
 
-## 16. Reference CLI Templates
+## Non-Negotiable Boundaries
 
-### 16.1 Analysis task
-
-```bash
-codex exec --json -C <workspace> --output-schema schemas/analysis.json "
-Analyze the repository and answer only according to the schema.
-Respect write scope: read-only.
-"
-```
-
-### 16.2 Implementation task
-
-```bash
-codex exec --json -C <workspace> --output-schema schemas/implementation.json "
-Implement the requested changes.
-Only modify files under <allowed_paths>.
-Run relevant tests if available.
-"
-```
-
-### 16.3 Review task
-
-```bash
-codex review --uncommitted
-```
-
-## 17. Versioning and Portability
-
-为了避免将来被单一入口绑死，系统应把 Codex 封装在内部协议后面。
-
-也就是说：
-
-- 上层 workflow 调用的是 `codex worker protocol`
-- 底层可以是 `codex exec`
-- 将来必要时可切到 SDK 或 cloud mode
-- 上层不应依赖某个 CLI 输出细节
-
-## 18. Success Metrics
-
-应持续衡量 Codex fabric 的价值：
-
-- 每类任务完成率
-- 平均 token 成本
-- 平均耗时
-- review 通过率
-- eval 通过率
-- 回归事故率
-- 节省的人工操作量
-
-## 19. Hard Rules
-
-- Codex worker 不直接拥有最终生产发布权
-- Codex worker 不直接拥有 broker 资金控制权
-- 所有高风险输出必须经过治理门槛
-- 每次 run 必须具备可审计输入和输出
+- Codex workers do not directly own production release authority.
+- Codex workers do not directly own broker capital authority.
+- high-risk outputs always pass a governance threshold.
+- every run must remain auditable end to end.

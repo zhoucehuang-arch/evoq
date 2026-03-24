@@ -18,7 +18,7 @@
 |---|---|---|
 | 00:00-04:00 | Micro x2 | Mode A/C: overnight research, capability evolution |
 | 04:00 | Synthesis | First synthesis of the day |
-| 04:00-09:30 | Micro x2-3 | Mode A/C: pre-market research, event calendar scan |
+| 04:00-09:30 | Micro x2-3 | Mode A/C: pre-market research, event-calendar scan |
 | 09:30-10:00 | Synthesis | Pre-market synthesis |
 | 09:30-16:00 | Micro x3 | Mode A/B: market hours, real-time data available |
 | 16:00 | Synthesis | Post-market synthesis + read System B daily data |
@@ -35,14 +35,14 @@
 | 22:00 | Evolution | Daily architecture debate (deeper on non-trading days) |
 
 **Non-trading day focus:**
-- More Mode C cycles (capability evolution, cross-disciplinary learning)
+- More Mode C cycles (capability evolution and cross-disciplinary learning)
 - In-depth paper analysis (Explorer research phase can extend)
 - Backtesting with longer historical data windows
-- Preparation for next week: upcoming earnings, economic data releases
+- Preparation for next week: upcoming earnings and economic-data releases
 
 ### Reporting Frequency
 
-> **Note:** All reports sent to the admin (`#admin` channel) must be written in Chinese (中文).
+> **Note:** All reports sent to the admin (`#admin` channel) must be written in English.
 
 | Frequency | Time | Content | Channel |
 |---|---|---|---|
@@ -77,7 +77,7 @@
 
 ### Reporting Frequency
 
-> **Note:** All reports sent to the admin (`#admin` channel) must be written in Chinese (中文).
+> **Note:** All reports sent to the admin (`#admin` channel) must be written in English.
 
 | Frequency | Time | Content | Channel |
 |---|---|---|---|

@@ -28,11 +28,11 @@ Use these commands before the Discord bot is fully configured, or when you want 
 ./ops/bin/system-doctor.sh
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . status core
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaybaseurl https://relay.example.com/v1
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core marketmode us
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core marketmode cn
-py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwrightenabled true
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relay-base-url https://relay.example.com/v1
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relay-key <secret>
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core market-mode us
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core market-mode cn
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwright-enabled true
 ```
 
 ## Daily Rhythm
@@ -44,28 +44,28 @@ py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwr
 
 ## Good Discord Prompts
 
-- `现在系统整体状态怎么样？`
-- `列出待审批事项`
-- `查看当前运行时配置`
-- `把 heartbeat 改成 120 秒`
-- `禁用 research-intake loop`
-- `回滚配置 rev-12345678`
-- `暂停自动交易，保留学习`
-- `暂停自动进化`
-- `恢复 trading`
-- `最近系统学到了什么？`
-- `为什么这个策略没有进入生产？`
-- `初始化 core 部署`
-- `查看 core 部署状态`
-- `设置 core 中转地址 为 https://relay.example.com/v1`
-- `设置 core 中转key 为 <secret>`
-- `设置 core 部署模式 为 single_vps_compact`
-- `设置 core 市场模式 为 us`
-- `设置 core 市场模式 为 cn`
-- `设置 core SearXNG 为 http://127.0.0.1:8080`
-- `设置 core RSSHub 为 http://127.0.0.1:1200`
-- `设置 core Playwright启用 为 true`
-- `设置 core Playwright地址 为 ws://127.0.0.1:3001/browser`
+- `status`
+- `pending approvals`
+- `show runtime config`
+- `set heartbeat interval to 120 seconds`
+- `disable research-intake loop`
+- `rollback config rev-12345678`
+- `pause auto-trading but keep learning running`
+- `pause auto-evolution`
+- `resume trading`
+- `what has the system learned recently?`
+- `why was this strategy not promoted to production?`
+- `setup core deployment`
+- `show core deployment status`
+- `set core relay base url to https://relay.example.com/v1`
+- `set core relay key to <secret>`
+- `set core deployment topology to single_vps_compact`
+- `set core market mode to us`
+- `set core market mode to cn`
+- `set core searxng base url to http://127.0.0.1:8080`
+- `set core rsshub base url to http://127.0.0.1:1200`
+- `set core playwright enabled to true`
+- `set core playwright endpoint to ws://127.0.0.1:3001/browser`
 
 ## When To Intervene
 
@@ -99,7 +99,7 @@ Intervene manually if:
 
 - Deploy-draft changes made through Discord or the owner CLI still require a service restart before the runtime reads the new values.
 - Playwright remains a governed fallback path, not the default research path.
-- Truly unattended live operation still depends on clean smoke checks, broker sync, paper/live promotion discipline, and actual production activation on the target VPS.
+- Truly unattended live operation still depends on clean smoke checks, broker sync, paper/live promotion discipline, and real production activation on the target VPS.
 
 ## Next Reading
 

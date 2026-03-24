@@ -19,38 +19,38 @@ export default async function OverviewPage() {
     ? overview.system.active_sleeves.join(" / ")
     : "unconfigured";
   const ownerPrompts = [
-    "现在系统整体状态怎么样？",
-    "当前部署是美股还是 A 股？激活了哪些交易 sleeves？",
-    "列出待审批事项。",
-    "查看当前运行时配置。",
-    "暂停自动交易，保留学习。",
-    "最近系统学到了什么？",
-    "为什么这个策略没有进入生产？",
+    "What's the overall system status right now?",
+    "Is this deployment running in US or CN market mode, and which sleeves are active?",
+    "List pending approvals.",
+    "Show the current runtime configuration.",
+    "Pause auto-trading but keep learning running.",
+    "What has the system learned recently?",
+    "Why was this strategy not promoted to production?",
   ];
   const deployFlow = [
-    "推送仓库到 GitHub。",
-    "在单台 Ubuntu VPS 上 git clone 到 /opt/quant-evo-nextgen。",
-    "执行 ./ops/bin/quickstart-single-vps.sh；如果想先检查草稿，就改用 ./ops/bin/onboard-single-vps.sh --no-start。",
-    "在首次引导里先确认市场模式是 us 还是 cn，再填写 Discord、中转和 dashboard 密钥。",
-    "先用 paper 模式跑通 doctor、smoke 与首轮 broker sync，再考虑切换真实 broker。",
-    "需要隔离时，再把 Worker 扩展到第二台 VPS，而不是从一开始就拆双机。",
+    "Push the repository to GitHub.",
+    "On a single Ubuntu VPS, clone it into /opt/quant-evo-nextgen.",
+    "Run ./ops/bin/quickstart-single-vps.sh; use ./ops/bin/onboard-single-vps.sh --no-start if you want to review the draft first.",
+    "During first-time onboarding, confirm whether the market mode is us or cn, then fill the Discord, relay, and dashboard secrets.",
+    "Bring up the first doctor, smoke, and broker-sync cycle in paper mode before pointing at a real broker.",
+    "Only add a second VPS for the Worker later if you actually need stronger isolation.",
   ];
   const activationChecks = [
-    "./ops/bin/core-smoke.sh 无 fail",
-    "./ops/bin/system-doctor.sh 无 fail",
-    "Dashboard 能正常打开",
-    "Discord 只响应允许的账号和频道",
-    "首次 broker sync 与风控状态正常",
+    "./ops/bin/core-smoke.sh returns no fail",
+    "./ops/bin/system-doctor.sh returns no fail",
+    "The dashboard loads correctly",
+    "Discord responds only to allowed accounts and channels",
+    "The first broker sync and risk state look healthy",
   ];
   const supportedSurface = [
-    "US 部署当前支持受治理的美股正股、期权，以及期权多腿结构。",
-    "CN 部署当前支持 A 股研究、选股、市场时段治理与 paper-first 运行。",
-    "两种市场模式都保留 Discord 控制面与 Dashboard 观测面。",
+    "US deployments currently support governed US equities, options, and multi-leg option structures.",
+    "CN deployments currently support A-share research, selection, market-session governance, and paper-first operation.",
+    "Both market modes keep Discord as the control surface and the dashboard as the observation surface.",
   ];
   const honestBoundaries = [
-    "CN live broker 仍然是后续适配器闭环，不应被当成已交付能力。",
-    "组合 sleeve attribution 与部分跨策略净额限制仍偏保守。",
-    "通用 maintenance margin、borrow fee 与 locate 建模还没有覆盖全部产品路径。",
+    "CN live broker execution is still an adapter gap and should not be treated as shipped capability.",
+    "Portfolio sleeve attribution and some cross-strategy netting limits remain conservative.",
+    "Universal maintenance-margin, borrow-fee, and locate modeling is not yet closed across every product path.",
   ];
 
   return (
@@ -84,7 +84,7 @@ export default async function OverviewPage() {
           <div className="meta-grid">
             <div className="stat-card">
               <div className="stat-label">Generated</div>
-              <div className="stat-value small-value">{new Date(overview.generated_at).toLocaleString("zh-CN")}</div>
+              <div className="stat-value small-value">{new Date(overview.generated_at).toLocaleString("en-US")}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Active goals</div>

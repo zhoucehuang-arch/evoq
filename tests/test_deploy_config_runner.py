@@ -24,7 +24,7 @@ def test_deploy_config_runner_bootstrap_and_set_field(tmp_path: Path) -> None:
             str(tmp_path),
             "set-field",
             "core",
-            "\u90e8\u7f72\u6a21\u5f0f",
+            "deployment topology",
             "single_vps_compact",
         ]
     )

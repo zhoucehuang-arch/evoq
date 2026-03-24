@@ -1,7 +1,7 @@
 name: Daily Report
 on:
   schedule:
-    - cron: '0 22 * * 1-5'  # 每个交易日 22:00 UTC (美东 17:00)
+    - cron: '0 22 * * 1-5'  # Every trading day at 22:00 UTC (17:00 US Eastern)
   workflow_dispatch:
 
 jobs:
