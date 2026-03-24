@@ -5,7 +5,7 @@
 If the API is still reachable:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/qe-enter-safe-mode.sh http://127.0.0.1:8000 break-glass-admin "manual takeover"
 ```
 
@@ -20,14 +20,14 @@ This creates active pause overrides for:
 On the core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 docker compose -f ops/production/core/docker-compose.core.yml --env-file ops/production/core/core.env stop supervisor-runner discord-shell
 ```
 
 On the worker VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/worker-down.sh
 ```
 

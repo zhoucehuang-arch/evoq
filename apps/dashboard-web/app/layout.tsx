@@ -5,8 +5,8 @@ import { TopNav } from "@/components/top-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Quant Evo Terminal",
-  description: "Next-generation autonomous investment dashboard",
+  title: "EvoQ Terminal",
+  description: "Autonomous investment dashboard",
 };
 
 export default function RootLayout({
@@ -20,8 +20,8 @@ export default function RootLayout({
         <div className="shell">
           <header className="topbar">
             <div className="brand">
-              <span className="eyebrow">Next-Gen Autonomous Investment System</span>
-              <h1 className="title">Quant Evo Terminal</h1>
+              <span className="eyebrow">Autonomous Investment Runtime</span>
+              <h1 className="title">EvoQ Terminal</h1>
               <p className="subtitle">
                 Use Discord for control and approvals. Use the dashboard for monitoring, review, and operator visibility.
               </p>

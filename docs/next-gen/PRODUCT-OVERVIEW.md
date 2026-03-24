@@ -1,6 +1,6 @@
 # Product Overview
 
-Quant Evo Next-Gen is an autonomous investment platform built around three ideas:
+EvoQ is an autonomous investment platform built around three ideas:
 
 1. the owner should be able to operate the system mainly through Discord and a dashboard
 2. research, strategy, and trading should happen inside governed workflows instead of ad hoc prompts

@@ -123,7 +123,7 @@ function buildDemoOverview(): DashboardOverview {
       open_incidents: 1,
       pending_approvals: 2,
       active_overrides: 1,
-      repo_root: "/opt/quant-evo-nextgen",
+      repo_root: "/opt/evoq",
     },
   };
 }

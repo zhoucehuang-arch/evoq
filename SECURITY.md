@@ -1,6 +1,6 @@
 # Security Policy
 
-Quant Evo Next-Gen handles automation, deployment workflows, and broker-facing behavior. Security issues should be reported privately.
+EvoQ handles automation, deployment workflows, and broker-facing behavior. Security issues should be reported privately.
 
 ## Supported branch
 

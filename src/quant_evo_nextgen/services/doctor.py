@@ -754,7 +754,7 @@ class DoctorService:
 
 
 def render_text_report(report: dict[str, Any]) -> str:
-    lines = [f"Quant Evo Doctor: {report['status']}"]
+    lines = [f"EvoQ Doctor: {report['status']}"]
     for check in report["checks"]:
         lines.append(f"- [{check['status']}] {check['label']}: {check['message']}")
     profiles = report.get("profiles", [])

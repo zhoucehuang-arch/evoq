@@ -2,7 +2,7 @@
 
 ## What is this project?
 
-Quant Evo Next-Gen is a Discord-operated investment platform with research, strategy, execution, governance, and monitoring built into one system.
+EvoQ is a Discord-operated investment platform with research, strategy, execution, governance, and monitoring built into one system.
 
 ## Do I need to use the terminal every day?
 
@@ -121,14 +121,14 @@ Browser automation is important, but it is treated as a governed fallback instea
 On each node:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/update-from-github.sh core
 ```
 
 or on the Worker:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/update-from-github.sh worker
 ```
 

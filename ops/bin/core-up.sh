@@ -51,7 +51,7 @@ fi
 compose ps
 
 if [[ "${QE_DEPLOYMENT_TOPOLOGY:-}" == "single_vps_compact" ]]; then
-  echo "Quant Evo single-VPS core stack is up, migrated, and now also hosts the Codex worker runtime."
+  echo "EvoQ single-VPS core stack is up, migrated, and now also hosts the Codex worker runtime."
 else
-  echo "Quant Evo core stack is up, migrated, and ready for smoke checks."
+  echo "EvoQ core stack is up, migrated, and ready for smoke checks."
 fi

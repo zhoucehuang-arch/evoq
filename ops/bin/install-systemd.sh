@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
-  echo "Usage: install-systemd.sh core|worker /opt/quant-evo-nextgen" >&2
+  echo "Usage: install-systemd.sh core|worker /opt/evoq" >&2
   exit 1
 fi
 
@@ -26,7 +26,7 @@ UNIT_NAME="quant-evo-${ROLE}.service"
 TEMPLATE_PATH="${ROOT_DIR}/ops/systemd/${UNIT_NAME}"
 RENDERED_UNIT="$(mktemp)"
 trap 'rm -f "${RENDERED_UNIT}"' EXIT
-sed "s|/opt/quant-evo-nextgen|${ROOT_DIR}|g" "${TEMPLATE_PATH}" > "${RENDERED_UNIT}"
+sed "s|/opt/evoq|${ROOT_DIR}|g" "${TEMPLATE_PATH}" > "${RENDERED_UNIT}"
 install -m 0644 "${RENDERED_UNIT}" "${SYSTEMD_DIR}/${UNIT_NAME}"
 systemctl daemon-reload
 systemctl enable --now "${UNIT_NAME}"

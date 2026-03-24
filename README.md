@@ -1,4 +1,4 @@
-# Quant Evo Next-Gen
+# EvoQ
 
 <p align="center">
   <a href="README.zh-CN.md">Chinese README</a>
@@ -23,10 +23,10 @@
 <table>
   <tr>
     <td width="76%">
-      <img src="docs/assets/dashboard-overview-en-v2.png" alt="Quant Evo Terminal overview dashboard" width="100%" />
+      <img src="docs/assets/dashboard-overview-en-v2.png" alt="EvoQ Terminal overview dashboard" width="100%" />
     </td>
     <td width="24%">
-      <img src="docs/assets/dashboard-mobile-en-v2.png" alt="Quant Evo Terminal mobile dashboard" width="100%" />
+      <img src="docs/assets/dashboard-mobile-en-v2.png" alt="EvoQ Terminal mobile dashboard" width="100%" />
     </td>
   </tr>
 </table>
@@ -37,7 +37,7 @@
 
 ## What It Is
 
-Quant Evo Next-Gen is a long-running autonomous investment runtime built around one idea: autonomy only matters if it stays governable.
+EvoQ is a long-running autonomous investment runtime built around one idea: autonomy only matters if it stays governable.
 
 The system combines:
 
@@ -53,7 +53,7 @@ This is not an "unlimited agents talking to each other" stack. It is a productiz
 
 Most autonomous trading projects still force the owner to babysit prompts, terminals, and manual scripts.
 
-Quant Evo Next-Gen treats the problem as an operating-system problem instead:
+EvoQ treats the problem as an operating-system problem instead:
 
 - one authoritative Core instead of multiple competing masters
 - one durable runtime database instead of context-only state
@@ -125,13 +125,13 @@ Useful helpers:
 Typical first deploy on Debian or Ubuntu:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> quant-evo-nextgen && sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen && cd /opt/quant-evo-nextgen && ./ops/bin/quickstart-single-vps.sh
+sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> evoq && sudo chown -R "$USER":"$USER" /opt/evoq && cd /opt/evoq && ./ops/bin/quickstart-single-vps.sh
 ```
 
 Draft-first bring-up:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/onboard-single-vps.sh --no-start
 ./ops/bin/core-up.sh
 ./ops/bin/core-smoke.sh
@@ -178,7 +178,7 @@ The design rule is simple: one authoritative Core, one runtime database, and a w
 4. [First Paper Run Checklist](docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md)
 5. [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
 6. [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
-7. [Next-Gen Docs Index](docs/next-gen/README.md)
+7. [Docs Index](docs/next-gen/README.md)
 
 ## Relay Support
 

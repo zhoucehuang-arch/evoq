@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The dashboard is the high-density observation layer for Quant Evo Next-Gen. It is not a replacement for Discord. Discord remains the main control shell; the dashboard is the place to verify health, inspect history, and understand what the system is doing without reading raw logs.
+The dashboard is the high-density observation layer for EvoQ. It is not a replacement for Discord. Discord remains the main control shell; the dashboard is the place to verify health, inspect history, and understand what the system is doing without reading raw logs.
 
 Reference aesthetic:
 

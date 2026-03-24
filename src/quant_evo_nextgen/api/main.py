@@ -147,7 +147,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             database.dispose()
 
     app = FastAPI(
-        title="Quant Evo Next-Gen API",
+        title="EvoQ API",
         version="0.3.0",
         lifespan=lifespan,
     )

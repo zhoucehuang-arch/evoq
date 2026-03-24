@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     node_role: str = "core"
     deployment_topology: str = "single_node_bootstrap"
     deployment_market_mode: str = "us"
-    operator_language: str = "zh-CN"
+    operator_language: str = "en-US"
     operator_timezone: str = "Asia/Hong_Kong"
     market_timezone: str = "America/New_York"
     market_calendar: str = "XNYS"
@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     skill_library_root: str = "skills"
 
     heartbeat_interval_seconds: int = 60
-    dashboard_title: str = "Quant Evo Terminal"
+    dashboard_title: str = "EvoQ Terminal"
     dashboard_bind_host: str = "127.0.0.1"
     dashboard_host_port: int = 3000
     dashboard_api_token: str | None = None

@@ -3,9 +3,9 @@ requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "quant-evo-nextgen"
+name = "evoq"
 version = "0.1.0"
-description = "Next-generation autonomous investment system foundation."
+description = "Autonomous investment runtime foundation."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

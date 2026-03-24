@@ -20,4 +20,4 @@ echo "Running worker env preflight..."
 
 QE_WORKER_RUNTIME_ENV_FILE="${ENV_FILE}" docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build codex-fabric-runner
 
-echo "Quant Evo worker stack is up."
+echo "EvoQ worker stack is up."

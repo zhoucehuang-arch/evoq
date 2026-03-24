@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the risk-governance framework for Quant Evo Next-Gen.
+This document defines the risk-governance framework for EvoQ.
 
 Risk governance is not meant to suppress progress. It exists to keep learning, evolution, and trading from damaging capital, governance integrity, or recovery posture.
 

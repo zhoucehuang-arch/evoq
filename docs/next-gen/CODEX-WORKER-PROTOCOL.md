@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how `Codex` is integrated as the default execution engine inside Quant Evo Next-Gen.
+This document defines how `Codex` is integrated as the default execution engine inside EvoQ.
 
 Core conclusions:
 

@@ -1,6 +1,6 @@
 # Code of Conduct
 
-Quant Evo Next-Gen is an engineering-heavy project, but the standard for collaboration is still simple:
+EvoQ is an engineering-heavy project, but the standard for collaboration is still simple:
 
 - be respectful
 - be specific

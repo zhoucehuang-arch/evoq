@@ -19,12 +19,12 @@ Scale out later when needed:
 
 Repo path on both machines:
 
-- `/opt/quant-evo-nextgen`
+- `/opt/evoq`
 
 ## 2. Assumptions
 
 - Docker Engine and the Docker Compose plugin are installed on both VPS nodes.
-- The repo is cloned on both nodes at `/opt/quant-evo-nextgen`.
+- The repo is cloned on both nodes at `/opt/evoq`.
 - Core and Worker can reach each other over Tailscale or another private network path.
 - Postgres is not exposed to the open internet.
 - The owner will operate primarily from Discord and the dashboard.
@@ -33,7 +33,7 @@ Repo path on both machines:
 If you are starting from a fresh Ubuntu or Debian VPS, you can install the host prerequisites first:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 sudo ./ops/bin/install-host-deps.sh
 ```
 
@@ -42,7 +42,7 @@ sudo ./ops/bin/install-host-deps.sh
 If you want the shortest deploy path first, use the single-VPS profile:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/quickstart-single-vps.sh
 ```
 
@@ -51,7 +51,7 @@ This keeps the authority model inside the Core runtime, but also starts the Code
 If you prefer to separate host preparation from app onboarding, you can also use:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 sudo ./ops/bin/install-host-deps.sh
 ./ops/bin/onboard-single-vps.sh
 ```
@@ -59,14 +59,14 @@ sudo ./ops/bin/install-host-deps.sh
 If you prefer to prepare the draft first and start the services later, you can also use:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/onboard-single-vps.sh --no-start
 ```
 
 If you prefer the lower-level owner CLI instead of the shell wrapper, use:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaybaseurl https://relay.example.com/v1
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
@@ -77,7 +77,7 @@ py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relayk
 ### 3.1 Bootstrap the Core env file
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/bootstrap-node.sh core
 ```
 
@@ -86,7 +86,7 @@ This guided path runs host prerequisite checks, creates the canonical env file i
 If you want a friendlier owner-facing bootstrap path on the VPS, the same draft can be managed with:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/onboard-single-vps.sh --no-start
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . status core
@@ -96,7 +96,7 @@ py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relayk
 If you want the explicit step-by-step path instead, use:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/host-preflight.sh core
 ./ops/bin/deploy-config.sh init core
 ./ops/bin/deploy-config.sh preflight core ops/production/core/core.env
@@ -153,14 +153,14 @@ If `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`, `./ops/bin/core-up.sh` also star
 ### 4.1 Bootstrap the Worker env file
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/bootstrap-node.sh worker
 ```
 
 If you want the explicit step-by-step path instead, use:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/host-preflight.sh worker
 ./ops/bin/deploy-config.sh init worker
 ./ops/bin/deploy-config.sh preflight worker ops/production/worker/worker.env
@@ -187,7 +187,7 @@ Do not bootstrap the Worker env when the topology is `single_vps_compact`; that 
 ## 5. Bring Up Core
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/core-up.sh
 ./ops/bin/core-smoke.sh
 ```
@@ -204,7 +204,7 @@ What this does:
 ## 6. Bring Up Worker
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/worker-up.sh
 ./ops/bin/worker-smoke.sh
 ```
@@ -214,15 +214,15 @@ cd /opt/quant-evo-nextgen
 On Core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
-sudo ./ops/bin/install-systemd.sh core /opt/quant-evo-nextgen
+cd /opt/evoq
+sudo ./ops/bin/install-systemd.sh core /opt/evoq
 ```
 
 On Worker VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
-sudo ./ops/bin/install-systemd.sh worker /opt/quant-evo-nextgen
+cd /opt/evoq
+sudo ./ops/bin/install-systemd.sh worker /opt/evoq
 ```
 
 ## 7.1 Upgrade From GitHub
@@ -232,14 +232,14 @@ If the repo on the VPS is tracked from GitHub and you want the simplest safe upd
 Core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/update-from-github.sh core
 ```
 
 Worker VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/update-from-github.sh worker
 ```
 
@@ -250,7 +250,7 @@ This helper refuses to run on a dirty working tree, performs `git pull --ff-only
 Run on Core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/core-smoke.sh
 ```
 
@@ -271,7 +271,7 @@ Then confirm:
 Create a backup on Core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/backup-postgres.sh
 ```
 
@@ -291,7 +291,7 @@ Minimum cadence:
 Restore on Core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/restore-postgres.sh .qe/backups/postgres-YYYYMMDDTHHMMSSZ.sql .qe/backups/runtime-YYYYMMDDTHHMMSSZ.tgz
 ./ops/bin/core-up.sh
 ./ops/bin/core-smoke.sh
@@ -302,7 +302,7 @@ cd /opt/quant-evo-nextgen
 ### 11.1 Stop the stack
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/core-down.sh
 ```
 

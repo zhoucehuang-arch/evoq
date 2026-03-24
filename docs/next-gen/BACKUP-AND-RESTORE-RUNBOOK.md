@@ -5,7 +5,7 @@
 Run on the Core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/backup-postgres.sh
 ```
 
@@ -25,7 +25,7 @@ Minimum policy:
 Run on the Core VPS:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/restore-postgres.sh .qe/backups/postgres-YYYYMMDDTHHMMSSZ.sql .qe/backups/runtime-YYYYMMDDTHHMMSSZ.tgz
 ./ops/bin/core-up.sh
 ./ops/bin/core-smoke.sh

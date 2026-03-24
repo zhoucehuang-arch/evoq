@@ -269,7 +269,7 @@ class DeployConfigService:
         }
 
     def render_preflight_report(self, report: dict[str, Any]) -> str:
-        lines = [f"Quant Evo Deploy Preflight ({report['role']}): {report['status']}"]
+        lines = [f"EvoQ Deploy Preflight ({report['role']}): {report['status']}"]
         for check in report["checks"]:
             lines.append(f"- [{check['status']}] {check['label']}: {check['message']}")
         return "\n".join(lines)

@@ -29,7 +29,7 @@ If the local folder is not already a Git repository:
 git init
 git branch -M main
 git add .
-git commit -m "Initial deployable Quant Evo Next-Gen"
+git commit -m "Initial deployable EvoQ"
 git remote add origin <your-github-repo-url>
 git push -u origin main
 ```
@@ -48,9 +48,9 @@ Run on the VPS:
 
 ```bash
 cd /opt
-sudo git clone <your-github-repo-url> quant-evo-nextgen
-sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen
-cd /opt/quant-evo-nextgen
+sudo git clone <your-github-repo-url> evoq
+sudo chown -R "$USER":"$USER" /opt/evoq
+cd /opt/evoq
 ./ops/bin/quickstart-single-vps.sh
 ```
 
@@ -65,7 +65,7 @@ This creates the simplest supported product shape:
 If you want the practical one-liner first-deploy path on a Debian or Ubuntu VPS, use:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> quant-evo-nextgen && sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen && cd /opt/quant-evo-nextgen && ./ops/bin/quickstart-single-vps.sh
+sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> evoq && sudo chown -R "$USER":"$USER" /opt/evoq && cd /opt/evoq && ./ops/bin/quickstart-single-vps.sh
 ```
 
 ## 3. Fill the Core Env File
@@ -136,7 +136,7 @@ py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwr
 ## 5. Start and Verify
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/core-up.sh
 ./ops/bin/core-smoke.sh
 ./ops/bin/system-doctor.sh
@@ -174,7 +174,7 @@ When you want stronger isolation or more research throughput, keep the same repo
 Bootstrap the Worker later with:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/bootstrap-node.sh worker
 ./ops/bin/deploy-config.sh init worker
 ```
@@ -200,15 +200,15 @@ Important rules:
 Single-VPS or Core node:
 
 ```bash
-cd /opt/quant-evo-nextgen
-sudo ./ops/bin/install-systemd.sh core /opt/quant-evo-nextgen
+cd /opt/evoq
+sudo ./ops/bin/install-systemd.sh core /opt/evoq
 ```
 
 Worker node, when used:
 
 ```bash
-cd /opt/quant-evo-nextgen
-sudo ./ops/bin/install-systemd.sh worker /opt/quant-evo-nextgen
+cd /opt/evoq
+sudo ./ops/bin/install-systemd.sh worker /opt/evoq
 ```
 
 ## 9. Update Later from GitHub
@@ -216,14 +216,14 @@ sudo ./ops/bin/install-systemd.sh worker /opt/quant-evo-nextgen
 On the single-VPS or Core host:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/update-from-github.sh core
 ```
 
 On the Worker, when used:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/update-from-github.sh worker
 ```
 

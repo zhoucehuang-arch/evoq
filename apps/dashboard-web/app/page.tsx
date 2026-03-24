@@ -36,7 +36,7 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
   ];
   const deployFlow = [
     "Push the repository to GitHub.",
-    "On a single Ubuntu VPS, clone it into /opt/quant-evo-nextgen.",
+    "On a single Ubuntu VPS, clone it into /opt/evoq.",
     "Run ./ops/bin/quickstart-single-vps.sh; use ./ops/bin/onboard-single-vps.sh --no-start if you want to review the draft first.",
     "During first-time onboarding, confirm whether the market mode is us or cn, then fill the Discord, relay, and dashboard secrets.",
     "Bring up the first doctor, smoke, and broker-sync cycle in paper mode before pointing at a real broker.",

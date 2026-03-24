@@ -156,7 +156,7 @@ def _render_single_vps_onboard_report(
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Quant Evo VPS config bootstrap and preflight helper.")
+    parser = argparse.ArgumentParser(description="EvoQ VPS config bootstrap and preflight helper.")
     parser.add_argument("--repo-root", help="Repo root path. Defaults to the current working directory.")
     parser.add_argument(
         "--env-root",

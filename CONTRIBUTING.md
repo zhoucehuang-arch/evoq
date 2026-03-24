@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thank you for improving Quant Evo Next-Gen.
+Thank you for improving EvoQ.
 
 This project mixes product surfaces, automation, and trading-system safety concerns, so changes should be easy to review, easy to verify, and easy to operate.
 

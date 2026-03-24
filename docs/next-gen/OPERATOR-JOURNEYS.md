@@ -16,7 +16,7 @@ Primary surfaces:
 Recommended path:
 
 1. Publish or update the repository on GitHub.
-2. Clone to Core and Worker under `/opt/quant-evo-nextgen`.
+2. Clone to Core and Worker under `/opt/evoq`.
 3. Run the host dependency and bootstrap scripts for each role.
 4. Fill the role env files and keep the broker in `paper`.
 5. Bring up both roles, pass smoke checks, and confirm dashboard plus Discord behavior.

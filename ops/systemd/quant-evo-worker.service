@@ -1,5 +1,5 @@
 [Unit]
-Description=Quant Evo Worker
+Description=EvoQ Worker
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
@@ -7,9 +7,9 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/opt/quant-evo-nextgen
-ExecStart=/opt/quant-evo-nextgen/ops/bin/worker-up.sh
-ExecStop=/opt/quant-evo-nextgen/ops/bin/worker-down.sh
+WorkingDirectory=/opt/evoq
+ExecStart=/opt/evoq/ops/bin/worker-up.sh
+ExecStop=/opt/evoq/ops/bin/worker-down.sh
 TimeoutStartSec=0
 
 [Install]

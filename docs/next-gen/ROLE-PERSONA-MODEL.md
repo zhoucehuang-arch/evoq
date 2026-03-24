@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how agents are assembled in Quant Evo Next-Gen.
+This document defines how agents are assembled in EvoQ.
 
 The goal is to move away from giant role prompt files toward a composable model that is governable, reusable, and easier to evaluate.
 

@@ -1,4 +1,4 @@
-"""Quant Evo next-generation runtime foundation."""
+"""EvoQ runtime foundation."""
 
 __all__ = ["__version__"]
 

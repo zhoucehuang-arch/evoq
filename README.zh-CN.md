@@ -1,108 +1,111 @@
-# Quant Evo Next-Gen
+# EvoQ
 
 [English](README.md)
 
-Quant Evo Next-Gen 是一套面向 VPS 长期运行的 Discord 优先自治投资系统。
+EvoQ 是一套面向 VPS 长期运行的 Discord 优先自治投资系统。
 
-它把研究采集、多 agent 评审、受治理的策略开发、交易执行、风控、审批和 dashboard 监控整合到同一套产品里。目标不是把 agent 数量堆到越多越好，而是在可治理、可回滚、可长期运转的前提下，让研究、学习、自进化和投资持续推进。
+它把研究采集、多角色评审、受治理的策略迭代、交易执行、风控、审批、长期记忆和 Dashboard 监控收敛到同一套产品里。目标不是堆更多 agent，而是在可治理、可审计、可回滚、可持续运行的前提下，让系统长期推进研究、学习、自进化与投资。
 
-## 这个项目为什么存在
+## 这是什么
 
-很多所谓“自动投资”系统最后都会退化成：
+EvoQ 的核心定位是一个可长期运行的自治投资运行时，而不是一次性的 prompt 编排。
 
-- 需要人长期盯 prompt 和日志
-- 需要人手动拼命令和脚本
-- 一旦故障就只能 SSH 上去硬查
-- 一到 live 阶段就很难治理、回滚和审计
+它提供：
 
-Quant Evo Next-Gen 试图把这些问题系统化解决：
+- Discord 优先的 owner 控制与审批入口
+- 用于监控交易、学习、进化、事故和系统状态的 Web Dashboard
+- 以 Codex 为主执行引擎的 Worker 平面
+- 基于持久化状态和治理工作流的长期记忆与演进机制
+- `paper-first`、审批门、canary 和 rollback 路径
 
-- 用持久化状态替代 prompt 残留
-- 用受治理的工作流替代随意的 agent 对话
-- 用 Discord 和 Dashboard 替代终端优先的操作方式
-- 用 paper-first、审批、回滚和风控替代盲目切到 live
+## 为什么是这种架构
+
+很多“自动投资”项目最后都会退化成需要人持续盯命令行、盯 prompt、盯脚本的系统。
+
+EvoQ 把问题当作“运行时系统”来解决：
+
+- 一个权威 Core，而不是多个互相竞争的主控
+- 一个持久化运行时数据库，而不是只靠上下文
+- 受治理的工作流，而不是随意的 agent 对话
+- Discord 和 Dashboard 作为主要交互面，而不是终端优先
+- 明确的 `paper -> live` 渐进式激活路径，而不是直接切到 live
 
 ## 截图
 
-Overview 页面：
+概览页面：
 
-![Quant Evo dashboard overview](docs/assets/dashboard-overview.png)
+![EvoQ dashboard overview](docs/assets/dashboard-overview-en-v2.png)
 
 移动端页面：
 
-![Quant Evo dashboard mobile](docs/assets/dashboard-mobile.png)
+![EvoQ dashboard mobile](docs/assets/dashboard-mobile-en-v2.png)
 
-## 核心能力
+## 你会得到什么
 
-- Discord 优先的 owner 控制与审批流
-- 面向交易、学习、进化、事故和系统状态的 dashboard
-- 以 Codex 为核心的 worker 执行层，但不让 worker 变成权威层
-- paper-first 的交易治理方式，带有 promotion、rollback 和 incident 路径
-- 单 VPS 优先的产品路径，后续再扩展到 `Core + Worker`
+| 模块 | 作用 |
+|---|---|
+| Discord control plane | 自然语言状态查询、审批、暂停、配置变更草案 |
+| Dashboard | 观察交易、学习、进化、事故和系统健康 |
+| Core runtime | 风控、记忆、配置、执行治理和系统监督 |
+| Worker plane | 承担 Codex 驱动的研究与执行任务，但不成为系统事实来源 |
+| VPS deploy path | 单 VPS 优先，可在后续扩展到 `Core + Worker` |
 
 ## 市场模式
 
-一个部署实例只能选择一个市场模式：
+一套部署实例只能选择一个市场模式：
 
-- `QE_DEPLOYMENT_MARKET_MODE=us`
-  - 美股正股
-  - 美股期权
-  - 在策略治理允许时支持混合 sleeves
-- `QE_DEPLOYMENT_MARKET_MODE=cn`
-  - A 股研究、选股与时段治理下的 paper-first 运行
+| 模式 | 当前支持 | 说明 |
+|---|---|---|
+| `us` | 美股正股、美股期权、受治理的混合 sleeves、带 borrow 和 margin gate 的做空路径 | 基于 Alpaca 的 paper-first 和 live-gated 路径 |
+| `cn` | A 股研究、选股、时段治理、paper-first 运行 | `CN live` 券商执行暂未交付 |
 
-如果你希望美股和 A 股同时运行，应该部署两套实例，而不是把两个市场揉进同一实例。
+如果你希望美股和 A 股同时运行，应该部署两套独立实例。
 
-## 当前交易面能力
+## 当前边界
 
-- `US` 模式当前支持受治理的美股正股、单腿期权、多腿期权结构、带 borrow / margin gate 的做空路径，以及 Alpaca 驱动的 paper/live 渐进式推进。
-- `CN` 模式当前支持 A 股研究、选股、交易时段治理以及 paper-first 运行。
-
-当前仍需诚实保留的边界：
-
-- `CN live` broker 执行还没有交付
-- 组合 sleeve attribution 仍偏保守
-- 通用 maintenance margin、borrow fee 和 locate 建模还没有覆盖全部产品路径
+- `CN live` 券商执行还没有完成。
+- 组合 sleeve attribution 仍然保持保守。
+- 通用的 maintenance margin、borrow fee 和 locate 建模还没有覆盖所有产品路径。
 
 ## 记忆与学习
 
-这套系统有意保留两层记忆：
+系统有意分成两层记忆：
 
 - 运行时学习网格
-  - 研究文档、证据项和 insight 候选写入持久化数据库状态
 - 提升后的长期记忆
-  - 提升后的 principles、causal cases 和 feature-map lineage 仍然保持 repo-backed，落在 `memory/` 和 `evo/feature_map.json`
 
-Dashboard 会把运行时学习状态与长期记忆分开展示，避免把“刚采集到的内容”和“已经沉淀成长期记忆的内容”混为一谈。
+原始研究、证据和 insight 候选存放在持久化运行时状态里。被正式提升后的原则、因果案例和 feature-map lineage 则保存在仓库内的 `memory/` 与 `evo/feature_map.json` 中。
+
+这种分层能让 owner 明确区分“刚采集到的内容”和“已经被提升为长期操作记忆的内容”。
 
 ## 推荐部署形态
 
-建议先从下面这套形态开始：
+建议的首次部署：
 
 - `1 Discord bot`
 - `1 VPS`
 - `single_vps_compact`
-- `Postgres` 与运行时同机
-- 第一阶段保持 `paper` 模式，再逐步推进到受控 live
+- 本地 `Postgres`
+- 先保持 `paper` 模式
 
-后续如果需要更强隔离和更高研究吞吐，再扩展为：
+只有在确实需要更强隔离或更高研究吞吐时，再扩展到：
 
-- `1 Core VPS`
-- `1 Worker VPS`
-- broker 相关密钥只放在 Core
+- 保持 `Core` 作为唯一权威节点
+- 增加 `1 Worker VPS`
+- broker 凭据只放在 Core
 
-## 最快的首次部署方式
+## 60 秒部署
 
 在 Debian 或 Ubuntu VPS 上，最短路径是：
 
 ```bash
-sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> quant-evo-nextgen && sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen && cd /opt/quant-evo-nextgen && ./ops/bin/quickstart-single-vps.sh
+sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> evoq && sudo chown -R "$USER":"$USER" /opt/evoq && cd /opt/evoq && ./ops/bin/quickstart-single-vps.sh
 ```
 
-如果你更喜欢先生成部署草稿，再手动启动服务：
+如果你希望先生成部署草稿，再手动启动：
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/onboard-single-vps.sh --no-start
 ./ops/bin/core-up.sh
 ./ops/bin/core-smoke.sh
@@ -129,20 +132,17 @@ flowchart LR
   Worker --> Core
 ```
 
-核心设计原则很简单：只有一个权威 Core、一个运行时数据库、一个可扩展但不多主的 worker 平面。
+设计原则很简单：一个权威 Core、一个运行时数据库、一个可扩展但不多主的 Worker 平面。
 
 ## 仓库结构
 
-- `src/quant_evo_nextgen`
-  - 后端运行时、控制面、服务与工作流
-- `apps/dashboard-web`
-  - operator dashboard
-- `ops`
-  - 部署脚本、smoke check、备份恢复与 systemd 资产
-- `docs/next-gen`
-  - 架构、运维、部署与 runbook
-- `tests`
-  - 回归测试与服务级验证
+| 路径 | 作用 |
+|---|---|
+| `src/quant_evo_nextgen` | 后端运行时、服务、工作流和控制面 |
+| `apps/dashboard-web` | Dashboard 前端 |
+| `ops` | 部署脚本、smoke checks、更新工具、systemd 安装器 |
+| `docs/next-gen` | 架构、部署、runbook 和操作文档 |
+| `tests` | 回归测试和服务级验证 |
 
 ## 推荐阅读顺序
 
@@ -152,11 +152,11 @@ flowchart LR
 4. [First Paper Run Checklist](docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md)
 5. [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
 6. [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
-7. [Next-Gen Docs Index](docs/next-gen/README.md)
+7. [Docs Index](docs/next-gen/README.md)
 
 ## 中转支持
 
-这套系统支持 OpenAI 兼容中转和 Codex 兼容执行。
+系统支持 OpenAI 兼容中转和 Codex 兼容执行。
 
 需要配置：
 

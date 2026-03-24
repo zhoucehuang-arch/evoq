@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const REALM = 'Basic realm="Quant Evo Dashboard"';
+const REALM = 'Basic realm="EvoQ Dashboard"';
 
 function unauthorizedResponse(message: string, status = 401): NextResponse {
   return new NextResponse(message, {

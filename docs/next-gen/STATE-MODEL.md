@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the state model for Quant Evo Next-Gen.
+This document defines the state model for EvoQ.
 
 The goal is to replace chat residue and file-scattered assumptions with explicit entities, events, and transitions.
 

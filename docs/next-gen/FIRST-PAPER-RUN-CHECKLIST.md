@@ -19,7 +19,7 @@ You are done with this checklist only when all of the following are true:
 
 Confirm these assumptions:
 
-- the repository is cloned to `/opt/quant-evo-nextgen` on both nodes
+- the repository is cloned to `/opt/evoq` on both nodes
 - `QE_OPENAI_API_KEY` is present on both nodes
 - `QE_OPENAI_BASE_URL` is set on both nodes if you use a relay
 - broker credentials exist on Core only
@@ -30,7 +30,7 @@ Confirm these assumptions:
 Run on Core:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/core-up.sh
 ./ops/bin/core-smoke.sh
 ```
@@ -42,7 +42,7 @@ Stop and fix the environment if `core-smoke.sh` reports any `fail`.
 Run on Worker:
 
 ```bash
-cd /opt/quant-evo-nextgen
+cd /opt/evoq
 ./ops/bin/worker-up.sh
 ./ops/bin/worker-smoke.sh
 ```

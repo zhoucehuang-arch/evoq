@@ -1,4 +1,4 @@
-# Quant Evo Next-Gen Documentation
+# EvoQ Documentation
 
 This folder is the main documentation hub for the project.
 
