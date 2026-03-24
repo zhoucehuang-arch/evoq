@@ -14,19 +14,19 @@
 </p>
 
 <p align="center">
-  <a href="docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md">Deploy to VPS</a> •
-  <a href="docs/next-gen/OWNER-OPERATION-QUICKSTART.md">Owner Quickstart</a> •
-  <a href="docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md">First Paper Run</a> •
+  <a href="docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md">Deploy to VPS</a> |
+  <a href="docs/next-gen/OWNER-OPERATION-QUICKSTART.md">Owner Quickstart</a> |
+  <a href="docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md">First Paper Run</a> |
   <a href="docs/next-gen/README.md">Docs Index</a>
 </p>
 
 <table>
   <tr>
     <td width="76%">
-      <img src="docs/assets/dashboard-overview.png" alt="Quant Evo Terminal overview dashboard" width="100%" />
+      <img src="docs/assets/dashboard-overview-en-v2.png" alt="Quant Evo Terminal overview dashboard" width="100%" />
     </td>
     <td width="24%">
-      <img src="docs/assets/dashboard-mobile.png" alt="Quant Evo Terminal mobile dashboard" width="100%" />
+      <img src="docs/assets/dashboard-mobile-en-v2.png" alt="Quant Evo Terminal mobile dashboard" width="100%" />
     </td>
   </tr>
 </table>
