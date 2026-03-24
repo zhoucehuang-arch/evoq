@@ -93,7 +93,7 @@ export default async function IncidentsPage() {
                   <td>{incident.title}</td>
                   <td>{incident.severity}</td>
                   <td>{incident.status}</td>
-                  <td>{new Date(incident.created_at).toLocaleString("zh-CN")}</td>
+                  <td>{new Date(incident.created_at).toLocaleString("en-US")}</td>
                 </tr>
               ))}
             </tbody>

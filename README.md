@@ -1,107 +1,134 @@
 # Quant Evo Next-Gen
 
-[Chinese README](README.zh-CN.md)
+<p align="center">
+  <a href="README.zh-CN.md">Chinese README</a>
+</p>
 
-[![CI](https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml/badge.svg)](https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml"><img src="https://github.com/zhoucehuang-arch/quant-evo-nextgen/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" /></a>
+</p>
 
-Quant Evo Next-Gen is a Discord-first autonomous investment platform built for long-running VPS operation.
+<p align="center">
+  Discord-first autonomous investment platform for governed research, learning, evolution, and paper-first or live-gated execution.
+</p>
 
-It combines research intake, multi-agent review, governed strategy development, controlled execution, risk management, approvals, and dashboard monitoring in one system. The goal is not to maximize the number of agents. The goal is to keep research, learning, self-improvement, and trading moving forward without turning the runtime into something the owner cannot govern.
+<p align="center">
+  <a href="docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md">Deploy to VPS</a> •
+  <a href="docs/next-gen/OWNER-OPERATION-QUICKSTART.md">Owner Quickstart</a> •
+  <a href="docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md">First Paper Run</a> •
+  <a href="docs/next-gen/README.md">Docs Index</a>
+</p>
 
-## Why It Exists
+<table>
+  <tr>
+    <td width="76%">
+      <img src="docs/assets/dashboard-overview.png" alt="Quant Evo Terminal overview dashboard" width="100%" />
+    </td>
+    <td width="24%">
+      <img src="docs/assets/dashboard-mobile.png" alt="Quant Evo Terminal mobile dashboard" width="100%" />
+    </td>
+  </tr>
+</table>
 
-Most autonomous trading stacks still leave the owner babysitting prompts, terminals, and one-off scripts.
+<p align="center">
+  Dashboard overview and mobile operator view from the English product surface.
+</p>
 
-Quant Evo Next-Gen treats autonomy as an operating-system problem instead:
+## What It Is
 
-- durable state instead of prompt residue
+Quant Evo Next-Gen is a long-running autonomous investment runtime built around one idea: autonomy only matters if it stays governable.
+
+The system combines:
+
+- Discord-based owner control
+- a web dashboard for monitoring trading, learning, evolution, incidents, and runtime state
+- Codex-centered worker execution behind a governed control plane
+- durable memory and proposal workflows instead of prompt residue
+- paper-first activation, approval gates, canaries, and rollback paths
+
+This is not an "unlimited agents talking to each other" stack. It is a productized runtime for keeping research, self-improvement, and trading moving forward without turning operations into chaos.
+
+## Why This Architecture
+
+Most autonomous trading projects still force the owner to babysit prompts, terminals, and manual scripts.
+
+Quant Evo Next-Gen treats the problem as an operating-system problem instead:
+
+- one authoritative Core instead of multiple competing masters
+- one durable runtime database instead of context-only state
 - governed workflows instead of ad hoc agent chatter
-- Discord and dashboard surfaces instead of terminal-only control
-- paper-first activation and rollback paths instead of blind live switching
-
-## Screenshots
-
-Overview dashboard:
-
-![Quant Evo dashboard overview](docs/assets/dashboard-overview.png)
-
-Mobile dashboard:
-
-![Quant Evo dashboard mobile](docs/assets/dashboard-mobile.png)
+- Discord and dashboard surfaces instead of terminal-only interaction
+- explicit paper-to-live progression instead of blind live switching
 
 ## What You Get
 
-- Discord-first owner control with governed approvals and runtime config changes
-- a web dashboard for monitoring trading, learning, evolution, incidents, and system state
-- Codex-centered worker execution without making the worker plane authoritative
-- paper-first trading posture with explicit promotion, rollback, and incident paths
-- a single-VPS-first product path that can scale to `Core + Worker` later
+| Surface | What it does |
+|---|---|
+| Discord control plane | natural-language status, approvals, pauses, deploy-draft changes, governed config updates |
+| Dashboard | operator visibility for trading, learning, evolution, incidents, and system health |
+| Core runtime | authority node for supervision, risk, memory, config, and execution governance |
+| Worker plane | Codex-heavy research and execution tasks without becoming the system of record |
+| VPS deploy path | single-VPS-first install that can later scale to `Core + Worker` |
 
 ## Market Modes
 
 One deployment chooses one market mode:
 
-- `QE_DEPLOYMENT_MARKET_MODE=us`
-  - US equities
-  - US options
-  - governed mixed sleeve operation when strategy policy allows it
-- `QE_DEPLOYMENT_MARKET_MODE=cn`
-  - China A-share research, ranking, and calendar-aware paper-first operation
+| Mode | Supports today | Notes |
+|---|---|---|
+| `us` | US equities, US options, governed mixed sleeves, short-equity paths with borrow and margin gates | Alpaca-backed paper and live-gated progression |
+| `cn` | China A-share research, ranking, calendar-aware supervision, paper-first operation | CN live broker execution is not shipped yet |
 
 If you want both markets active at the same time, run separate deployments.
 
-## Current Trading Surface
+## Current Honest Boundaries
 
-- `US` mode currently supports governed equities, single-leg options, multi-leg option structures, short-equity paths with borrow and margin gates, and Alpaca-backed paper/live progression.
-- `CN` mode currently supports China A-share research, ranking, market-calendar-aware supervision, and paper-first operation under the same Discord and dashboard shell.
-
-Current honest boundaries:
-
-- `CN live` broker execution is not shipped yet
-- portfolio sleeve attribution is still conservative
-- universal maintenance-margin, borrow-fee, and locate modeling is not fully closed for every product path
+- `CN live` broker execution is not shipped yet.
+- Portfolio sleeve attribution is still conservative.
+- Universal maintenance-margin, borrow-fee, and locate modeling is not fully closed for every product path.
 
 ## Memory And Learning
 
-The product keeps two memory layers on purpose:
+The product deliberately keeps two memory layers:
 
 - runtime learning mesh
-  - research documents, evidence items, and insight candidates live in durable database state
 - promoted long-term memory
-  - promoted principles, causal cases, and feature-map lineage remain repo-backed under `memory/` and `evo/feature_map.json`
 
-The dashboard distinguishes runtime learning from promoted long-term memory so the owner can tell what has merely been collected from what has actually been promoted.
+Raw research, evidence items, and insight candidates live in durable runtime state. Promoted principles, causal cases, and feature-map lineage stay repo-backed under `memory/` and `evo/feature_map.json`.
+
+That split matters: the owner can tell the difference between material that has merely been collected and material that has been promoted into durable operating memory.
 
 ## Deployment Shape
 
-Start with:
+Recommended first deployment:
 
 - `1 Discord bot`
-- `1 VPS` running `single_vps_compact`
-- `Postgres` on the same host as the runtime source of truth
-- `paper` mode first, then controlled promotion to live
+- `1 VPS`
+- `single_vps_compact`
+- local `Postgres`
+- `paper` broker posture first
 
-Scale out later when needed:
+Scale later only if you actually need stronger isolation:
 
 - keep `Core` as the authority node
 - add `1 Worker VPS` for Codex-heavy execution and research
 - keep broker-facing secrets on Core only
 
-Useful scale-out helpers:
+Useful helpers:
 
 - `./ops/bin/bootstrap-node.sh core`
 - `./ops/bin/bootstrap-node.sh worker`
 
-## Fastest First Deploy
+## Deploy In 60 Seconds
 
-Typical one-line bring-up on a Debian or Ubuntu VPS:
+Typical first deploy on Debian or Ubuntu:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> quant-evo-nextgen && sudo chown -R "$USER":"$USER" /opt/quant-evo-nextgen && cd /opt/quant-evo-nextgen && ./ops/bin/quickstart-single-vps.sh
 ```
 
-If you prefer the guided draft-first path:
+Draft-first bring-up:
 
 ```bash
 cd /opt/quant-evo-nextgen
@@ -131,20 +158,17 @@ flowchart LR
   Worker --> Core
 ```
 
-The main design rule is simple: one authoritative Core, one runtime database, and a worker plane that can scale without multiplying masters.
+The design rule is simple: one authoritative Core, one runtime database, and a worker plane that can scale without multiplying masters.
 
 ## Repository Layout
 
-- `src/quant_evo_nextgen`
-  - backend runtime, control plane, services, and workflows
-- `apps/dashboard-web`
-  - operator dashboard
-- `ops`
-  - deployment scripts, smoke checks, backup, restore, and systemd helpers
-- `docs/next-gen`
-  - architecture, operations, deployment, and runbooks
-- `tests`
-  - regression and service-level coverage
+| Path | Purpose |
+|---|---|
+| `src/quant_evo_nextgen` | backend runtime, services, workflows, control plane |
+| `apps/dashboard-web` | operator dashboard |
+| `ops` | deployment scripts, smoke checks, update helpers, systemd installers |
+| `docs/next-gen` | architecture, runbooks, deployment guides, operator docs |
+| `tests` | regression and service-level coverage |
 
 ## Start Here
 

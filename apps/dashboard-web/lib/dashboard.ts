@@ -13,8 +13,14 @@ import {
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
 const DASHBOARD_API_TOKEN = (process.env.QE_DASHBOARD_API_TOKEN ?? "").trim();
+const DASHBOARD_DEMO_MODE = ["1", "true", "yes", "on"].includes(
+  (process.env.QE_DASHBOARD_DEMO_MODE ?? process.env.NEXT_PUBLIC_DASHBOARD_DEMO_MODE ?? "").trim().toLowerCase(),
+);
 
-export async function fetchOverview(): Promise<DashboardOverview> {
+export async function fetchOverview(options?: { demo?: boolean }): Promise<DashboardOverview> {
+  if (DASHBOARD_DEMO_MODE || options?.demo) {
+    return buildDemoOverview();
+  }
   return fetchJson("/api/v1/dashboard/overview", buildFallbackOverview);
 }
 
@@ -60,6 +66,66 @@ async function fetchJson<T>(path: string, fallback: (failure: DashboardFetchFail
   } catch (error) {
     return fallback(classifyThrownFailure(error));
   }
+}
+
+function buildDemoOverview(): DashboardOverview {
+  const generatedAt = new Date().toISOString();
+  return {
+    generated_at: generatedAt,
+    freshness: {
+      state: "fresh",
+      age_seconds: 12,
+      generated_at: generatedAt,
+      note: "Demo preview mode",
+    },
+    headline: "Single-VPS authority core is healthy, research loops are active, and live execution is still gated behind approvals.",
+    summary_cards: [
+      { label: "Production strategies", value: "4", tone: "good", hint: "2 equities, 2 options sleeves live-ready" },
+      { label: "Pending approvals", value: "2", tone: "warn", hint: "Live rollout and config promotion waiting" },
+      { label: "Market mode", value: "us", tone: "good", hint: "US equities + options deployment" },
+      { label: "Learning docs", value: "128", tone: "good", hint: "Fresh research and post-mortems retained" },
+      { label: "Ready insights", value: "9", tone: "good", hint: "Ready for governance review" },
+      { label: "Principle memory", value: "34", tone: "good", hint: "Promoted, durable operating knowledge" },
+      { label: "Active overrides", value: "1", tone: "warn", hint: "One guarded exposure override" },
+    ],
+    highlights: [
+      "Discord owner control, dashboard monitoring, and governed research loops are online.",
+      "The runtime is still in paper-first posture even though multiple sleeves are execution-ready.",
+      "Codex work is queued behind governed approvals instead of acting as an unbounded control plane.",
+      "Long-term memory remains separated from raw research intake so promotion stays explicit.",
+    ],
+    strategy: {
+      candidates: 12,
+      staging: 5,
+      production: 4,
+      active_production: true,
+    },
+    learning: {
+      principles: 34,
+      causal_cases: 91,
+      document_count: 128,
+      insight_count: 48,
+      ready_insight_count: 9,
+      quarantined_insight_count: 3,
+      occupied_feature_cells: 22,
+      feature_coverage_pct: 36.7,
+      total_generations: 187,
+    },
+    system: {
+      mode: "paper_live_guarded",
+      risk_state: "normal",
+      deployment_market_mode: "us",
+      active_sleeves: ["equities", "options", "event"],
+      market_calendar: "XNYS",
+      market_timezone: "America/New_York",
+      codex_queue_depth: 2,
+      active_goals: 6,
+      open_incidents: 1,
+      pending_approvals: 2,
+      active_overrides: 1,
+      repo_root: "/opt/quant-evo-nextgen",
+    },
+  };
 }
 
 function buildFallbackOverview(failure: DashboardFetchFailure): DashboardOverview {

@@ -1,5 +1,11 @@
 import { fetchOverview } from "@/lib/dashboard";
 
+type OverviewPageProps = {
+  searchParams?: Promise<{
+    demo?: string;
+  }>;
+};
+
 function toneClass(tone: string): string {
   switch (tone) {
     case "good":
@@ -13,8 +19,9 @@ function toneClass(tone: string): string {
   }
 }
 
-export default async function OverviewPage() {
-  const overview = await fetchOverview();
+export default async function OverviewPage({ searchParams }: OverviewPageProps) {
+  const params = searchParams ? await searchParams : undefined;
+  const overview = await fetchOverview({ demo: params?.demo === "1" });
   const activeSleeves = overview.system.active_sleeves.length
     ? overview.system.active_sleeves.join(" / ")
     : "unconfigured";
