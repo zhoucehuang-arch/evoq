@@ -478,6 +478,12 @@ SYSTEM_POLICY_METADATA: dict[str, dict[str, Any]] = {
         "is_mutable": True,
         "requires_restart": True,
     },
+    "deployment_market_mode": {
+        "category": "operations",
+        "risk_level": "R3",
+        "is_mutable": True,
+        "requires_restart": True,
+    },
     "owner_language": {
         "category": "owner-experience",
         "risk_level": "R1",
@@ -1250,6 +1256,20 @@ class StateStore:
                 True,
             ),
             (
+                "deployment_market_mode",
+                "Deployment Market Mode",
+                "Current configured deployment market mode and the sleeve family it unlocks.",
+                {
+                    "deployment_market_mode": settings.deployment_market_mode,
+                    "market_timezone": settings.market_timezone,
+                    "market_calendar": settings.market_calendar,
+                    "active_sleeves": ["us_equities", "us_options"]
+                    if settings.deployment_market_mode == "us"
+                    else ["cn_equities"],
+                },
+                True,
+            ),
+            (
                 "owner_language",
                 "Owner Language",
                 "Primary owner interaction language.",
@@ -1749,7 +1769,7 @@ class StateStore:
         if target_type == "system_policy":
             metadata = SYSTEM_POLICY_METADATA.get(target_key, {})
             risk_level = str(metadata.get("risk_level", "R2"))
-            requires_approval = bool(target_key in {"deployment_topology", "codex_runtime"})
+            requires_approval = bool(target_key in {"deployment_topology", "deployment_market_mode", "codex_runtime"})
             if target_key == "heartbeat_runtime":
                 interval_seconds = int(proposed_value.get("interval_seconds", current_value.get("interval_seconds", 60)))
                 if interval_seconds < 15 or interval_seconds > 3600:

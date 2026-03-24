@@ -125,6 +125,7 @@ class DoctorService:
                 details={
                     "node_role": self.settings.node_role,
                     "deployment_topology": self.settings.deployment_topology,
+                    "deployment_market_mode": self.settings.deployment_market_mode,
                     "default_broker_adapter": self.settings.default_broker_adapter,
                     "active_overrides": runtime_snapshot.active_overrides,
                 },
@@ -151,6 +152,7 @@ class DoctorService:
             details={
                 "node_role": self.settings.node_role,
                 "deployment_topology": self.settings.deployment_topology,
+                "deployment_market_mode": self.settings.deployment_market_mode,
                 "default_broker_adapter": self.settings.default_broker_adapter,
                 "default_broker_environment": self.settings.default_broker_environment,
                 "pending_approvals": runtime_snapshot.pending_approvals,
@@ -196,6 +198,7 @@ class DoctorService:
                 blocked_by=blocked_by,
                 details={
                     "default_broker_adapter": self.settings.default_broker_adapter,
+                    "deployment_market_mode": self.settings.deployment_market_mode,
                     "default_broker_environment": self.settings.default_broker_environment,
                     "trading_allowed": execution_readiness.trading_allowed,
                     "execution_status": execution_readiness.status,
@@ -214,6 +217,7 @@ class DoctorService:
             blocked_by=[],
             details={
                 "default_broker_adapter": self.settings.default_broker_adapter,
+                "deployment_market_mode": self.settings.deployment_market_mode,
                 "default_broker_environment": self.settings.default_broker_environment,
                 "trading_allowed": execution_readiness.trading_allowed,
                 "execution_status": execution_readiness.status,
@@ -243,23 +247,89 @@ class DoctorService:
             blocked_by.append("Codex-compatible execution is not fully configured on this runtime.")
         if check_status.get("broker") == "fail":
             blocked_by.append("Broker configuration is not healthy enough for the intended trading mode.")
+        elif self.settings.default_broker_adapter == "paper_sim":
+            if self.settings.deployment_market_mode == "cn":
+                blocked_by.append(
+                    "CN deployment mode remains paper-first on this runtime because a bounded CN live broker adapter is not configured."
+                )
+            else:
+                blocked_by.append(
+                    "Default broker adapter is still `paper_sim`, so the owner's live-trading target posture is not active on this runtime."
+                )
+        elif self.settings.default_broker_environment != "live":
+            blocked_by.append(
+                "Default broker environment is not `live`, so the owner's live-trading target posture is not active on this runtime."
+            )
         if runtime_snapshot.open_incidents > 0:
             blocked_by.append("Open incidents remain active.")
+        if runtime_snapshot.active_overrides > 0:
+            blocked_by.append("Active manual overrides remain in place.")
+        if not execution_readiness.trading_allowed:
+            blocked_by.extend(
+                execution_readiness.blocked_reasons
+                or ["Execution readiness is not allowing governed trading on this runtime."]
+            )
         if execution_readiness.active_production_strategies <= 0:
             blocked_by.append("No governed production strategy is currently active.")
+
+        warnings: list[str] = []
+        if runtime_snapshot.pending_approvals > 0:
+            warnings.append("Pending approvals still remain open.")
+
+        if blocked_by:
+            return ReadinessProfile(
+                key="owner_target_full_system",
+                label="Owner Target Full System",
+                status="fail",
+                message="This runtime has not yet reached the owner's unattended learning and live-trading target posture.",
+                blocked_by=blocked_by,
+                details={
+                    "default_broker_adapter": self.settings.default_broker_adapter,
+                    "deployment_market_mode": self.settings.deployment_market_mode,
+                    "default_broker_environment": self.settings.default_broker_environment,
+                    "execution_status": execution_readiness.status,
+                    "trading_allowed": execution_readiness.trading_allowed,
+                    "active_production_strategies": execution_readiness.active_production_strategies,
+                    "active_overrides": runtime_snapshot.active_overrides,
+                    "open_incidents": runtime_snapshot.open_incidents,
+                    "pending_approvals": runtime_snapshot.pending_approvals,
+                },
+            )
+
+        if warnings:
+            return ReadinessProfile(
+                key="owner_target_full_system",
+                label="Owner Target Full System",
+                status="warn",
+                message="This runtime matches the owner's target posture, but one or more governance items still need review.",
+                blocked_by=warnings,
+                details={
+                    "default_broker_adapter": self.settings.default_broker_adapter,
+                    "deployment_market_mode": self.settings.deployment_market_mode,
+                    "default_broker_environment": self.settings.default_broker_environment,
+                    "execution_status": execution_readiness.status,
+                    "trading_allowed": execution_readiness.trading_allowed,
+                    "active_production_strategies": execution_readiness.active_production_strategies,
+                    "active_overrides": runtime_snapshot.active_overrides,
+                    "open_incidents": runtime_snapshot.open_incidents,
+                    "pending_approvals": runtime_snapshot.pending_approvals,
+                },
+            )
 
         return ReadinessProfile(
             key="owner_target_full_system",
             label="Owner Target Full System",
-            status="fail",
-            message="The repository is not yet closed against the owner's full target system requirements.",
-            blocked_by=blocked_by,
+            status="ok",
+            message="This runtime matches the owner's current unattended learning and live-trading target envelope.",
+            blocked_by=[],
             details={
                 "default_broker_adapter": self.settings.default_broker_adapter,
+                "deployment_market_mode": self.settings.deployment_market_mode,
                 "default_broker_environment": self.settings.default_broker_environment,
                 "execution_status": execution_readiness.status,
                 "trading_allowed": execution_readiness.trading_allowed,
                 "active_production_strategies": execution_readiness.active_production_strategies,
+                "active_overrides": runtime_snapshot.active_overrides,
                 "open_incidents": runtime_snapshot.open_incidents,
                 "pending_approvals": runtime_snapshot.pending_approvals,
             },
@@ -437,6 +507,20 @@ class DoctorService:
         )
 
     def _check_broker_configuration(self) -> DoctorCheck:
+        if self.settings.deployment_market_mode == "cn" and self.settings.default_broker_adapter == "alpaca":
+            return DoctorCheck(
+                key="broker",
+                label="Broker Configuration",
+                status="fail",
+                message=(
+                    "CN deployment mode cannot use Alpaca. Keep the runtime in `paper_sim` until a bounded CN broker adapter is configured."
+                ),
+                details={
+                    "deployment_market_mode": self.settings.deployment_market_mode,
+                    "default_broker_adapter": self.settings.default_broker_adapter,
+                    "default_broker_environment": self.settings.default_broker_environment,
+                },
+            )
         if self.settings.default_broker_adapter != "alpaca":
             return DoctorCheck(
                 key="broker",
@@ -444,6 +528,7 @@ class DoctorService:
                 status="ok",
                 message="Default broker adapter does not require external broker credentials.",
                 details={
+                    "deployment_market_mode": self.settings.deployment_market_mode,
                     "default_broker_adapter": self.settings.default_broker_adapter,
                     "default_broker_environment": self.settings.default_broker_environment,
                 },
@@ -466,6 +551,7 @@ class DoctorService:
                 status="fail",
                 message="Default broker adapter is Alpaca, but the matching API key or secret is missing.",
                 details={
+                    "deployment_market_mode": self.settings.deployment_market_mode,
                     "default_broker_adapter": self.settings.default_broker_adapter,
                     "default_broker_environment": environment,
                     "base_url": base_url,
@@ -478,6 +564,7 @@ class DoctorService:
             status="ok",
             message="Alpaca broker credentials are present for the configured default environment.",
             details={
+                "deployment_market_mode": self.settings.deployment_market_mode,
                 "default_broker_adapter": self.settings.default_broker_adapter,
                 "default_broker_environment": environment,
                 "base_url": base_url,

@@ -1869,6 +1869,8 @@ class ExecutionService:
             }
         if calendar_key == "XNYS":
             return self._build_xnys_session_payload(local_now, market_calendar, market_timezone)
+        if calendar_key in {"XSHG", "XSHE"}:
+            return self._build_cn_equities_session_payload(local_now, market_calendar, market_timezone)
         return {
             "market_calendar": market_calendar,
             "market_timezone": market_timezone,
@@ -1925,12 +1927,80 @@ class ExecutionService:
             "next_close_at": next_close.astimezone(UTC) if next_close is not None else None,
         }
 
+    def _build_cn_equities_session_payload(
+        self,
+        local_now: datetime,
+        market_calendar: str,
+        market_timezone: str,
+    ) -> dict[str, Any]:
+        timezone = ZoneInfo(market_timezone)
+        morning_open = datetime.combine(local_now.date(), time(9, 30), tzinfo=timezone)
+        morning_close = datetime.combine(local_now.date(), time(11, 30), tzinfo=timezone)
+        afternoon_open = datetime.combine(local_now.date(), time(13, 0), tzinfo=timezone)
+        afternoon_close = datetime.combine(local_now.date(), time(15, 0), tzinfo=timezone)
+        weekday = local_now.weekday()
+
+        if weekday >= 5:
+            next_open = self._next_weekday_time(local_now, timezone, time(9, 30))
+            next_close = datetime.combine(next_open.date(), time(11, 30), tzinfo=timezone)
+            session_label = "weekend"
+            is_market_open = False
+            trading_allowed = False
+        elif local_now < morning_open:
+            next_open = morning_open
+            next_close = morning_close
+            session_label = "pre_open"
+            is_market_open = False
+            trading_allowed = False
+        elif local_now < morning_close:
+            next_open = afternoon_open
+            next_close = morning_close
+            session_label = "morning_continuous"
+            is_market_open = True
+            trading_allowed = True
+        elif local_now < afternoon_open:
+            next_open = afternoon_open
+            next_close = afternoon_close
+            session_label = "midday_break"
+            is_market_open = False
+            trading_allowed = False
+        elif local_now < afternoon_close:
+            next_open = self._next_weekday_time(local_now + timedelta(days=1), timezone, time(9, 30))
+            next_close = afternoon_close
+            session_label = "afternoon_continuous"
+            is_market_open = True
+            trading_allowed = True
+        else:
+            next_open = self._next_weekday_time(local_now + timedelta(days=1), timezone, time(9, 30))
+            next_close = datetime.combine(next_open.date(), time(11, 30), tzinfo=timezone)
+            session_label = "after_close"
+            is_market_open = False
+            trading_allowed = False
+
+        return {
+            "market_calendar": market_calendar,
+            "market_timezone": market_timezone,
+            "session_label": session_label,
+            "is_market_open": is_market_open,
+            "trading_allowed": trading_allowed,
+            "next_open_at": next_open.astimezone(UTC) if next_open is not None else None,
+            "next_close_at": next_close.astimezone(UTC) if next_close is not None else None,
+        }
+
     def _next_weekday_open(self, start_local: datetime, timezone: ZoneInfo) -> datetime:
+        return self._next_weekday_time(start_local, timezone, time(9, 30))
+
+    def _next_weekday_time(
+        self,
+        start_local: datetime,
+        timezone: ZoneInfo,
+        target_time: time,
+    ) -> datetime:
         probe = start_local
         while True:
             probe_date = probe.date()
             if probe.weekday() < 5:
-                return datetime.combine(probe_date, time(9, 30), tzinfo=timezone)
+                return datetime.combine(probe_date, target_time, tzinfo=timezone)
             probe = (probe + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
     def _resolve_snapshot(

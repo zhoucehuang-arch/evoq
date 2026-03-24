@@ -248,8 +248,10 @@ def test_api_persists_goals_incidents_and_dashboard_counts(tmp_path: Path) -> No
 
         assert overview_payload["system"]["active_goals"] == 1
         assert overview_payload["system"]["open_incidents"] == 1
+        assert overview_payload["system"]["deployment_market_mode"] == "us"
+        assert overview_payload["system"]["active_sleeves"] == ["us_equities", "us_options"]
         assert overview_payload["freshness"]["state"] in {"fresh", "lagging"}
-        assert "pending approvals 1" in overview_payload["highlights"][3]
+        assert any("pending approvals 1" in highlight for highlight in overview_payload["highlights"])
         assert trading_payload["domain_states"][1]["domain"] == "evolution"
         assert system_dashboard_payload["providers"][0]["provider_key"] == "primary-relay"
         assert status_payload["active_goals"] == 1
@@ -603,21 +605,34 @@ def test_api_exposes_learning_documents_and_insights_in_dashboard(tmp_path: Path
             )
 
         dashboard_learning_response = client.get("/api/v1/dashboard/learning")
+        overview_response = client.get("/api/v1/dashboard/overview")
         learning_documents_response = client.get("/api/v1/learning/documents")
         learning_insights_response = client.get("/api/v1/learning/insights")
 
         assert dashboard_learning_response.status_code == 200
+        assert overview_response.status_code == 200
         assert learning_documents_response.status_code == 200
         assert learning_insights_response.status_code == 200
 
         dashboard_learning_payload = dashboard_learning_response.json()
+        overview_payload = overview_response.json()
         learning_documents_payload = learning_documents_response.json()
         learning_insights_payload = learning_insights_response.json()
+        overview_cards = {
+            card["label"]: card for card in overview_payload["summary_cards"]
+        }
 
         assert dashboard_learning_payload["metrics"]["document_count"] == 1
         assert dashboard_learning_payload["metrics"]["insight_count"] == 1
         assert dashboard_learning_payload["metrics"]["ready_insight_count"] == 1
         assert dashboard_learning_payload["metrics"]["quarantined_insight_count"] == 0
+        assert overview_payload["learning"]["document_count"] == 1
+        assert overview_payload["learning"]["insight_count"] == 1
+        assert overview_payload["learning"]["ready_insight_count"] == 1
+        assert overview_cards["Learning docs"]["value"] == "1"
+        assert overview_cards["Ready insights"]["value"] == "1"
+        assert overview_cards["Principle memory"]["hint"].startswith("Repo-backed promoted principles.")
+        assert any("Runtime learning docs 1" in highlight for highlight in overview_payload["highlights"])
         assert dashboard_learning_payload["recent_documents"][0]["title"] == "Durable research note"
         assert dashboard_learning_payload["recent_documents"][0]["status"] == "distilled"
         assert dashboard_learning_payload["recent_documents"][0]["source_key"] == "research-intake"

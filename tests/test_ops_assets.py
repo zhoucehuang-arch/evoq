@@ -20,6 +20,7 @@ def test_core_and_worker_ops_assets_exist() -> None:
         repo_root / "ops" / "bin" / "core-smoke.sh",
         repo_root / "ops" / "bin" / "host-preflight.sh",
         repo_root / "ops" / "bin" / "deploy-config.sh",
+        repo_root / "ops" / "bin" / "system-doctor.sh",
         repo_root / "ops" / "bin" / "worker-up.sh",
         repo_root / "ops" / "bin" / "worker-down.sh",
         repo_root / "ops" / "bin" / "worker-smoke.sh",
@@ -43,6 +44,7 @@ def test_ops_scripts_use_repo_local_deploy_wrapper() -> None:
     bootstrap_node = (repo_root / "ops" / "bin" / "bootstrap-node.sh").read_text(encoding="utf-8")
     quickstart_single_vps = (repo_root / "ops" / "bin" / "quickstart-single-vps.sh").read_text(encoding="utf-8")
     onboard_single_vps = (repo_root / "ops" / "bin" / "onboard-single-vps.sh").read_text(encoding="utf-8")
+    system_doctor = (repo_root / "ops" / "bin" / "system-doctor.sh").read_text(encoding="utf-8")
     core_up = (repo_root / "ops" / "bin" / "core-up.sh").read_text(encoding="utf-8")
     worker_up = (repo_root / "ops" / "bin" / "worker-up.sh").read_text(encoding="utf-8")
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
@@ -67,12 +69,16 @@ def test_ops_scripts_use_repo_local_deploy_wrapper() -> None:
     assert 'onboard-single-vps' in onboard_single_vps
     assert 'core-up.sh' in onboard_single_vps
     assert 'core-smoke.sh' in onboard_single_vps
+    assert 'runner.doctor' in system_doctor
     assert "./ops/bin/quickstart-single-vps.sh" in readme
     assert "./ops/bin/onboard-single-vps.sh" in readme
+    assert "./ops/bin/system-doctor.sh" in readme
     assert "./ops/bin/bootstrap-node.sh core" in readme
     assert "./ops/bin/bootstrap-node.sh worker" in readme
     assert "./ops/bin/quickstart-single-vps.sh" in ops_readme
+    assert "./ops/bin/system-doctor.sh" in ops_readme
     assert "./ops/bin/install-host-deps.sh" in github_to_vps
+    assert "./ops/bin/system-doctor.sh" in github_to_vps
     assert "./ops/bin/onboard-single-vps.sh --no-start" in ops_readme
     assert "./ops/bin/deploy-config.sh init core" in ops_readme
     assert "./ops/bin/deploy-config.sh init worker" in ops_readme

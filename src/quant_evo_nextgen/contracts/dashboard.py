@@ -37,6 +37,10 @@ class StrategySummary(BaseModel):
 class LearningSummary(BaseModel):
     principles: int
     causal_cases: int
+    document_count: int = 0
+    insight_count: int = 0
+    ready_insight_count: int = 0
+    quarantined_insight_count: int = 0
     occupied_feature_cells: int
     feature_coverage_pct: float
     total_generations: int
@@ -45,6 +49,10 @@ class LearningSummary(BaseModel):
 class SystemSummary(BaseModel):
     mode: str
     risk_state: str
+    deployment_market_mode: str
+    active_sleeves: list[str] = Field(default_factory=list)
+    market_calendar: str | None = None
+    market_timezone: str | None = None
     codex_queue_depth: int
     active_goals: int
     open_incidents: int

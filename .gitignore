@@ -52,3 +52,6 @@ memory/reflections/*.json
 memory/architecture/*.json
 knowledge/papers/*.json
 knowledge/market/*.json
+.gstack/
+.external/
+.tmp-*.png

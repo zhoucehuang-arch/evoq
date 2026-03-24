@@ -21,6 +21,8 @@ def run(argv: list[str] | None = None) -> int:
         overrides = _parse_set_overrides(args.set)
         if args.broker_mode:
             overrides["__broker_mode__"] = args.broker_mode
+        if args.market_mode:
+            overrides["__market_mode__"] = args.market_mode
         if args.topology:
             overrides["QE_DEPLOYMENT_TOPOLOGY"] = args.topology
         output_path = Path(args.output) if args.output else None
@@ -43,6 +45,8 @@ def run(argv: list[str] | None = None) -> int:
         overrides = _parse_set_overrides(args.set)
         overrides["QE_DEPLOYMENT_TOPOLOGY"] = "single_vps_compact"
         overrides["__broker_mode__"] = "paper_sim"
+        if args.market_mode:
+            overrides["__market_mode__"] = args.market_mode
         output_path = Path(args.output) if args.output else None
         created = service.initialize_env_file(
             role="core",
@@ -200,6 +204,11 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["single_vps_compact", "two_vps_asymmetrical"],
         help="Deployment topology profile to write into the env file.",
     )
+    init_parser.add_argument(
+        "--market-mode",
+        choices=["us", "cn"],
+        help="Deployment market mode to write into the env file.",
+    )
     init_parser.add_argument("--overwrite", action="store_true", help="Overwrite the output env file from the template.")
     init_parser.add_argument("--no-prompt", action="store_true", help="Do not prompt interactively. Use template values plus --set overrides only.")
     init_parser.add_argument("--json", action="store_true", help="Print the resulting preflight report as JSON.")
@@ -219,6 +228,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--no-prompt",
         action="store_true",
         help="Do not prompt interactively. Use template values plus --set overrides only.",
+    )
+    onboard_single_vps_parser.add_argument(
+        "--market-mode",
+        choices=["us", "cn"],
+        help="Single-VPS deployment market mode. `us` enables the US-equities and US-options product surface; `cn` enables the A-share product surface.",
     )
     onboard_single_vps_parser.add_argument("--json", action="store_true", help="Print the onboarding result as JSON.")
 

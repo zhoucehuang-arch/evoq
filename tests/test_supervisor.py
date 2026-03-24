@@ -81,6 +81,44 @@ def test_supervisor_queues_codex_run_for_research_intake_loop(tmp_path: Path) ->
     assert codex_runs[0].workflow_run_id == results[0].workflow_run_id
 
 
+def test_supervisor_research_intake_includes_cn_market_context(tmp_path: Path) -> None:
+    _seed_repo_state(tmp_path)
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'supervisor-cn-research.db'}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'supervisor-cn-research.db'}",
+        db_bootstrap_on_start=True,
+        deployment_market_mode="cn",
+        market_calendar="XSHG",
+        market_timezone="Asia/Shanghai",
+        openai_api_key="relay-key",
+        openai_base_url="https://relay.example.com/v1",
+    )
+    state_store = StateStore(database.session_factory)
+    state_store.bootstrap_reference_data(settings)
+    codex_fabric_service = CodexFabricService(database.session_factory, settings)
+    dashboard_service = DashboardService(RepoStateService(tmp_path), state_store, codex_fabric_service)
+    supervisor = SupervisorService(
+        state_store=state_store,
+        dashboard_service=dashboard_service,
+        settings=settings,
+        codex_fabric_service=codex_fabric_service,
+    )
+    _activate_single_loop(database, "research-intake")
+
+    supervisor.run_due_loops(max_loops=1)
+
+    with database.session_scope() as session:
+        run = session.scalar(select(CodexRunModel).where(CodexRunModel.supervisor_loop_key == "research-intake"))
+        assert run is not None
+        assert "deployment_market_mode=cn" in run.context_summary
+        assert "active_sleeves=cn_equities" in run.context_summary
+        assert "AKShare" in str(run.request_payload.get("prompt_appendix"))
+        assert "Do not propose US options" in str(run.request_payload.get("prompt_appendix"))
+
+
 def test_supervisor_dedupes_active_codex_runs_for_same_loop(tmp_path: Path) -> None:
     _seed_repo_state(tmp_path)
     database = Database(f"sqlite+pysqlite:///{tmp_path / 'supervisor-codex-dedupe.db'}")
@@ -152,6 +190,46 @@ def test_supervisor_market_session_guard_records_execution_state(tmp_path: Path)
     assert results[0].payload["status"] == "completed"
     assert market_states[0].market_calendar == "CRYPTO_24X7"
     assert market_states[0].trading_allowed is True
+
+
+def test_supervisor_strategy_evaluation_includes_market_scope(tmp_path: Path) -> None:
+    _seed_repo_state(tmp_path)
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'supervisor-cn-strategy.db'}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'supervisor-cn-strategy.db'}",
+        db_bootstrap_on_start=True,
+        deployment_market_mode="cn",
+        market_calendar="XSHG",
+        market_timezone="Asia/Shanghai",
+        openai_api_key="relay-key",
+        openai_base_url="https://relay.example.com/v1",
+    )
+    state_store = StateStore(database.session_factory)
+    state_store.bootstrap_reference_data(settings)
+    codex_fabric_service = CodexFabricService(database.session_factory, settings)
+    dashboard_service = DashboardService(RepoStateService(tmp_path), state_store, codex_fabric_service)
+    supervisor = SupervisorService(
+        state_store=state_store,
+        dashboard_service=dashboard_service,
+        settings=settings,
+        codex_fabric_service=codex_fabric_service,
+    )
+    _activate_single_loop(database, "strategy-evaluation")
+
+    results = supervisor.run_due_loops(max_loops=1)
+
+    assert results
+    assert results[0].payload["status"] == "queued"
+
+    with database.session_scope() as session:
+        run = session.scalar(select(CodexRunModel).where(CodexRunModel.supervisor_loop_key == "strategy-evaluation"))
+        assert run is not None
+        assert "deployment_market_mode=cn" in run.context_summary
+        assert "active_sleeves=cn_equities" in run.context_summary
+        assert "outside that deployment scope" in str(run.request_payload.get("prompt_appendix"))
 
 
 def test_supervisor_broker_state_sync_records_external_snapshot(tmp_path: Path) -> None:

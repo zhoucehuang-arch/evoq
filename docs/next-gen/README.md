@@ -4,6 +4,15 @@ This folder is the main documentation hub for the project.
 
 If you are new to the repository, do not start by reading everything in order. Start from the page that matches your goal.
 
+Canonical current product truth lives in:
+
+- [../../README.md](../../README.md)
+- [PRODUCT-OVERVIEW.md](PRODUCT-OVERVIEW.md)
+- [GITHUB-TO-VPS-DEPLOYMENT.md](GITHUB-TO-VPS-DEPLOYMENT.md)
+- [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md)
+
+Some deeper review and architecture documents in this folder preserve historical reasoning and tradeoff analysis. Treat the four documents above as the current product contract when there is any tension.
+
 ## Start Here
 
 1. [PRODUCT-OVERVIEW.md](PRODUCT-OVERVIEW.md)
@@ -46,9 +55,12 @@ If you are new to the repository, do not start by reading everything in order. S
 ### I want to evaluate product readiness and risk
 
 - [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md)
+- [GSTACK-FULL-PRODUCT-REREVIEW.md](GSTACK-FULL-PRODUCT-REREVIEW.md)
 - [CORE-GOAL-COVERAGE-REVIEW.md](CORE-GOAL-COVERAGE-REVIEW.md)
 - [RISK-GOVERNANCE.md](RISK-GOVERNANCE.md)
 - [MULTI-EXPERT-SYSTEM-REVIEW.md](MULTI-EXPERT-SYSTEM-REVIEW.md)
+- [MULTI-MARKET-QUANT-ARCHITECTURE-REVIEW.md](MULTI-MARKET-QUANT-ARCHITECTURE-REVIEW.md)
+- [THREE-CORE-POINTS-RESEARCH-AND-OPTIMIZATION-PLAN.md](THREE-CORE-POINTS-RESEARCH-AND-OPTIMIZATION-PLAN.md)
 - [SINGLE-VPS-AND-ACQUISITION-REVIEW.md](SINGLE-VPS-AND-ACQUISITION-REVIEW.md)
 
 ### I want to study the system design

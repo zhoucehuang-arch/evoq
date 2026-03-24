@@ -74,7 +74,11 @@ class AcquisitionStackService:
         skill_guidance = self.skill_catalog.build_acquisition_guidance(
             include_playwright=self._playwright_enabled()
         )
+        market_mode = (self.settings.deployment_market_mode or "us").strip().lower() or "us"
+        active_sleeves = self._active_sleeves_for_market_mode(market_mode)
+        sleeve_text = ", ".join(active_sleeves) if active_sleeves else "unconfigured"
         lines = [
+            f"Deployment market mode: {market_mode}; active sleeves: {sleeve_text}.",
             "Use the governed layered acquisition stack in this order:",
             "1. Official APIs and broker/provider truth when they answer the question.",
             "2. Hosted web search through the configured Codex-compatible search path.",
@@ -84,6 +88,7 @@ class AcquisitionStackService:
             "Do not use browser-style acquisition as the default path.",
             f"Current acquisition posture: {summary.status}; primary mode: {summary.primary_mode}.",
         ]
+        lines.extend(self._market_mode_guidance_lines(market_mode))
         if skill_guidance:
             lines.append(skill_guidance)
         return " ".join(lines)
@@ -230,6 +235,30 @@ class AcquisitionStackService:
 
     def _playwright_endpoint(self) -> str | None:
         return self.settings.playwright_browser_endpoint or self.settings.browser_fallback_endpoint
+
+    def _active_sleeves_for_market_mode(self, market_mode: str) -> list[str]:
+        if market_mode == "cn":
+            return ["cn_equities"]
+        if market_mode == "us":
+            return ["us_equities", "us_options"]
+        return []
+
+    def _market_mode_guidance_lines(self, market_mode: str) -> list[str]:
+        if market_mode == "cn":
+            return [
+                "In cn mode, prioritize SSE, SZSE, CSRC, company filings, and AKShare-style structured collectors before generic web search.",
+                "Treat Tushare or other local structured feeds as optional secondary sources, not the only truth source.",
+                "Respect A-share microstructure such as the midday break, daily price-limit regimes, and T+1 cash-equity exit constraints when turning research into execution ideas.",
+                "Do not propose US options, Alpaca-only workflows, or other US broker-dependent paths for a cn deployment.",
+            ]
+        if market_mode == "us":
+            return [
+                "In us mode, prioritize broker truth, SEC filings, exchange notices, earnings releases, and option-chain-aware sources when the question touches options, shorting, or leverage.",
+                "Treat social or narrative chatter as weak evidence unless it is confirmed by primary filings, broker state, or exchange data.",
+            ]
+        return [
+            "If the deployment market mode is unclear, keep recommendations conservative and avoid market-specific live execution assumptions.",
+        ]
 
     def _probe_endpoint(self, endpoint: str, *, probe_endpoints: bool) -> AcquisitionLayerStatus:
         if not probe_endpoints:

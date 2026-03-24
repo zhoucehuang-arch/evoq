@@ -15,8 +15,12 @@ function toneClass(tone: string): string {
 
 export default async function OverviewPage() {
   const overview = await fetchOverview();
+  const activeSleeves = overview.system.active_sleeves.length
+    ? overview.system.active_sleeves.join(" / ")
+    : "unconfigured";
   const ownerPrompts = [
     "现在系统整体状态怎么样？",
+    "当前部署是美股还是 A 股？激活了哪些交易 sleeves？",
     "列出待审批事项。",
     "查看当前运行时配置。",
     "暂停自动交易，保留学习。",
@@ -25,17 +29,28 @@ export default async function OverviewPage() {
   ];
   const deployFlow = [
     "推送仓库到 GitHub。",
-    "在 Core 与 Worker VPS 上 git clone 到 /opt/quant-evo-nextgen。",
-    "两台机器都执行 sudo ./ops/bin/install-host-deps.sh。",
-    "Core 执行 ./ops/bin/bootstrap-node.sh core，Worker 执行 ./ops/bin/bootstrap-node.sh worker。",
-    "先用 paper 模式启动，再运行 smoke 检查。",
+    "在单台 Ubuntu VPS 上 git clone 到 /opt/quant-evo-nextgen。",
+    "执行 ./ops/bin/quickstart-single-vps.sh；如果想先检查草稿，就改用 ./ops/bin/onboard-single-vps.sh --no-start。",
+    "在首次引导里先确认市场模式是 us 还是 cn，再填写 Discord、中转和 dashboard 密钥。",
+    "先用 paper 模式跑通 doctor、smoke 与首轮 broker sync，再考虑切换真实 broker。",
+    "需要隔离时，再把 Worker 扩展到第二台 VPS，而不是从一开始就拆双机。",
   ];
   const activationChecks = [
     "./ops/bin/core-smoke.sh 无 fail",
-    "./ops/bin/worker-smoke.sh 无 fail",
+    "./ops/bin/system-doctor.sh 无 fail",
     "Dashboard 能正常打开",
     "Discord 只响应允许的账号和频道",
     "首次 broker sync 与风控状态正常",
+  ];
+  const supportedSurface = [
+    "US 部署当前支持受治理的美股正股、期权，以及期权多腿结构。",
+    "CN 部署当前支持 A 股研究、选股、市场时段治理与 paper-first 运行。",
+    "两种市场模式都保留 Discord 控制面与 Dashboard 观测面。",
+  ];
+  const honestBoundaries = [
+    "CN live broker 仍然是后续适配器闭环，不应被当成已交付能力。",
+    "组合 sleeve attribution 与部分跨策略净额限制仍偏保守。",
+    "通用 maintenance margin、borrow fee 与 locate 建模还没有覆盖全部产品路径。",
   ];
 
   return (
@@ -47,7 +62,10 @@ export default async function OverviewPage() {
               Freshness <strong>{overview.freshness.state}</strong>
             </span>
             <span className="chip">
-              Mode <strong>{overview.system.mode}</strong>
+              Runtime <strong>{overview.system.mode}</strong>
+            </span>
+            <span className="chip">
+              Market <strong>{overview.system.deployment_market_mode.toUpperCase()}</strong>
             </span>
             <span className="chip">
               Risk <strong>{overview.system.risk_state}</strong>
@@ -75,6 +93,10 @@ export default async function OverviewPage() {
             <div className="stat-card">
               <div className="stat-label">Pending approvals</div>
               <div className="stat-value tone-warn">{overview.system.pending_approvals}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Active sleeves</div>
+              <div className="stat-value small-value">{activeSleeves}</div>
             </div>
           </div>
         </aside>
@@ -110,7 +132,7 @@ export default async function OverviewPage() {
         <article className="panel">
           <h3>Learning Surface</h3>
           <div className="split">
-            <span className="split-label">Principles</span>
+            <span className="split-label">Promoted principles</span>
             <strong>{overview.learning.principles}</strong>
           </div>
           <div className="split">
@@ -118,9 +140,20 @@ export default async function OverviewPage() {
             <strong>{overview.learning.causal_cases}</strong>
           </div>
           <div className="split">
+            <span className="split-label">Learning docs</span>
+            <strong>{overview.learning.document_count}</strong>
+          </div>
+          <div className="split">
+            <span className="split-label">Ready insights</span>
+            <strong>{overview.learning.ready_insight_count}</strong>
+          </div>
+          <div className="split">
             <span className="split-label">Feature coverage</span>
             <strong>{overview.learning.feature_coverage_pct.toFixed(4)}%</strong>
           </div>
+          <p className="callout">
+            Repo-backed principle memory is shown separately from runtime learning-mesh documents and insight candidates.
+          </p>
         </article>
 
         <article className="panel">
@@ -136,6 +169,52 @@ export default async function OverviewPage() {
           <div className="split">
             <span className="split-label">Codex queue</span>
             <strong>{overview.system.codex_queue_depth}</strong>
+          </div>
+        </article>
+
+        <article className="panel">
+          <h3>Market Deployment</h3>
+          <div className="split">
+            <span className="split-label">Market mode</span>
+            <strong>{overview.system.deployment_market_mode}</strong>
+          </div>
+          <div className="split">
+            <span className="split-label">Calendar</span>
+            <strong>{overview.system.market_calendar ?? "unknown"}</strong>
+          </div>
+          <div className="split">
+            <span className="split-label">Timezone</span>
+            <strong>{overview.system.market_timezone ?? "unknown"}</strong>
+          </div>
+          <div className="split">
+            <span className="split-label">Active sleeves</span>
+            <strong>{activeSleeves}</strong>
+          </div>
+        </article>
+      </section>
+
+      <section className="detail-grid two-col">
+        <article className="panel">
+          <div className="section-kicker">Supported Today</div>
+          <h3>Current Product Surface</h3>
+          <div className="stack">
+            {supportedSurface.map((item) => (
+              <article key={item} className="stack-card">
+                <p className="callout">{item}</p>
+              </article>
+            ))}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="section-kicker">Boundaries</div>
+          <h3>Honest Limits</h3>
+          <div className="stack">
+            {honestBoundaries.map((item) => (
+              <article key={item} className="stack-card">
+                <p className="callout">{item}</p>
+              </article>
+            ))}
           </div>
         </article>
       </section>
@@ -184,13 +263,13 @@ export default async function OverviewPage() {
           <h3>GitHub Update Shortcut</h3>
           <div className="stack">
             <article className="stack-card">
-              <strong>Core VPS</strong>
+              <strong>Single VPS</strong>
               <p className="callout">
                 <code>./ops/bin/update-from-github.sh core</code>
               </p>
             </article>
             <article className="stack-card">
-              <strong>Worker VPS</strong>
+              <strong>Scale-out Later</strong>
               <p className="callout">
                 <code>./ops/bin/update-from-github.sh worker</code>
               </p>

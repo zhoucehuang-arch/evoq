@@ -14,22 +14,71 @@ No. The intended owner workflow is:
 
 ## How many VPS nodes do I need?
 
-Recommended long-term production shape:
-
-- 1 Core VPS
-- 1 Worker VPS
-
 Simplest supported product path:
 
 - 1 VPS with the `single_vps_compact` profile
 
-That one-VPS mode keeps the same Discord and dashboard experience, but runs the Codex worker runtime on the Core host too. The intended long-running upgrade path is still two nodes.
+That one-VPS mode keeps the same Discord and dashboard experience, but runs the Codex worker runtime on the Core host too.
+
+Stronger isolation later:
+
+- 1 Core VPS
+- 1 Worker VPS
+
+The recommended owner path is to start with one VPS, then add the Worker only when you actually need the isolation or throughput.
 
 ## How many Discord bots do I need?
 
 One bot.
 
 The system is designed around one operator-facing Discord bot, not one bot per agent persona.
+
+## Can one deployment run both US and CN at the same time?
+
+No.
+
+One deployment chooses one market mode:
+
+- `QE_DEPLOYMENT_MARKET_MODE=us`
+- `QE_DEPLOYMENT_MARKET_MODE=cn`
+
+This keeps the runtime simpler, the risk model clearer, and the operator surface easier to govern.
+
+If you want both markets active at the same time, run separate deployments.
+
+## What does US mode include?
+
+`US` mode is the US product surface:
+
+- US equities
+- US options
+
+The strategy layer may decide whether a given sleeve uses equities, options, or a governed mix.
+Current US closure is honest for paper-first operation and Alpaca-backed paper/live progression.
+
+## What does CN mode include?
+
+`CN` mode is the China A-share product surface.
+
+The shell, dashboard, Discord control plane, and learning model stay the same, but the runtime does not pretend CN live execution is identical to the US Alpaca path.
+Current CN closure is honest for research, ranking, market-session governance, and paper-first operation. `CN live` remains a future broker-edge closure task.
+
+## What trading is honestly supported today?
+
+- US deployments: equities, options, multi-leg option structure, short-equity paths with borrow/margin gates, governed broker sync, and paper/live progression.
+- CN deployments: A-share research, ranking, calendar-aware runtime governance, and paper-first operation.
+- Still not fully closed: CN live execution, sleeve attribution in all cross-strategy cases, and universal maintenance-margin / borrow-fee / locate modeling across every product path.
+
+## What is the memory system?
+
+The product keeps two memory layers on purpose:
+
+- runtime learning mesh: research documents, evidence items, and insight candidates live in durable Postgres state
+- promoted long-term memory: repo-backed principles, causal cases, and feature-map lineage live under `memory/` and `evo/feature_map.json`
+
+The older [QMD daily memory spec](../QMD_COMMAND_DRIVEN_MEMORY_DAILY_SPEC.md) is still useful as a reference workflow from the earlier system, but it is not the authoritative runtime state store for this product.
+
+The dashboard overview now distinguishes runtime learning from promoted long-term memory so the owner can see whether the system has merely collected research or actually promoted durable memory.
 
 ## Can I use an OpenAI-compatible relay?
 

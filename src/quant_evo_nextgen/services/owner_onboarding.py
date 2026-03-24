@@ -5,6 +5,7 @@ from pathlib import Path
 
 from quant_evo_nextgen.services.deploy_config import (
     DeployConfigService,
+    SUPPORTED_DEPLOYMENT_MARKET_MODES,
     SUPPORTED_DEPLOYMENT_TOPOLOGIES,
     normalize_deploy_role,
 )
@@ -35,6 +36,20 @@ SUPPORTED_TOPOLOGY_ALIASES = {
     "\u53ccvps": "two_vps_asymmetrical",
     "\u53cc\u673a\u90e8\u7f72": "two_vps_asymmetrical",
     "two_vps_asymmetrical": "two_vps_asymmetrical",
+}
+SUPPORTED_MARKET_MODE_ALIASES = {
+    "us": "us",
+    "usa": "us",
+    "usequities": "us",
+    "usoptions": "us",
+    "\u7f8e\u80a1": "us",
+    "\u7f8e\u80a1\u671f\u6743": "us",
+    "cn": "cn",
+    "china": "cn",
+    "ashares": "cn",
+    "\u4e2d\u56fd": "cn",
+    "a\u80a1": "cn",
+    "\u6caa\u6df1a\u80a1": "cn",
 }
 
 
@@ -136,6 +151,19 @@ class OwnerOnboardingService:
                 "QE_DEFAULT_BROKER_ADAPTER",
             ]
             masked_value = broker_mode
+        elif field.kind == "market_mode":
+            market_mode = self._normalize_market_mode(value)
+            updated = self.deploy_config.update_env_file(
+                role=normalized,
+                output_path=env_path,
+                market_mode=market_mode,
+            )
+            changed_keys = [
+                "QE_DEPLOYMENT_MARKET_MODE",
+                "QE_MARKET_TIMEZONE",
+                "QE_MARKET_CALENDAR",
+            ]
+            masked_value = market_mode
         else:
             if field.env_key is None:
                 raise ValueError(f"Field `{field_alias}` has no env mapping yet.")
@@ -190,6 +218,8 @@ class OwnerOnboardingService:
             return self._normalize_bool_value(stripped)
         if field.kind == "topology":
             return self._normalize_topology(stripped)
+        if field.kind == "market_mode":
+            return self._normalize_market_mode(stripped)
         return stripped
 
     def _normalize_broker_mode(self, value: str) -> str:
@@ -216,6 +246,16 @@ class OwnerOnboardingService:
         if mapped is None:
             supported = ", ".join(sorted(SUPPORTED_DEPLOYMENT_TOPOLOGIES))
             raise ValueError(f"Deployment topology must be one of: {supported}.")
+        return mapped
+
+    def _normalize_market_mode(self, value: str) -> str:
+        normalized = value.strip().lower().replace(" ", "").replace("-", "").replace("_", "")
+        mapped = SUPPORTED_MARKET_MODE_ALIASES.get(normalized)
+        if mapped is None and value.strip().lower() in SUPPORTED_DEPLOYMENT_MARKET_MODES:
+            mapped = value.strip().lower()
+        if mapped is None:
+            supported = ", ".join(sorted(SUPPORTED_DEPLOYMENT_MARKET_MODES))
+            raise ValueError(f"Deployment market mode must be one of: {supported}.")
         return mapped
 
     def _mask_value(self, value: str, *, secret: bool) -> str:

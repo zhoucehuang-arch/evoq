@@ -72,11 +72,15 @@ function buildFallbackOverview(failure: DashboardFetchFailure): DashboardOvervie
     summary_cards: [
       { label: "Production strategies", value: "0", tone: "warn", hint: "Waiting for API" },
       { label: "Pending approvals", value: "0", tone: "neutral", hint: "Waiting for API" },
-      { label: "Principle memory", value: "0", tone: "neutral", hint: "Waiting for API" },
+      { label: "Market mode", value: "unconfigured", tone: "neutral", hint: "Waiting for API" },
+      { label: "Learning docs", value: "0", tone: "warn", hint: "Waiting for API" },
+      { label: "Ready insights", value: "0", tone: "neutral", hint: "Waiting for API" },
+      { label: "Principle memory", value: "0", tone: "neutral", hint: "Repo-backed memory is waiting for API" },
       { label: "Active overrides", value: "0", tone: "warn", hint: "Waiting for API" },
     ],
     highlights: [
       "The frontend is running, but the backend aggregation API could not be reached.",
+      failure.operator_action,
       "Check that core-api is online and that NEXT_PUBLIC_API_BASE_URL points to the right host.",
       "Broken freshness means the UI should not pretend to have live control-plane data.",
     ],
@@ -89,6 +93,10 @@ function buildFallbackOverview(failure: DashboardFetchFailure): DashboardOvervie
     learning: {
       principles: 0,
       causal_cases: 0,
+      document_count: 0,
+      insight_count: 0,
+      ready_insight_count: 0,
+      quarantined_insight_count: 0,
       occupied_feature_cells: 0,
       feature_coverage_pct: 0,
       total_generations: 0,
@@ -96,6 +104,10 @@ function buildFallbackOverview(failure: DashboardFetchFailure): DashboardOvervie
     system: {
       mode: "degraded",
       risk_state: "observe",
+      deployment_market_mode: "unconfigured",
+      active_sleeves: [],
+      market_calendar: null,
+      market_timezone: null,
       codex_queue_depth: 0,
       active_goals: 0,
       open_incidents: 0,

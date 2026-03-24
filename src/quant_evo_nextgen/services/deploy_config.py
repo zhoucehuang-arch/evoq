@@ -28,6 +28,10 @@ SUPPORTED_DEPLOYMENT_TOPOLOGIES = {
     "single_vps_compact",
     "two_vps_asymmetrical",
 }
+SUPPORTED_DEPLOYMENT_MARKET_MODES = {
+    "us",
+    "cn",
+}
 
 
 @dataclass(slots=True)
@@ -101,6 +105,10 @@ class DeployConfigService:
             values.update({key: value for key, value in overrides.items() if key.startswith("QE_")})
 
         broker_mode = str((overrides or {}).get("__broker_mode__", "") or values.get("__broker_mode__", "paper_sim")).strip().lower()
+        market_mode = str(
+            (overrides or {}).get("__market_mode__", "")
+            or values.get("__market_mode__", values.get("QE_DEPLOYMENT_MARKET_MODE", "us"))
+        ).strip().lower()
         prompt_fn = prompt or input
 
         if interactive:
@@ -114,6 +122,7 @@ class DeployConfigService:
             if normalized == "core" and prompt_profile == "full":
                 broker_mode = self._prompt_broker_mode(prompt_fn, broker_mode)
 
+        self._apply_market_mode(values, market_mode)
         self._apply_broker_mode(values, broker_mode)
         if normalized == "core":
             self._ensure_core_security_defaults(values)
@@ -128,13 +137,20 @@ class DeployConfigService:
         role: str,
         output_path: Path | None = None,
         broker_mode: str | None = None,
+        market_mode: str | None = None,
     ) -> Path:
         normalized = normalize_deploy_role(role)
         target_path = output_path or self.default_env_path(normalized)
         target_path = target_path if target_path.is_absolute() else (self.repo_root / target_path).resolve()
         if target_path.exists():
             return target_path
-        overrides = {"__broker_mode__": broker_mode} if broker_mode else None
+        overrides: dict[str, str] | None = None
+        if broker_mode or market_mode:
+            overrides = {}
+            if broker_mode:
+                overrides["__broker_mode__"] = broker_mode
+            if market_mode:
+                overrides["__market_mode__"] = market_mode
         return self.initialize_env_file(
             role=normalized,
             output_path=target_path,
@@ -149,14 +165,22 @@ class DeployConfigService:
         updates: Mapping[str, str] | None = None,
         output_path: Path | None = None,
         broker_mode: str | None = None,
+        market_mode: str | None = None,
     ) -> Path:
         normalized = normalize_deploy_role(role)
-        target_path = self.ensure_env_file(role=normalized, output_path=output_path, broker_mode=broker_mode)
+        target_path = self.ensure_env_file(
+            role=normalized,
+            output_path=output_path,
+            broker_mode=broker_mode,
+            market_mode=market_mode,
+        )
         example_path = self.example_env_path(normalized)
         template_lines = example_path.read_text(encoding="utf-8").splitlines()
         values = self._read_env_values(example_path)
         values.update(self._role_defaults(normalized))
         values.update(self._read_env_values(target_path))
+        if market_mode:
+            self._apply_market_mode(values, market_mode)
         if broker_mode:
             self._apply_broker_mode(values, broker_mode)
         if updates:
@@ -283,6 +307,7 @@ class DeployConfigService:
         if role == "core":
             if prompt_profile == "single_vps_minimal":
                 return [
+                    PromptField("__market_mode__", "Deployment market mode [us/cn]", optional=True),
                     PromptField("QE_POSTGRES_PASSWORD", "Postgres password", secret=True),
                     PromptField("QE_OPENAI_API_KEY", "Relay or OpenAI API key", secret=True),
                     PromptField("QE_OPENAI_BASE_URL", "Relay base URL", optional=True),
@@ -294,6 +319,7 @@ class DeployConfigService:
                     PromptField("QE_DISCORD_ALLOWED_USER_IDS", "Allowed Discord user IDs, comma-separated"),
                 ]
             return [
+                PromptField("__market_mode__", "Deployment market mode [us/cn]", optional=True),
                 PromptField("QE_POSTGRES_PASSWORD", "Postgres password", secret=True),
                 PromptField("QE_OPENAI_API_KEY", "Relay or OpenAI API key", secret=True),
                 PromptField("QE_OPENAI_BASE_URL", "Relay base URL", optional=True),
@@ -317,6 +343,7 @@ class DeployConfigService:
                 PromptField("QE_ALPACA_LIVE_API_SECRET", "Alpaca live API secret", secret=True, optional=True),
             ]
         return [
+            PromptField("__market_mode__", "Deployment market mode [us/cn]", optional=True),
             PromptField(
                 "QE_POSTGRES_URL",
                 "Core Postgres URL"
@@ -335,10 +362,13 @@ class DeployConfigService:
                 "QE_ENV": "production",
                 "QE_NODE_ROLE": "core",
                 "QE_DEPLOYMENT_TOPOLOGY": "two_vps_asymmetrical",
+                "QE_DEPLOYMENT_MARKET_MODE": "us",
                 "QE_DEFAULT_BROKER_PROVIDER_KEY": "paper-sim",
                 "QE_DEFAULT_BROKER_ACCOUNT_REF": "paper-main",
                 "QE_DEFAULT_BROKER_ENVIRONMENT": "paper",
                 "QE_DEFAULT_BROKER_ADAPTER": "paper_sim",
+                "QE_MARKET_TIMEZONE": "America/New_York",
+                "QE_MARKET_CALENDAR": "XNYS",
                 "QE_POSTGRES_BIND_HOST": "127.0.0.1",
                 "QE_API_BIND_HOST": "127.0.0.1",
                 "QE_DASHBOARD_BIND_HOST": "127.0.0.1",
@@ -355,12 +385,29 @@ class DeployConfigService:
             "QE_ENV": "production",
             "QE_NODE_ROLE": "worker",
             "QE_DEPLOYMENT_TOPOLOGY": "two_vps_asymmetrical",
+            "QE_DEPLOYMENT_MARKET_MODE": "us",
+            "QE_MARKET_TIMEZONE": "America/New_York",
+            "QE_MARKET_CALENDAR": "XNYS",
             "QE_SEARXNG_BASE_URL": "",
             "QE_RSSHUB_BASE_URL": "",
             "QE_PLAYWRIGHT_BROWSER_ENABLED": "false",
             "QE_PLAYWRIGHT_BROWSER_ENDPOINT": "",
             "QE_SKILL_LIBRARY_ROOT": "skills",
         }
+
+    def _apply_market_mode(self, values: dict[str, str], market_mode: str) -> None:
+        normalized = market_mode.strip().lower() or "us"
+        if normalized == "us":
+            values["QE_DEPLOYMENT_MARKET_MODE"] = "us"
+            values["QE_MARKET_TIMEZONE"] = "America/New_York"
+            values["QE_MARKET_CALENDAR"] = "XNYS"
+        elif normalized == "cn":
+            values["QE_DEPLOYMENT_MARKET_MODE"] = "cn"
+            values["QE_MARKET_TIMEZONE"] = "Asia/Shanghai"
+            values["QE_MARKET_CALENDAR"] = "XSHG"
+        else:
+            raise ValueError(f"Unsupported market mode: {market_mode}")
+        values["__market_mode__"] = normalized
 
     def _apply_broker_mode(self, values: dict[str, str], broker_mode: str) -> None:
         normalized = broker_mode.strip().lower() or "paper_sim"
@@ -431,7 +478,10 @@ class DeployConfigService:
             issues.append(
                 "QE_DEPLOYMENT_TOPOLOGY should be either `single_vps_compact` or `two_vps_asymmetrical`."
             )
-        elif role == "worker" and topology != "two_vps_asymmetrical":
+        market_mode = (settings.deployment_market_mode or "").strip().lower()
+        if market_mode not in SUPPORTED_DEPLOYMENT_MARKET_MODES:
+            issues.append("QE_DEPLOYMENT_MARKET_MODE should be either `us` or `cn`.")
+        if role == "worker" and topology != "two_vps_asymmetrical":
             return DeployConfigCheck(
                 key="runtime_profile",
                 label="Runtime Profile",
@@ -467,6 +517,7 @@ class DeployConfigService:
             details={
                 "env": settings.env,
                 "deployment_topology": settings.deployment_topology,
+                "deployment_market_mode": settings.deployment_market_mode,
                 "heartbeat_interval_seconds": settings.heartbeat_interval_seconds,
             },
         )
@@ -561,13 +612,30 @@ class DeployConfigService:
                 message="QE_POSTGRES_PASSWORD is still missing or set to a placeholder.",
                 details={},
             )
+        if settings.deployment_market_mode == "cn" and settings.default_broker_adapter == "alpaca":
+            return DeployConfigCheck(
+                key="broker_and_db",
+                label="Broker And Database Guard",
+                status="fail",
+                message=(
+                    "CN deployment mode cannot use Alpaca. Keep `paper_sim` for China-market deployments "
+                    "until a bounded CN broker adapter is configured."
+                ),
+                details={
+                    "deployment_market_mode": settings.deployment_market_mode,
+                    "default_broker_adapter": settings.default_broker_adapter,
+                },
+            )
         if settings.default_broker_adapter != "alpaca":
             return DeployConfigCheck(
                 key="broker_and_db",
                 label="Broker And Database Guard",
                 status="ok",
-                message="Core is configured for paper-first bring-up and does not require Alpaca credentials yet.",
-                details={"default_broker_adapter": settings.default_broker_adapter},
+                message="Core is configured for paper-first bring-up and does not require external broker credentials yet.",
+                details={
+                    "deployment_market_mode": settings.deployment_market_mode,
+                    "default_broker_adapter": settings.default_broker_adapter,
+                },
             )
 
         if settings.default_broker_environment == "paper":
@@ -597,7 +665,11 @@ class DeployConfigService:
             label="Broker And Database Guard",
             status="ok",
             message="Core broker settings are consistent with the selected Alpaca mode.",
-            details={"base_url": base_url, "default_broker_environment": settings.default_broker_environment},
+            details={
+                "base_url": base_url,
+                "deployment_market_mode": settings.deployment_market_mode,
+                "default_broker_environment": settings.default_broker_environment,
+            },
         )
 
     def _check_core_postgres_exposure(

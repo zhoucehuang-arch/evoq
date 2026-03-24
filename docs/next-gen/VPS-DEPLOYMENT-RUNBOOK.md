@@ -6,16 +6,16 @@ This is the canonical production deploy path for the active next-generation runt
 
 If you are starting from a local folder and want to publish to GitHub first, then deploy to VPS by `git clone` / `git pull`, read [GITHUB-TO-VPS-DEPLOYMENT.md](GITHUB-TO-VPS-DEPLOYMENT.md) before using this runbook.
 
-Recommended topology:
-
-- `VPS-A Core`
-- `VPS-B Worker`
-
-Simplest supported product path:
+Recommended first deployment shape:
 
 - `1 VPS` using the `single_vps_compact` profile
 - bootstrap only the Core env
 - let the Core stack also host `codex-fabric-runner`
+
+Scale out later when needed:
+
+- `VPS-A Core`
+- `VPS-B Worker`
 
 Repo path on both machines:
 
@@ -257,6 +257,7 @@ cd /opt/quant-evo-nextgen
 Then confirm:
 
 - `./ops/bin/core-smoke.sh` reports no `fail`
+- `./ops/bin/system-doctor.sh` reports no `fail`
 - `/api/v1/system/doctor` shows `node_vps_deploy=ok` before treating the node as deploy-ready
 - `/api/v1/system/doctor` should be reviewed together with worker reachability, broker sync state, smoke checks, and the current paper/live activation posture before treating the deployment as production-ready
 - `http://127.0.0.1:${QE_API_HOST_PORT:-8000}/healthz` returns `ok: true`

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     repo_root: Path = Path(".")
     node_role: str = "core"
     deployment_topology: str = "single_node_bootstrap"
+    deployment_market_mode: str = "us"
     operator_language: str = "zh-CN"
     operator_timezone: str = "Asia/Hong_Kong"
     market_timezone: str = "America/New_York"

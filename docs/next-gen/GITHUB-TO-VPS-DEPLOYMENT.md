@@ -20,6 +20,7 @@ If this is your first real deployment, start with `1 VPS` unless you already kno
 - Discord bot token, guild ID, channel IDs, and allowed owner user IDs
 - an OpenAI-compatible API key or relay key
 - `QE_OPENAI_BASE_URL` if you use a relay
+- a market choice for this deployment: `us` or `cn`
 - optional broker credentials if you plan to move beyond `paper`
 
 ### 1. Push the Project to GitHub
@@ -78,6 +79,7 @@ Edit:
 Minimum values:
 
 - `QE_POSTGRES_PASSWORD`
+- `QE_DEPLOYMENT_MARKET_MODE`
 - `QE_DISCORD_TOKEN`
 - `QE_DISCORD_GUILD_ID`
 - `QE_DISCORD_CONTROL_CHANNEL_ID`
@@ -93,11 +95,19 @@ Minimum values:
 Recommended safe first-boot values:
 
 - `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`
+- `QE_DEPLOYMENT_MARKET_MODE=us` for the US equities + US options product surface
 - `QE_DEFAULT_BROKER_ADAPTER=paper_sim`
 - `QE_DEFAULT_BROKER_ENVIRONMENT=paper`
 - `QE_POSTGRES_BIND_HOST=127.0.0.1`
 - `QE_API_BIND_HOST=127.0.0.1`
 - `QE_DASHBOARD_BIND_HOST=127.0.0.1`
+
+If this VPS is for the China A-share product surface, use:
+
+- `QE_DEPLOYMENT_MARKET_MODE=cn`
+- `QE_MARKET_TIMEZONE=Asia/Shanghai`
+- `QE_MARKET_CALENDAR=XSHG`
+- keep the first-boot broker posture on `paper_sim` until the CN broker edge is ready
 
 ### 4. Owner-Friendly Draft Control
 
@@ -136,6 +146,7 @@ Also check:
 
 - dashboard loads
 - Discord bot responds only in the allowed owner path
+- `./ops/bin/system-doctor.sh` reports no `fail`
 - `/api/v1/system/doctor` reports no `fail`
 
 ### 6. Safe First Activation
@@ -145,10 +156,11 @@ Do not switch straight into live trading.
 Recommended order:
 
 1. finish the first clean bring-up on the single VPS
-2. keep the broker path in `paper`
-3. let the first broker sync and reconciliation finish cleanly
-4. verify dashboard, Discord, and doctor all agree on runtime health
-5. only then consider a paper-broker path or later live approval
+2. confirm the deployment market mode is correct for this VPS
+3. keep the broker path in `paper`
+4. let the first broker sync and reconciliation finish cleanly
+5. verify dashboard, Discord, and doctor all agree on runtime health
+6. only then consider a paper-broker path or later live approval
 
 ### 7. Scale to Core + Worker Later
 

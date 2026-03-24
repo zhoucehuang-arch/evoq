@@ -15,7 +15,7 @@ This guide is for the person operating the system day to day.
 2. Run `./ops/bin/core-smoke.sh` on the Core VPS and confirm it reports no `fail`.
 3. If you are on the two-VPS topology, run `./ops/bin/worker-smoke.sh` on the Worker VPS and confirm it reports no `fail`.
 4. In Discord, verify that only the allowed owner accounts and channels can control the bot.
-5. Run the doctor once and confirm the acquisition stack explains whether Codex web search, SearXNG, RSSHub, and Playwright are configured, reachable, or degraded.
+5. Run `./ops/bin/system-doctor.sh` and confirm the acquisition stack explains whether Codex web search, SearXNG, RSSHub, and Playwright are configured, reachable, or degraded.
 6. If a real broker is configured, wait for the first broker sync and confirm the trading view updates correctly.
 
 ## Owner CLI
@@ -25,10 +25,13 @@ Use these commands before the Discord bot is fully configured, or when you want 
 ```bash
 ./ops/bin/quickstart-single-vps.sh
 ./ops/bin/onboard-single-vps.sh --no-start
+./ops/bin/system-doctor.sh
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . onboard-single-vps
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . status core
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaybaseurl https://relay.example.com/v1
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core marketmode us
+py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core marketmode cn
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwrightenabled true
 ```
 
@@ -57,6 +60,8 @@ py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core playwr
 - `设置 core 中转地址 为 https://relay.example.com/v1`
 - `设置 core 中转key 为 <secret>`
 - `设置 core 部署模式 为 single_vps_compact`
+- `设置 core 市场模式 为 us`
+- `设置 core 市场模式 为 cn`
 - `设置 core SearXNG 为 http://127.0.0.1:8080`
 - `设置 core RSSHub 为 http://127.0.0.1:1200`
 - `设置 core Playwright启用 为 true`

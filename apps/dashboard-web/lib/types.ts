@@ -34,6 +34,10 @@ export interface StrategySummary {
 export interface LearningSummary {
   principles: number;
   causal_cases: number;
+  document_count: number;
+  insight_count: number;
+  ready_insight_count: number;
+  quarantined_insight_count: number;
   occupied_feature_cells: number;
   feature_coverage_pct: number;
   total_generations: number;
@@ -42,6 +46,10 @@ export interface LearningSummary {
 export interface SystemSummary {
   mode: string;
   risk_state: string;
+  deployment_market_mode: string;
+  active_sleeves: string[];
+  market_calendar?: string | null;
+  market_timezone?: string | null;
   codex_queue_depth: number;
   active_goals: number;
   open_incidents: number;

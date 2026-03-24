@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 from sqlalchemy import text
 
@@ -87,6 +88,31 @@ def test_doctor_fails_when_default_alpaca_broker_lacks_credentials(tmp_path: Pat
     assert report["status"] == "fail"
     assert statuses["broker"] == "fail"
     assert profiles["capital_activation"]["status"] == "fail"
+
+    database.dispose()
+
+
+def test_doctor_fails_when_cn_market_mode_uses_alpaca(tmp_path: Path) -> None:
+    database_path = tmp_path / "doctor-cn-alpaca.db"
+    database = Database(f"sqlite+pysqlite:///{database_path}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{database_path}",
+        deployment_market_mode="cn",
+        default_broker_adapter="alpaca",
+        default_broker_provider_key="alpaca-paper",
+        default_broker_account_ref="paper-main",
+        default_broker_environment="paper",
+    )
+    store = StateStore(database.session_factory)
+    store.bootstrap_reference_data(settings)
+    report = DoctorService(database.session_factory, settings).run()
+
+    statuses = {check["key"]: check["status"] for check in report["checks"]}
+    assert report["status"] == "fail"
+    assert statuses["broker"] == "fail"
 
     database.dispose()
 
@@ -189,5 +215,59 @@ def test_doctor_surfaces_acquisition_probe_details(monkeypatch, tmp_path: Path) 
     assert acquisition_check["details"]["probe_endpoints"] is True
     assert search_scrape_layer["status"] == "warn"
     assert search_scrape_layer["details"]["probed"] is True
+
+    database.dispose()
+
+
+def test_doctor_owner_target_profile_can_turn_ok_when_runtime_is_fully_live_ready(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "doctor-owner-target-ok.db"
+    database = Database(f"sqlite+pysqlite:///{database_path}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{database_path}",
+        codex_workspace_mode="isolated_copy",
+        default_broker_adapter="alpaca",
+        default_broker_provider_key="alpaca-live",
+        default_broker_account_ref="live-main",
+        default_broker_environment="live",
+        alpaca_live_api_key="live-key",
+        alpaca_live_api_secret="live-secret",
+        openai_api_key="relay-key",
+        openai_base_url="https://relay.example.com/v1",
+        discord_token="discord-token",
+        discord_control_channel="owner-control",
+        discord_approvals_channel="owner-approvals",
+        discord_allowed_user_ids="123456789",
+        dashboard_access_username="owner",
+        dashboard_access_password="super-secret-password",
+        dashboard_api_token="dashboard-token",
+    )
+    store = StateStore(database.session_factory)
+    store.bootstrap_reference_data(settings)
+    with database.session_scope() as session:
+        session.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
+        session.execute(text("INSERT INTO alembic_version (version_num) VALUES ('20260320_0014')"))
+
+    doctor = DoctorService(database.session_factory, settings)
+    monkeypatch.setattr(
+        doctor.execution_service,
+        "get_execution_readiness",
+        lambda: SimpleNamespace(
+            status="ready",
+            trading_allowed=True,
+            active_production_strategies=1,
+            blocked_reasons=[],
+        ),
+    )
+
+    report = doctor.run()
+    profiles = {profile["key"]: profile for profile in report["profiles"]}
+
+    assert profiles["owner_target_full_system"]["status"] == "ok"
 
     database.dispose()

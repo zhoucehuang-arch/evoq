@@ -66,6 +66,19 @@ _FIELD_SPECS: tuple[DeployFieldSpec, ...] = (
         kind="topology",
     ),
     DeployFieldSpec(
+        key="deployment_market_mode",
+        label="Deployment Market Mode",
+        aliases=(
+            "\u5e02\u573a\u6a21\u5f0f",
+            "\u90e8\u7f72\u5e02\u573a",
+            "deploymentmarketmode",
+            "marketmode",
+            "targetmarket",
+        ),
+        env_key="QE_DEPLOYMENT_MARKET_MODE",
+        kind="market_mode",
+    ),
+    DeployFieldSpec(
         key="broker_mode",
         label="Broker Mode",
         aliases=(

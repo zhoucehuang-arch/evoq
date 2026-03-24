@@ -9,6 +9,7 @@ The target is not merely "more features." The target is:
 - Discord-first owner control
 - dashboard-first visibility
 - governed Codex-centered execution
+- deployment-level market selection with one active market mode per runtime
 - durable learning, strategy, and trading state
 - safe unattended VPS operation
 - a deployment and recovery model a non-technical owner can actually use
@@ -42,12 +43,30 @@ Still not complete:
 
 - Discord operator security and richer owner UX
 - real broker adapters
+- deployment-level market mode closure for `us` versus `cn`
 - multi-instrument trading closure for options, short lifecycle, and leverage-aware execution
 - governed strategy-to-capital promotion closure
 - full auto-evolution closure
 - VPS productization and operator runbooks
 
 ## 4. Finish Order
+
+### 4.0 Stage 0: Planning Contract Closure
+
+Scope:
+
+- formal memory-plane contract
+- formal skill-plane contract
+- named failure taxonomy and fallback policy
+- dashboard and Discord state tables
+- initial `DESIGN.md` for product surfaces
+
+Done when:
+
+- learning and self-improvement are backed by explicit runtime contracts
+- reusable skills have provenance, quality gates, and rollback posture
+- operator-facing states are specified before more UI expansion
+- major failures are named, surfaced, and recoverable by design
 
 ### 4.1 Stage A: Owner Control Plane Hardening
 
@@ -70,17 +89,22 @@ Done when:
 Scope:
 
 - canonical instrument and broker capability model
+- deployment-level market mode contract: `us` or `cn`
+- durable portfolio sleeve attribution for `us_equities`, `us_options`, and `cn_equities`
+- sleeve-specific market calendars, broker profiles, source packs, and capital policy
 - equities, options, and short/margin-aware order semantics
 - paper/live product-parity execution logic
 - one or more real broker adapters
 - authenticated sync loops
 - cancel/replace/sync parity with broker truth
-- portfolio sleeve attribution and symbol ownership
+- symbol ownership within sleeves
 - live capital guardrails tied to strategy stage
 
 Done when:
 
 - the trading kernel no longer relies on equity-only assumptions
+- one deployment selects one market mode and the active sleeve family follows from that choice
+- US and China strategies are separated in runtime truth rather than only by prose fields
 - at least one real broker path supports the target product surface end-to-end
 - restart recovery works against a real broker
 - limited-live mode has real reconciliation confidence
@@ -120,12 +144,18 @@ Done when:
 
 ## 5. Immediate Next Build Queue
 
-1. Close multi-instrument paper execution and product-aware risk rules on top of the new instrument and broker capability model.
-2. Harden Discord operator security and owner workflow ergonomics.
-3. Implement the first real broker adapter and authenticated sync loop.
-4. Add product-grade deployment checks, backup scaffolding, and operator runbooks.
-5. Close governed strategy-to-capital promotion.
-6. Close governed auto-evolution promotion and rollback.
+1. Close durable sleeve attribution and per-sleeve runtime state for `us_equities`, `us_options`, and `cn_equities`.
+2. Close deployment-level market mode so one runtime explicitly selects `us` or `cn`.
+3. Add a first-class quant signal layer so candidate generation, ranking, and sizing do not depend on LLM free-form reasoning.
+4. Formalize the memory plane, skill plane, and failure taxonomy before expanding autonomous learning and self-improvement.
+5. Close multi-instrument paper execution and product-aware risk rules on top of the new instrument and broker capability model.
+6. Harden Discord operator security and owner workflow ergonomics.
+7. Implement the first real broker adapter and authenticated sync loop.
+8. Add sleeve-specific acquisition packs, research artifacts, and promotion thresholds.
+9. Add an initial `DESIGN.md` plus dashboard and Discord interaction-state contracts.
+10. Add product-grade deployment checks, backup scaffolding, and operator runbooks.
+11. Close governed strategy-to-capital promotion.
+12. Close governed auto-evolution promotion and rollback.
 
 ## 6. Non-Negotiable Constraints
 

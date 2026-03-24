@@ -242,6 +242,45 @@ def test_execution_service_reports_ready_when_session_snapshot_and_reconciliatio
     assert readiness.active_trading_overrides == 0
 
 
+def test_execution_service_supports_cn_equity_market_sessions(tmp_path: Path) -> None:
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'execution-cn-session.db'}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'execution-cn-session.db'}",
+        db_bootstrap_on_start=True,
+        deployment_market_mode="cn",
+        market_calendar="XSHG",
+        market_timezone="Asia/Shanghai",
+    )
+    state_store = StateStore(database.session_factory)
+    state_store.bootstrap_reference_data(settings)
+
+    service = ExecutionService(database.session_factory, settings)
+
+    morning_state = service.synthesize_market_session_state(now=datetime(2026, 3, 18, 2, 0, tzinfo=UTC))
+    midday_state = service.synthesize_market_session_state(now=datetime(2026, 3, 18, 4, 0, tzinfo=UTC))
+    after_close_state = service.synthesize_market_session_state(now=datetime(2026, 3, 18, 7, 30, tzinfo=UTC))
+
+    assert morning_state.market_calendar == "XSHG"
+    assert morning_state.session_label == "morning_continuous"
+    assert morning_state.is_market_open is True
+    assert morning_state.trading_allowed is True
+
+    assert midday_state.session_label == "midday_break"
+    assert midday_state.is_market_open is False
+    assert midday_state.trading_allowed is False
+
+    assert after_close_state.session_label == "after_close"
+    assert after_close_state.is_market_open is False
+    assert after_close_state.trading_allowed is False
+    assert after_close_state.next_open_at is not None
+    assert after_close_state.next_close_at is not None
+    assert after_close_state.next_open_at.replace(tzinfo=UTC) == datetime(2026, 3, 19, 1, 30, tzinfo=UTC)
+    assert after_close_state.next_close_at.replace(tzinfo=UTC) == datetime(2026, 3, 19, 3, 30, tzinfo=UTC)
+
+
 def test_execution_service_blocks_and_halts_trading_on_reconciliation_divergence(tmp_path: Path) -> None:
     database = Database(f"sqlite+pysqlite:///{tmp_path / 'execution-halt.db'}")
     database.create_schema()

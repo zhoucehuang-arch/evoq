@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-03-20
+2026-03-24
 
 ## Summary
 
@@ -21,11 +21,14 @@ The next major step is no longer a foundational redesign. It is environment-spec
 - governed trading and risk controls with broker sync, reconciliation, readiness checks, option lifecycle handling, and multi-leg support
 - evolution governance with proposals, canary lanes, promotion decisions, rollback paths, incidents, capability scorecards, and anti-stall replanning
 - production-oriented Core and Worker deploy assets, smoke checks, backup scripts, restore scripts, and systemd units
+- single-VPS-first owner path with deployment-market mode selection and owner-friendly deploy-draft updates
+- overview and dashboard surfaces that now distinguish repo-backed promoted memory from runtime learning-mesh state
+- single-VPS-first deploy docs and runbooks aligned as the primary owner entry path
 
 ## What Was Verified In This Repository
 
-- `py -m pytest -q` passed with `113` tests
-- `py -m compileall src tests` passed
+- `py -m pytest -q` passed with `125` tests
+- `py -m compileall src` passed
 - `npm run build` passed in `apps/dashboard-web`
 - fresh-database Alembic `upgrade head` had already been verified through `20260320_0014`
 
@@ -51,8 +54,10 @@ These still require honest operator validation on the target environment:
 
 ## Conservative Boundaries Still In Place
 
+- `CN live` broker execution is still not shipped and must remain paper-first
 - conflicting or ambiguous option conversion events still require review
-- portfolio sleeve attribution is still not implemented
+- portfolio sleeve attribution is still not fully closed
+- universal maintenance-margin, borrow-fee, and locate modeling is still conservative rather than universal across every product path
 - learning synthesis remains intentionally conservative rather than maximally broad by default
 - owner-facing artifact browsing is still thinner than the rest of the control plane
 

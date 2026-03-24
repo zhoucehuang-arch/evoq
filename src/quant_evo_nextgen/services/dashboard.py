@@ -109,10 +109,53 @@ class DashboardService:
         self.execution_service = execution_service
         self.evolution_service = evolution_service
 
+    def _deployment_market_context(self) -> dict[str, object]:
+        if self.state_store is None:
+            return {
+                "deployment_market_mode": "unconfigured",
+                "active_sleeves": [],
+                "market_calendar": None,
+                "market_timezone": None,
+            }
+
+        entries = self.state_store.list_runtime_config_entries(limit=20)
+        for entry in entries:
+            if entry.target_key != "deployment_market_mode":
+                continue
+            value = dict(entry.value_json or {})
+            active_sleeves = [str(item) for item in value.get("active_sleeves", []) if item is not None]
+            return {
+                "deployment_market_mode": str(value.get("deployment_market_mode", "unconfigured")),
+                "active_sleeves": active_sleeves,
+                "market_calendar": str(value["market_calendar"]) if value.get("market_calendar") is not None else None,
+                "market_timezone": str(value["market_timezone"]) if value.get("market_timezone") is not None else None,
+            }
+
+        return {
+            "deployment_market_mode": "unconfigured",
+            "active_sleeves": [],
+            "market_calendar": None,
+            "market_timezone": None,
+        }
+
     def build_overview(self) -> DashboardOverview:
         snapshot = self.repo_state_service.collect()
         runtime = self.state_store.get_runtime_snapshot() if self.state_store is not None else _empty_runtime_snapshot()
         strategy_metrics = self.strategy_service.get_metrics() if self.strategy_service is not None else None
+        learning_metrics = (
+            self.learning_service.get_learning_metrics()
+            if self.learning_service is not None
+            else None
+        )
+        market_context = self._deployment_market_context()
+        active_sleeves = list(market_context["active_sleeves"])
+        sleeve_text = ", ".join(active_sleeves) if active_sleeves else "unconfigured"
+        document_count = learning_metrics.document_count if learning_metrics is not None else 0
+        insight_count = learning_metrics.insight_count if learning_metrics is not None else 0
+        ready_insight_count = learning_metrics.ready_insight_count if learning_metrics is not None else 0
+        quarantined_insight_count = (
+            learning_metrics.quarantined_insight_count if learning_metrics is not None else 0
+        )
 
         candidate_count = snapshot.candidates
         staging_count = snapshot.staging
@@ -145,7 +188,18 @@ class DashboardService:
                 f"Candidate strategies {candidate_count}, staging strategies {staging_count}, "
                 f"production strategies {production_count}."
             ),
-            f"Long-term principles {snapshot.principles}, causal memory records {snapshot.causal_cases}.",
+            (
+                f"Deployment market {market_context['deployment_market_mode']} with sleeves {sleeve_text}, "
+                f"calendar {market_context['market_calendar'] or 'unknown'}."
+            ),
+            (
+                f"Repo-backed principles {snapshot.principles}, causal memory records "
+                f"{snapshot.causal_cases}."
+            ),
+            (
+                f"Runtime learning docs {document_count}, insight candidates {insight_count}, "
+                f"ready for review {ready_insight_count}."
+            ),
             (
                 f"Feature map cells occupied {snapshot.occupied_feature_cells}, "
                 f"coverage {snapshot.feature_coverage_pct:.4f}%."
@@ -179,10 +233,35 @@ class DashboardService:
                     hint="Owner confirmations still waiting in the control plane.",
                 ),
                 SummaryCard(
+                    label="Market mode",
+                    value=str(market_context["deployment_market_mode"]),
+                    tone="neutral",
+                    hint=f"Active sleeves: {sleeve_text}.",
+                ),
+                SummaryCard(
+                    label="Learning docs",
+                    value=str(document_count),
+                    tone="good" if document_count else "warn",
+                    hint="Durable runtime research documents ingested into the learning mesh.",
+                ),
+                SummaryCard(
+                    label="Ready insights",
+                    value=str(ready_insight_count),
+                    tone=(
+                        "good"
+                        if ready_insight_count
+                        else ("warn" if insight_count or quarantined_insight_count else "neutral")
+                    ),
+                    hint=(
+                        f"Runtime insight candidates ready for review. Quarantined: "
+                        f"{quarantined_insight_count}."
+                    ),
+                ),
+                SummaryCard(
                     label="Principle memory",
                     value=str(snapshot.principles),
                     tone="neutral",
-                    hint="Promoted long-term principle records.",
+                    hint=f"Repo-backed promoted principles. Causal cases: {snapshot.causal_cases}.",
                 ),
                 SummaryCard(
                     label="Active overrides",
@@ -201,6 +280,10 @@ class DashboardService:
             learning=LearningSummary(
                 principles=snapshot.principles,
                 causal_cases=snapshot.causal_cases,
+                document_count=document_count,
+                insight_count=insight_count,
+                ready_insight_count=ready_insight_count,
+                quarantined_insight_count=quarantined_insight_count,
                 occupied_feature_cells=snapshot.occupied_feature_cells,
                 feature_coverage_pct=snapshot.feature_coverage_pct,
                 total_generations=snapshot.total_generations,
@@ -208,6 +291,10 @@ class DashboardService:
             system=SystemSummary(
                 mode=mode,
                 risk_state=risk_state,
+                deployment_market_mode=str(market_context["deployment_market_mode"]),
+                active_sleeves=active_sleeves,
+                market_calendar=market_context["market_calendar"],
+                market_timezone=market_context["market_timezone"],
                 codex_queue_depth=runtime.active_codex_runs,
                 active_goals=runtime.active_goals,
                 open_incidents=runtime.open_incidents,
@@ -380,6 +467,11 @@ class DashboardService:
             ],
             highlights=[
                 "Trading view prioritizes governed execution readiness over vanity PnL presentation.",
+                (
+                    f"Deployment market {overview.system.deployment_market_mode} is running sleeves "
+                    f"{', '.join(overview.system.active_sleeves) or 'unconfigured'} on "
+                    f"{overview.system.market_calendar or 'unknown'}."
+                ),
                 readiness_highlight,
                 strategy_highlight,
                 option_highlight,
@@ -611,6 +703,11 @@ class DashboardService:
                     tone="good" if providers else "warn",
                 ),
                 SummaryCard(
+                    label="Market mode",
+                    value=overview.system.deployment_market_mode,
+                    tone="neutral",
+                ),
+                SummaryCard(
                     label="Config proposals",
                     value=str(len(config_proposals)),
                     tone="warn" if config_proposals else "good",
@@ -625,6 +722,10 @@ class DashboardService:
                 "System view exposes authority-core observability instead of raw worker chatter.",
                 "If freshness is not fresh, the dashboard should show that risk directly instead of pretending the state is real-time.",
                 "Runtime config is durable, proposal-driven, and approval-backed for risky changes.",
+                (
+                    f"Deployment market {overview.system.deployment_market_mode} is mapped to "
+                    f"{', '.join(overview.system.active_sleeves) or 'no active sleeves'}."
+                ),
             ],
             providers=[_provider_card(provider) for provider in providers],
             supervisor_loops=[_loop_card(loop) for loop in loops],

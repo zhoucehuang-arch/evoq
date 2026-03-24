@@ -1,6 +1,11 @@
 # Ops Assets
 
-This folder contains the deploy and operations tooling for the recommended Core + Worker VPS setup.
+This folder contains the deploy and operations tooling for the single-VPS-first product path and the later Core + Worker scale-out shape.
+
+Default owner path:
+
+- start with `./ops/bin/quickstart-single-vps.sh` on one VPS
+- add the Worker only when you actually need more isolation or research throughput
 
 ## Most Common Commands
 
@@ -9,6 +14,7 @@ This folder contains the deploy and operations tooling for the recommended Core 
 - `./ops/bin/quickstart-single-vps.sh`
 - `sudo ./ops/bin/install-host-deps.sh`
 - `./ops/bin/onboard-single-vps.sh`
+- `./ops/bin/system-doctor.sh`
 - `./ops/bin/bootstrap-node.sh core`
 - `./ops/bin/bootstrap-node.sh worker`
 

@@ -53,6 +53,22 @@ def test_acquisition_stack_reports_ok_with_local_fallbacks_and_skill_pack(tmp_pa
     assert "playwright-browser-intake" in guidance
 
 
+def test_acquisition_guidance_is_market_aware_for_cn_mode() -> None:
+    settings = Settings(
+        deployment_market_mode="cn",
+        market_calendar="XSHG",
+        market_timezone="Asia/Shanghai",
+        openai_api_key="relay-key",
+    )
+
+    guidance = AcquisitionStackService(settings).prompt_guidance()
+
+    assert "Deployment market mode: cn" in guidance
+    assert "cn_equities" in guidance
+    assert "AKShare" in guidance
+    assert "Do not propose US options" in guidance
+
+
 def test_acquisition_stack_surfaces_probe_failure_for_configured_http_fallback(monkeypatch) -> None:
     settings = Settings(
         openai_api_key="relay-key",

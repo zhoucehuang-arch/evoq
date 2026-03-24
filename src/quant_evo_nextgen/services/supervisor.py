@@ -69,6 +69,14 @@ class SupervisorService:
             "owner_absence_watch": self._owner_absence_watch,
         }
 
+    def _deployment_market_context(self) -> tuple[str, list[str]]:
+        market_mode = (self.settings.deployment_market_mode or "us").strip().lower() or "us"
+        if market_mode == "cn":
+            return ("cn", ["cn_equities"])
+        if market_mode == "us":
+            return ("us", ["us_equities", "us_options"])
+        return (market_mode, [])
+
     def run_due_loops(self, *, max_loops: int = 3) -> list[LoopExecutionResult]:
         results: list[LoopExecutionResult] = []
         loops = self.state_store.claim_due_supervisor_loops(limit=max_loops)
@@ -217,6 +225,8 @@ class SupervisorService:
         sources = self.state_store.list_source_health()
         healthy_sources = sum(1 for source in sources if source.health_status in {"healthy", "unknown"})
         acquisition_guidance = AcquisitionStackService(self.settings).prompt_guidance()
+        market_mode, active_sleeves = self._deployment_market_context()
+        sleeve_text = ", ".join(active_sleeves) if active_sleeves else "unconfigured"
         return self._queue_loop_codex_run(
             loop=loop,
             workflow_run=workflow_run,
@@ -225,7 +235,9 @@ class SupervisorService:
             context_summary=(
                 f"System mode={overview.system.mode}, risk_state={overview.system.risk_state}, "
                 f"production_strategies={overview.strategy.production}, active_goals={overview.system.active_goals}, "
-                f"healthy_or_unknown_sources={healthy_sources}/{len(sources)}."
+                f"healthy_or_unknown_sources={healthy_sources}/{len(sources)}, "
+                f"deployment_market_mode={market_mode}, active_sleeves={sleeve_text}, "
+                f"market_calendar={self.settings.market_calendar}, market_timezone={self.settings.market_timezone}."
             ),
             write_scope=["knowledge/", "memory/", "docs/next-gen/"],
             allowed_tools=["shell", "web"],
@@ -243,6 +255,8 @@ class SupervisorService:
                 "Work as the research intake loop. Favor fresh, high-signal material over volume. "
                 "Explicitly distinguish confirmed evidence from inference. "
                 "If repository edits are unnecessary, keep the workspace read-light and return structured findings. "
+                f"Current deployment target is `{market_mode}` with sleeves `{sleeve_text}`. "
+                "Do not suggest instruments, brokers, or execution paths outside that deployment scope. "
                 f"{acquisition_guidance}"
             ),
             citation_requirements=[
@@ -321,6 +335,8 @@ class SupervisorService:
     ) -> dict[str, Any]:
         overview = self.dashboard_service.build_overview()
         strategy_metrics = self.strategy_service.get_metrics() if self.strategy_service is not None else None
+        market_mode, active_sleeves = self._deployment_market_context()
+        sleeve_text = ", ".join(active_sleeves) if active_sleeves else "unconfigured"
         context_summary = (
             (
                 f"Hypotheses={strategy_metrics.hypothesis_count}, specs={strategy_metrics.spec_count}, "
@@ -328,13 +344,17 @@ class SupervisorService:
                 f"paper_running={strategy_metrics.paper_running_count}, "
                 f"live_candidates={strategy_metrics.live_candidate_count}, "
                 f"production={strategy_metrics.production_count}, risk_state={overview.system.risk_state}, "
-                f"codex_queue_depth={overview.system.codex_queue_depth}."
+                f"codex_queue_depth={overview.system.codex_queue_depth}, "
+                f"deployment_market_mode={market_mode}, active_sleeves={sleeve_text}, "
+                f"market_calendar={self.settings.market_calendar}."
             )
             if strategy_metrics is not None
             else (
                 f"Candidates={overview.strategy.candidates}, staging={overview.strategy.staging}, "
                 f"production={overview.strategy.production}, risk_state={overview.system.risk_state}, "
-                f"codex_queue_depth={overview.system.codex_queue_depth}."
+                f"codex_queue_depth={overview.system.codex_queue_depth}, "
+                f"deployment_market_mode={market_mode}, active_sleeves={sleeve_text}, "
+                f"market_calendar={self.settings.market_calendar}."
             )
         )
         return self._queue_loop_codex_run(
@@ -358,7 +378,9 @@ class SupervisorService:
             ],
             prompt_appendix=(
                 "This is a strategy evaluation loop, not a live-promotion path. "
-                "Prefer objective readiness analysis, missing-test detection, and bounded improvement planning."
+                "Prefer objective readiness analysis, missing-test detection, and bounded improvement planning. "
+                f"Current deployment target is `{market_mode}` with sleeves `{sleeve_text}`. "
+                "Do not recommend instruments, broker paths, or promotions that fall outside that deployment scope."
             ),
         )
 

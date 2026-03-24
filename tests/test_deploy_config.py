@@ -36,6 +36,7 @@ def test_deploy_config_core_preflight_passes_with_complete_settings(tmp_path: Pa
     assert statuses["broker_and_db"] == "ok"
     assert statuses["postgres_exposure"] == "ok"
     assert statuses["dashboard_surface"] == "ok"
+    assert "QE_DEPLOYMENT_MARKET_MODE=us" in content
     assert "QE_DASHBOARD_ACCESS_USERNAME=owner" in content
     assert "QE_DASHBOARD_ACCESS_PASSWORD=" in content
     assert "QE_DASHBOARD_API_TOKEN=" in content
@@ -207,6 +208,7 @@ def test_deploy_config_single_vps_minimal_prompt_profile_keeps_owner_defaults(tm
     prompts = iter(
         [
             "",
+            "",
             "123456789",
             "111",
             "222",
@@ -236,8 +238,71 @@ def test_deploy_config_single_vps_minimal_prompt_profile_keeps_owner_defaults(tm
     report = service.run_preflight(role="core", env_path=created)
 
     assert "QE_DEPLOYMENT_TOPOLOGY=single_vps_compact" in content
+    assert "QE_DEPLOYMENT_MARKET_MODE=us" in content
     assert "QE_DEFAULT_BROKER_ADAPTER=paper_sim" in content
     assert "QE_DASHBOARD_ACCESS_USERNAME=owner" in content
     assert "QE_DASHBOARD_ACCESS_PASSWORD=" in content
     assert "QE_DASHBOARD_API_TOKEN=" in content
     assert report["status"] == "ok"
+
+
+def test_deploy_config_cn_market_mode_rewrites_market_defaults(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    service = DeployConfigService(repo_root)
+    env_path = tmp_path / "core-cn.env"
+
+    created = service.initialize_env_file(
+        role="core",
+        output_path=env_path,
+        overrides={
+            "__market_mode__": "cn",
+            "QE_DEPLOYMENT_TOPOLOGY": "single_vps_compact",
+            "QE_POSTGRES_PASSWORD": "super-secret-password",
+            "QE_OPENAI_API_KEY": "relay-key",
+            "QE_DISCORD_TOKEN": "discord-token",
+            "QE_DISCORD_GUILD_ID": "123456789",
+            "QE_DISCORD_CONTROL_CHANNEL_ID": "111",
+            "QE_DISCORD_APPROVALS_CHANNEL_ID": "222",
+            "QE_DISCORD_ALERTS_CHANNEL_ID": "333",
+            "QE_DISCORD_ALLOWED_USER_IDS": "444,555",
+        },
+        interactive=False,
+    )
+
+    report = service.run_preflight(role="core", env_path=created)
+    content = created.read_text(encoding="utf-8")
+
+    assert report["status"] == "ok"
+    assert "QE_DEPLOYMENT_MARKET_MODE=cn" in content
+    assert "QE_MARKET_TIMEZONE=Asia/Shanghai" in content
+    assert "QE_MARKET_CALENDAR=XSHG" in content
+
+
+def test_deploy_config_cn_market_mode_rejects_alpaca_bootstrap(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    service = DeployConfigService(repo_root)
+    env_path = tmp_path / "core-cn-alpaca.env"
+
+    created = service.initialize_env_file(
+        role="core",
+        output_path=env_path,
+        overrides={
+            "__market_mode__": "cn",
+            "__broker_mode__": "alpaca_paper",
+            "QE_POSTGRES_PASSWORD": "super-secret-password",
+            "QE_OPENAI_API_KEY": "relay-key",
+            "QE_DISCORD_TOKEN": "discord-token",
+            "QE_DISCORD_GUILD_ID": "123456789",
+            "QE_DISCORD_CONTROL_CHANNEL_ID": "111",
+            "QE_DISCORD_APPROVALS_CHANNEL_ID": "222",
+            "QE_DISCORD_ALERTS_CHANNEL_ID": "333",
+            "QE_DISCORD_ALLOWED_USER_IDS": "444,555",
+        },
+        interactive=False,
+    )
+
+    report = service.run_preflight(role="core", env_path=created)
+    statuses = {check["key"]: check["status"] for check in report["checks"]}
+
+    assert report["status"] == "fail"
+    assert statuses["broker_and_db"] == "fail"
