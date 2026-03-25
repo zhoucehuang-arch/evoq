@@ -21,15 +21,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/dashboard-overview-evoq.png" alt="EvoQ Terminal overview dashboard" width="100%" />
+  <img src="docs/assets/dashboard-hero-evoq.png" alt="EvoQ Terminal dashboard showcase" width="100%" />
 </p>
 
 <p align="center">
-  <img src="docs/assets/dashboard-mobile-evoq.png" alt="EvoQ Terminal mobile dashboard" width="32%" />
-</p>
-
-<p align="center">
-  Desktop overview and mobile operator view from the English product surface.
+  Desktop overview and mobile operator view in a single stable GitHub-friendly showcase image.
 </p>
 
 ## What It Is
