@@ -1,6 +1,8 @@
 import { fetchSystem } from "@/lib/dashboard";
 import type { DashboardFrontendStatus } from "@/lib/types";
 
+type MetricTone = "good" | "warn" | "bad" | "neutral";
+
 function toneClass(tone: string): string {
   switch (tone) {
     case "good":
@@ -11,6 +13,19 @@ function toneClass(tone: string): string {
       return "tone-bad";
     default:
       return "";
+  }
+}
+
+function toneSuffix(tone: MetricTone): string {
+  switch (tone) {
+    case "good":
+      return "good";
+    case "warn":
+      return "warn";
+    case "bad":
+      return "bad";
+    default:
+      return "neutral";
   }
 }
 
@@ -31,85 +46,262 @@ function statusLabel(status?: DashboardFrontendStatus): string {
   }
 }
 
+function dateLabel(value: string | null | undefined): string {
+  if (!value) {
+    return "n/a";
+  }
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function previewLines(lines: string[], fallback: string): string[] {
   return lines.length > 0 ? lines : [fallback];
 }
 
+function loopTone(status: string, failureStreak: number): string {
+  if (failureStreak > 0) {
+    return "tone-warn";
+  }
+  return /warning|review|degraded|halt/i.test(status) ? "tone-warn" : "tone-good";
+}
+
+function summaryValue(summaryCards: { label: string; value: string }[], label: string): string {
+  return summaryCards.find((card) => card.label === label)?.value ?? "n/a";
+}
+
 export default async function SystemPage() {
   const system = await fetchSystem();
-  const isDegraded = system.freshness.state === "broken" || system.freshness.state === "stale";
   const frontendStatus = system.frontend_status;
+  const healthyProviders = system.providers.filter((provider) => ["healthy", "ok"].includes(provider.health_status.toLowerCase())).length;
+  const degradedProviders = system.providers.length - healthyProviders;
+  const enabledLoops = system.supervisor_loops.filter((loop) => loop.is_enabled).length;
+  const loopsWithFailures = system.supervisor_loops.filter((loop) => loop.failure_streak > 0).length;
+  const loopsNeedingReview = system.supervisor_loops.filter((loop) => /warning|review|degraded|halt/i.test(loop.last_status)).length;
+  const mutableConfigCount = system.runtime_config.filter((entry) => entry.is_mutable).length;
+  const restartRequiredCount = system.runtime_config.filter((entry) => entry.requires_restart).length;
+  const highRiskProposals = system.pending_config_proposals.filter((proposal) => proposal.risk_level.toLowerCase() === "high").length;
+  const deploymentMode =
+    system.runtime_config.find((entry) => entry.target_key === "deployment_market_mode")?.value_preview ??
+    system.owner_preferences.find((preference) => preference.preference_key === "owner_market_focus")?.value_preview ??
+    "n/a";
+  const openIncidentCount = summaryValue(system.summary_cards, "Open incidents");
+
+  const topMetrics = [
+    {
+      label: "Freshness",
+      value: system.freshness.state,
+      tone: system.freshness.state === "fresh" ? "good" : system.freshness.state === "lagging" ? "warn" : "bad",
+      note: frontendStatus ? statusLabel(frontendStatus) : system.freshness.note ?? "authority aggregation is current",
+    },
+    {
+      label: "Providers",
+      value: `${healthyProviders}/${system.providers.length || 0}`,
+      tone: degradedProviders > 0 ? "warn" : "good",
+      note: degradedProviders > 0 ? `${degradedProviders} provider surface needs attention` : "provider fabric is healthy",
+    },
+    {
+      label: "Supervisor loops",
+      value: `${enabledLoops}/${system.supervisor_loops.length || 0}`,
+      tone: loopsWithFailures > 0 || loopsNeedingReview > 0 ? "warn" : enabledLoops > 0 ? "good" : "neutral",
+      note:
+        loopsWithFailures > 0
+          ? `${loopsWithFailures} loop failure streaks visible`
+          : loopsNeedingReview > 0
+            ? `${loopsNeedingReview} loop status${loopsNeedingReview === 1 ? " needs" : "es need"} review`
+            : "no failure streak is visible",
+    },
+    {
+      label: "Config queue",
+      value: `${system.pending_config_proposals.length}`,
+      tone: system.pending_config_proposals.length > 0 ? "warn" : "good",
+      note: `${highRiskProposals} high-risk proposal${highRiskProposals === 1 ? "" : "s"} in governed review`,
+    },
+    {
+      label: "Owner memory",
+      value: `${system.owner_preferences.length}`,
+      tone: system.owner_preferences.length > 0 ? "good" : "warn",
+      note: `${mutableConfigCount} mutable config entries are currently visible`,
+    },
+  ] as const;
+
+  const operatorFocus = [
+    frontendStatus
+      ? `${statusLabel(frontendStatus)}. ${frontendStatus.operator_action}`
+      : "The dashboard is reading live authority-core state and is not currently in degraded frontend mode.",
+    degradedProviders > 0
+      ? `${degradedProviders} provider surface${degradedProviders === 1 ? " is" : "s are"} not fully healthy, so system trust should stay guarded.`
+      : "Provider fabric appears healthy enough for normal observation and governed action.",
+    loopsWithFailures > 0
+      ? `${loopsWithFailures} supervisor loop${loopsWithFailures === 1 ? " has" : "s have"} a visible failure streak and deserves immediate review.`
+      : loopsNeedingReview > 0
+        ? `${loopsNeedingReview} supervisor loop${loopsNeedingReview === 1 ? " is" : "s are"} not failing but still reports a warning or review state.`
+        : "No visible supervisor loop is currently showing a failure streak.",
+    system.pending_config_proposals.length > 0
+      ? `${system.pending_config_proposals.length} config proposal${system.pending_config_proposals.length === 1 ? " is" : "s are"} still waiting for governance.`
+      : "No config proposal is currently waiting in the authority queue.",
+    restartRequiredCount > 0
+      ? `${restartRequiredCount} runtime setting${restartRequiredCount === 1 ? " requires" : "s require"} a restart to fully apply.`
+      : "Visible runtime config changes do not currently require a restart.",
+  ];
+
   const operatorShortcuts = [
     {
       title: "Fast health check",
       surface: "SSH",
-      detail: "Run ./ops/bin/core-smoke.sh and ./ops/bin/worker-smoke.sh before trusting live state after any change.",
+      detail: "Run ./ops/bin/core-smoke.sh and ./ops/bin/worker-smoke.sh before trusting live state after any config or code change.",
     },
     {
       title: "Pause trading, keep learning",
       surface: "Discord",
-      detail: "Use the Discord control surface to halt automated trading without turning off research and learning loops.",
+      detail: "Use the Discord control surface to halt automated trading while leaving research, learning, and evaluation loops active.",
     },
     {
-      title: "Review config drift",
+      title: "Review drift before changing posture",
       surface: "Dashboard + Discord",
-      detail: "Inspect runtime config and recent revisions here, then request governed changes or rollbacks through Discord.",
+      detail: "Inspect config, owner preferences, proposals, and incidents here before requesting a governed runtime change.",
     },
     {
-      title: "Upgrade from GitHub",
+      title: "Update from GitHub",
       surface: "SSH",
-      detail: "Use ./ops/bin/update-from-github.sh core and worker so updates stay repeatable and smoke-checked.",
+      detail: "Use ./ops/bin/update-from-github.sh core and worker so upgrades stay repeatable, auditable, and smoke-checked.",
     },
   ];
-  const degradedChecklist = [
-    "Check whether freshness is stale because the API is down, the Worker is blocked, or provider connectivity is degraded.",
-    "Pause the affected domain if trading safety could be impacted.",
-    "Compare recent workflows, Codex runs, and incidents before assuming the problem is only visual.",
-    "If smoke checks fail, move to SSH and the relevant recovery runbook instead of making blind config edits.",
+
+  const recoveryPlaybook = [
+    "Check whether degraded freshness comes from API reachability, a blocked worker loop, or provider-side connectivity trouble.",
+    "Pause the affected live domain before making speculative config changes if trading safety could be impacted.",
+    "Compare workflows, Codex runs, incidents, and config proposals before assuming the problem is purely visual.",
+    "If smoke checks fail, move to the relevant runbook instead of patching live state from intuition.",
   ];
 
   return (
     <>
-      <section className="hero">
-        <article className="panel hero-panel">
-          <div className="chip-row">
-            <span className="chip">
-              Freshness <strong>{system.freshness.state}</strong>
-            </span>
-          </div>
-          <h2 className="headline">Authority Core</h2>
-          <ul className="list">
-            {system.highlights.map((highlight) => (
-              <li key={highlight}>{highlight}</li>
-            ))}
-          </ul>
-          {system.freshness.note ? <p className="callout">Freshness note: {system.freshness.note}</p> : null}
-          {frontendStatus ? (
-            <article className="stack-card">
-              <strong>{statusLabel(frontendStatus)}</strong>
-              <span>
-                {frontendStatus.status_code ? `HTTP ${frontendStatus.status_code}` : "No HTTP status"} | {frontendStatus.error_kind}
-              </span>
-              <p className="callout">{frontendStatus.detail}</p>
-              <p className="callout">{frontendStatus.operator_action}</p>
-            </article>
-          ) : null}
-        </article>
-      </section>
-
-      <section className="card-grid">
-        {system.summary_cards.map((card) => (
-          <article key={card.label} className="stat-card">
-            <div className="stat-label">{card.label}</div>
-            <div className={`stat-value ${toneClass(card.tone)}`}>{card.value}</div>
+      <section className="metric-strip" aria-label="System metrics">
+        {topMetrics.map((metricCard) => (
+          <article key={metricCard.label} className={`metric-card metric-card-${toneSuffix(metricCard.tone)}`}>
+            <div className="metric-kicker">{metricCard.label}</div>
+            <div className={`metric-value ${toneClass(metricCard.tone)}`}>{metricCard.value}</div>
+            <div className="metric-note">{metricCard.note}</div>
           </article>
         ))}
+      </section>
+
+      <section className="overview-grid">
+        <article className="panel hero-panel stage-panel">
+          <div className="panel-heading">
+            <div>
+              <div className="section-kicker">Authority Core</div>
+              <h2 className="headline">System Command Surface</h2>
+              <p className="panel-copy">
+                This page should answer whether the authority core is trustworthy enough to accept owner intent, run Codex
+                work, and keep the learning and trading planes under control.
+              </p>
+            </div>
+            <div className="panel-badge-row">
+              <span className="panel-badge">Freshness {system.freshness.state}</span>
+              <span className="panel-badge">Market mode {deploymentMode}</span>
+              <span className="panel-badge">Open incidents {openIncidentCount}</span>
+            </div>
+          </div>
+
+          <div className="fact-grid">
+            <article className="fact-card">
+              <div className="fact-label">Generated</div>
+              <div className="fact-value">{dateLabel(system.generated_at)}</div>
+              <div className="fact-meta">authority snapshot timestamp</div>
+            </article>
+            <article className="fact-card">
+              <div className="fact-label">Providers</div>
+              <div className={`fact-value ${degradedProviders > 0 ? "tone-warn" : "tone-good"}`}>
+                {healthyProviders}/{system.providers.length || 0}
+              </div>
+              <div className="fact-meta">healthy / visible provider surfaces</div>
+            </article>
+            <article className="fact-card">
+              <div className="fact-label">Loops</div>
+              <div className={`fact-value ${loopsWithFailures > 0 ? "tone-warn" : ""}`}>
+                {enabledLoops}/{system.supervisor_loops.length || 0}
+              </div>
+              <div className="fact-meta">enabled / visible supervisor loops</div>
+            </article>
+            <article className="fact-card">
+              <div className="fact-label">Runtime config</div>
+              <div className="fact-value">{system.runtime_config.length}</div>
+              <div className="fact-meta">{mutableConfigCount} mutable entries currently visible</div>
+            </article>
+          </div>
+
+          <div className="bullet-cloud">
+            {system.highlights.map((highlight) => (
+              <div key={highlight} className="bullet-chip">
+                {highlight}
+              </div>
+            ))}
+          </div>
+
+          {frontendStatus ? (
+            <div className="stack">
+              <article className="stack-card">
+                <strong>{statusLabel(frontendStatus)}</strong>
+                <span>{frontendStatus.status_code ? `HTTP ${frontendStatus.status_code}` : "no HTTP status"}</span>
+                <p className="callout">{frontendStatus.detail}</p>
+                <p className="callout">{frontendStatus.operator_action}</p>
+              </article>
+            </div>
+          ) : null}
+        </article>
+
+        <aside className="panel command-panel">
+          <div className="section-kicker">Flight Deck</div>
+          <h3>Authority snapshot</h3>
+          <div className="snapshot-grid">
+            <article className="snapshot-cell">
+              <div className="snapshot-label">Recent workflows</div>
+              <div className="snapshot-value">{system.recent_workflows.length}</div>
+            </article>
+            <article className="snapshot-cell">
+              <div className="snapshot-label">Codex runs</div>
+              <div className="snapshot-value">{system.recent_codex_runs.length}</div>
+            </article>
+            <article className="snapshot-cell">
+              <div className="snapshot-label">Pending proposals</div>
+              <div className={`snapshot-value ${system.pending_config_proposals.length > 0 ? "tone-warn" : ""}`}>
+                {system.pending_config_proposals.length}
+              </div>
+            </article>
+            <article className="snapshot-cell">
+              <div className="snapshot-label">High-risk proposals</div>
+              <div className={`snapshot-value ${highRiskProposals > 0 ? "tone-warn" : ""}`}>{highRiskProposals}</div>
+            </article>
+            <article className="snapshot-cell">
+              <div className="snapshot-label">Revisions</div>
+              <div className="snapshot-value">{system.recent_config_revisions.length}</div>
+            </article>
+            <article className="snapshot-cell">
+              <div className="snapshot-label">Owner prefs</div>
+              <div className="snapshot-value">{system.owner_preferences.length}</div>
+            </article>
+          </div>
+
+          <h4 className="subsection-title">What to review now</h4>
+          <div className="stack tight-stack">
+            {operatorFocus.map((item) => (
+              <article key={item} className="stack-card compact-stack-card">
+                <p className="callout">{item}</p>
+              </article>
+            ))}
+          </div>
+        </aside>
       </section>
 
       <section className="detail-grid two-col">
         <article className="panel">
           <div className="section-kicker">Operate</div>
-          <h3>Operator Shortcuts</h3>
+          <h3>Operator shortcuts</h3>
           <div className="stack">
             {operatorShortcuts.map((shortcut) => (
               <article key={shortcut.title} className="stack-card">
@@ -122,10 +314,10 @@ export default async function SystemPage() {
         </article>
 
         <article className="panel">
-          <div className="section-kicker">{isDegraded ? "Recover" : "Prepare"}</div>
-          <h3>{isDegraded ? "System is degraded: do this first" : "If freshness turns stale or broken"}</h3>
+          <div className="section-kicker">Recover</div>
+          <h3>When the authority core degrades</h3>
           <div className="stack">
-            {degradedChecklist.map((step) => (
+            {recoveryPlaybook.map((step) => (
               <article key={step} className="stack-card">
                 <p className="callout">{step}</p>
               </article>
@@ -136,218 +328,181 @@ export default async function SystemPage() {
 
       <section className="detail-grid two-col">
         <article className="panel">
-          <h3>Provider Profiles</h3>
-          {system.providers.length === 0 ? (
-            <div className="stack">
-              <article className="stack-card">
-                <strong>No provider profiles yet</strong>
-                <p className="callout">This usually means the dashboard is still waiting for authority-core data.</p>
+          <div className="section-kicker">Providers</div>
+          <h3>Provider fabric</h3>
+          <div className="tile-grid">
+            {system.providers.map((provider) => (
+              <article key={provider.provider_key} className="tile">
+                <div className="tile-label">{provider.display_name}</div>
+                <div
+                  className={`tile-value ${
+                    ["healthy", "ok"].includes(provider.health_status.toLowerCase()) ? "tone-good" : "tone-warn"
+                  }`}
+                >
+                  {provider.health_status}
+                </div>
+                <div className="tile-meta">key {provider.provider_key}</div>
+                <div className="tile-meta">style {provider.api_style}</div>
+                <div className="tile-meta">primary {provider.is_primary ? "yes" : "no"}</div>
+                {provider.base_url ? <div className="tile-meta">{provider.base_url}</div> : null}
               </article>
-            </div>
-          ) : (
-            <div className="table-shell">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Provider</th>
-                    <th>Primary</th>
-                    <th>Status</th>
-                    <th>Base URL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {system.providers.map((provider) => (
-                    <tr key={provider.provider_key}>
-                      <td>{provider.display_name}</td>
-                      <td>{provider.is_primary ? "yes" : "no"}</td>
-                      <td>{provider.health_status}</td>
-                      <td>{provider.base_url ?? "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </article>
-
-        <article className="panel">
-          <h3>Supervisor Loops</h3>
-          {system.supervisor_loops.length === 0 ? (
-            <div className="stack">
-              <article className="stack-card">
-                <strong>No supervisor loops visible yet</strong>
-                <p className="callout">Check freshness, backend connectivity, and recent system incidents before trusting this as healthy.</p>
-              </article>
-            </div>
-          ) : (
-            <div className="table-shell">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Loop</th>
-                    <th>Domain</th>
-                    <th>Status</th>
-                    <th>Cadence</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {system.supervisor_loops.map((loop) => (
-                    <tr key={loop.loop_key}>
-                      <td>{loop.display_name}</td>
-                      <td>{loop.domain}</td>
-                      <td>{loop.last_status}</td>
-                      <td>{loop.cadence_seconds}s</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </article>
-      </section>
-
-      <section className="detail-grid two-col">
-        <article className="panel">
-          <h3>Recent Workflows</h3>
-          <div className="stack">
-            {system.recent_workflows.length === 0 ? (
-              <article className="stack-card">
-                <strong>No recent workflows</strong>
-                <p className="callout">Workflow evidence will appear here when the authority core is ingesting runtime state normally.</p>
-              </article>
-            ) : (
-              system.recent_workflows.map((workflow) => (
-                <article key={workflow.id} className="stack-card">
-                  <strong>{workflow.workflow_name}</strong>
-                  <span>{workflow.status}</span>
-                  <p className="callout">{workflow.latest_event_summary ?? "No latest event summary."}</p>
-                </article>
-              ))
-            )}
+            ))}
+            {system.providers.length === 0 ? <div className="tile-meta">No provider profiles are visible yet.</div> : null}
           </div>
         </article>
 
         <article className="panel">
-          <h3>Recent Codex Runs</h3>
-          <div className="stack">
-            {system.recent_codex_runs.length === 0 ? (
-              <article className="stack-card">
-                <strong>No recent Codex runs</strong>
-                <p className="callout">If you expected worker activity, verify the Worker role, provider access, and queue health.</p>
+          <div className="section-kicker">Cadence</div>
+          <h3>Supervisor loops</h3>
+          <div className="tile-grid">
+            {system.supervisor_loops.map((loop) => (
+              <article key={loop.loop_key} className="tile">
+                <div className="tile-label">{loop.display_name}</div>
+                <div className={`tile-value ${loopTone(loop.last_status, loop.failure_streak)}`}>{loop.last_status}</div>
+                <div className="tile-meta">domain {loop.domain}</div>
+                <div className="tile-meta">mode {loop.execution_mode}</div>
+                <div className="tile-meta">enabled {loop.is_enabled ? "yes" : "no"}</div>
+                <div className="tile-meta">cadence {loop.cadence_seconds}s</div>
+                <div className="tile-meta">next due {dateLabel(loop.next_due_at)}</div>
+                {loop.last_error ? <p className="callout">{loop.last_error}</p> : null}
               </article>
-            ) : (
-              system.recent_codex_runs.map((run) => (
-                <article key={run.id} className="stack-card">
-                  <strong>{run.worker_class}</strong>
-                  <span>
-                    {run.status} | {run.current_attempt}/{run.max_iterations}
-                  </span>
-                  <p className="callout">{run.objective}</p>
-                </article>
-              ))
-            )}
+            ))}
+            {system.supervisor_loops.length === 0 ? <div className="tile-meta">No supervisor loop is visible yet.</div> : null}
           </div>
         </article>
       </section>
 
       <section className="detail-grid two-col">
         <article className="panel">
-          <h3>Runtime Config</h3>
+          <div className="section-kicker">Workflow</div>
+          <h3>Recent workflows</h3>
           <div className="stack">
-            {system.runtime_config.length === 0 ? (
-              <article className="stack-card">
-                <strong>No runtime config snapshot</strong>
-                <p className="callout">Runtime config should appear here after the dashboard can read authority-core state.</p>
+            {system.recent_workflows.map((workflow) => (
+              <article key={workflow.id} className="stack-card">
+                <strong>{workflow.workflow_name}</strong>
+                <span>
+                  {workflow.workflow_family} | {workflow.status}
+                </span>
+                <p className="callout">{workflow.latest_event_summary ?? "No latest event summary recorded."}</p>
+                <p className="callout">
+                  {dateLabel(workflow.started_at)}
+                  {workflow.ended_at ? ` -> ${dateLabel(workflow.ended_at)}` : " -> still running"}
+                </p>
               </article>
-            ) : (
-              system.runtime_config.map((entry) => (
-                <article key={`${entry.target_type}:${entry.target_key}`} className="stack-card">
-                  <strong>{entry.display_name}</strong>
-                  <span>
-                    {entry.target_type} | {entry.category} | {entry.risk_level}
-                  </span>
-                  {previewLines(entry.preview_lines, entry.value_preview).map((line, index) => (
-                    <p key={`${entry.target_type}:${entry.target_key}:${index}`} className="callout">
-                      {line}
-                    </p>
-                  ))}
-                  {entry.contains_sensitive_fields ? (
-                    <p className="callout">Sensitive fields are masked on the dashboard preview.</p>
-                  ) : null}
-                </article>
-              ))
-            )}
+            ))}
+            {system.recent_workflows.length === 0 ? <div className="tile-meta">No recent workflow evidence is visible yet.</div> : null}
           </div>
         </article>
 
         <article className="panel">
-          <h3>Config Proposals</h3>
+          <div className="section-kicker">Codex</div>
+          <h3>Recent Codex activity</h3>
           <div className="stack">
-            {system.pending_config_proposals.length === 0 ? (
-              <article className="stack-card">
-                <strong>No pending proposals</strong>
-                <p className="callout">Runtime config changes are currently settled.</p>
+            {system.recent_codex_runs.map((run) => (
+              <article key={run.id} className="stack-card">
+                <strong>{run.worker_class}</strong>
+                <span>
+                  {run.status} | {run.current_attempt}/{run.max_iterations}
+                </span>
+                <p className="callout">{run.objective}</p>
+                <p className="callout">
+                  queued {dateLabel(run.queued_at)}
+                  {run.completed_at ? ` | completed ${dateLabel(run.completed_at)}` : " | still running"}
+                </p>
               </article>
-            ) : (
-              system.pending_config_proposals.map((proposal) => (
-                <article key={proposal.id} className="stack-card">
-                  <strong>{proposal.display_name}</strong>
-                  <span>
-                    {proposal.status} | {proposal.risk_level} | {proposal.requested_by}
-                  </span>
-                  <p className="callout">{proposal.change_summary}</p>
-                </article>
-              ))
-            )}
+            ))}
+            {system.recent_codex_runs.length === 0 ? <div className="tile-meta">No recent Codex system run is visible yet.</div> : null}
           </div>
         </article>
       </section>
 
       <section className="detail-grid two-col">
         <article className="panel">
-          <h3>Recent Config Revisions</h3>
+          <div className="section-kicker">Runtime</div>
+          <h3>Runtime config</h3>
           <div className="stack">
-            {system.recent_config_revisions.length === 0 ? (
-              <article className="stack-card">
-                <strong>No config revisions yet</strong>
-                <p className="callout">Applied runtime config versions will appear here.</p>
+            {system.runtime_config.map((entry) => (
+              <article key={`${entry.target_type}:${entry.target_key}`} className="stack-card">
+                <strong>{entry.display_name}</strong>
+                <span>
+                  {entry.category} | {entry.risk_level} | mutable {entry.is_mutable ? "yes" : "no"}
+                </span>
+                {previewLines(entry.preview_lines, entry.value_preview).map((line, index) => (
+                  <p key={`${entry.target_type}:${entry.target_key}:${index}`} className="callout">
+                    {line}
+                  </p>
+                ))}
+                <p className="callout">
+                  updated {dateLabel(entry.updated_at)}
+                  {entry.updated_by ? ` | by ${entry.updated_by}` : ""}
+                  {entry.requires_restart ? " | restart required" : ""}
+                </p>
+                {entry.contains_sensitive_fields ? <p className="callout">Sensitive fields stay masked in the dashboard preview.</p> : null}
               </article>
-            ) : (
-              system.recent_config_revisions.map((revision) => (
-                <article key={revision.id} className="stack-card">
-                  <strong>{revision.display_name}</strong>
-                  <span>{revision.applied_by}</span>
-                  <p className="callout">{revision.change_summary}</p>
-                </article>
-              ))
-            )}
+            ))}
+            {system.runtime_config.length === 0 ? <div className="tile-meta">No runtime config snapshot is visible yet.</div> : null}
           </div>
         </article>
 
         <article className="panel">
-          <h3>Owner Preferences</h3>
+          <div className="section-kicker">Governance</div>
+          <h3>Config change queue</h3>
           <div className="stack">
-            {system.owner_preferences.length === 0 ? (
-              <article className="stack-card">
-                <strong>No owner preferences yet</strong>
-                <p className="callout">Owner-level preferences will show up here once they have been captured and written through the governed path.</p>
+            {system.pending_config_proposals.map((proposal) => (
+              <article key={proposal.id} className="stack-card">
+                <strong>{proposal.display_name}</strong>
+                <span>
+                  {proposal.status} | {proposal.risk_level} | requested by {proposal.requested_by}
+                </span>
+                <p className="callout">{proposal.change_summary}</p>
+                <p className="callout">
+                  created {dateLabel(proposal.created_at)}
+                  {proposal.approval_request_id ? ` | approval ${proposal.approval_request_id}` : ""}
+                </p>
               </article>
-            ) : (
-              system.owner_preferences.map((preference) => (
-                <article key={preference.preference_key} className="stack-card">
-                  <strong>{preference.display_name}</strong>
-                  <span>{preference.updated_by}</span>
-                  {previewLines(preference.preview_lines, preference.value_preview).map((line, index) => (
-                    <p key={`${preference.preference_key}:${index}`} className="callout">
-                      {line}
-                    </p>
-                  ))}
-                  {preference.contains_sensitive_fields ? (
-                    <p className="callout">Sensitive fields are masked on the dashboard preview.</p>
-                  ) : null}
-                </article>
-              ))
-            )}
+            ))}
+            {system.pending_config_proposals.length === 0 ? <div className="tile-meta">No config proposal is waiting right now.</div> : null}
+          </div>
+        </article>
+      </section>
+
+      <section className="detail-grid two-col">
+        <article className="panel">
+          <div className="section-kicker">History</div>
+          <h3>Recent config revisions</h3>
+          <div className="stack">
+            {system.recent_config_revisions.map((revision) => (
+              <article key={revision.id} className="stack-card">
+                <strong>{revision.display_name}</strong>
+                <span>{revision.applied_by}</span>
+                <p className="callout">{revision.change_summary}</p>
+                <p className="callout">applied {dateLabel(revision.applied_at)}</p>
+              </article>
+            ))}
+            {system.recent_config_revisions.length === 0 ? <div className="tile-meta">No applied runtime revision is visible yet.</div> : null}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="section-kicker">Intent</div>
+          <h3>Owner preferences</h3>
+          <div className="stack">
+            {system.owner_preferences.map((preference) => (
+              <article key={preference.preference_key} className="stack-card">
+                <strong>{preference.display_name}</strong>
+                <span>
+                  {preference.scope} | updated by {preference.updated_by}
+                </span>
+                {previewLines(preference.preview_lines, preference.value_preview).map((line, index) => (
+                  <p key={`${preference.preference_key}:${index}`} className="callout">
+                    {line}
+                  </p>
+                ))}
+                <p className="callout">updated {dateLabel(preference.updated_at)}</p>
+                {preference.contains_sensitive_fields ? <p className="callout">Sensitive fields stay masked in dashboard previews.</p> : null}
+              </article>
+            ))}
+            {system.owner_preferences.length === 0 ? <div className="tile-meta">No owner preference has been captured yet.</div> : null}
           </div>
         </article>
       </section>
