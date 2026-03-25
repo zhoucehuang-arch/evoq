@@ -20,19 +20,16 @@
   <a href="docs/next-gen/README.md">Docs Index</a>
 </p>
 
-<table>
-  <tr>
-    <td width="76%">
-      <img src="docs/assets/dashboard-overview-evoq.png" alt="EvoQ Terminal overview dashboard" width="100%" />
-    </td>
-    <td width="24%">
-      <img src="docs/assets/dashboard-mobile-evoq.png" alt="EvoQ Terminal mobile dashboard" width="100%" />
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/assets/dashboard-overview-evoq.png" alt="EvoQ Terminal overview dashboard" width="100%" />
+</p>
 
 <p align="center">
-  Dashboard overview and mobile operator view from the English product surface.
+  <img src="docs/assets/dashboard-mobile-evoq.png" alt="EvoQ Terminal mobile dashboard" width="32%" />
+</p>
+
+<p align="center">
+  Desktop overview and mobile operator view from the English product surface.
 </p>
 
 ## What It Is
