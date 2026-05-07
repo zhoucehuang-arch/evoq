@@ -1,204 +1,211 @@
 # EvoQ
 
 <p align="center">
-  <a href="README.zh-CN.md">Chinese README</a>
+  <a href="README.zh-CN.md">中文 README</a> ·
+  <a href="docs/next-gen/EVOQ-BEGINNER-README.md">Beginner Guide</a> ·
+  <a href="docs/next-gen/EVOQ-USER-MANUAL.md">User Manual</a> ·
+  <a href="docs/next-gen/README.md">Docs Index</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/zhoucehuang-arch/evoq/actions/workflows/ci.yml"><img src="https://github.com/zhoucehuang-arch/evoq/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" /></a>
+  <img src="https://img.shields.io/badge/posture-paper--first-blue" alt="paper first" />
+  <img src="https://img.shields.io/badge/LLM-governed%20research-purple" alt="LLM governed research" />
 </p>
 
 <p align="center">
-  Discord-first autonomous investment platform for governed research, learning, evolution, and paper-first or live-gated execution.
+  <strong>Dashboard-first quant research and paper-trading runtime with LLM-assisted research, deterministic factor/backtest gates, and live-trading guardrails.</strong>
 </p>
 
 <p align="center">
-  <a href="docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md">Deploy to VPS</a> |
-  <a href="docs/next-gen/OWNER-OPERATION-QUICKSTART.md">Owner Quickstart</a> |
-  <a href="docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md">First Paper Run</a> |
-  <a href="docs/next-gen/README.md">Docs Index</a>
+  <img src="docs/assets/dashboard-hero-evoq.png" alt="EvoQ dashboard showcase" width="100%" />
 </p>
 
-<p align="center">
-  <img src="docs/assets/dashboard-hero-evoq.png" alt="EvoQ Terminal dashboard showcase" width="100%" />
-</p>
+> EvoQ is research and operations software, not financial advice. Keep the system in paper mode until you have verified data quality, backtests, broker sync, risk controls, and owner approvals.
 
-<p align="center">
-  Desktop overview and mobile operator view in a single stable GitHub-friendly showcase image.
-</p>
+## What EvoQ Is
 
-## What It Is
+EvoQ is a long-running autonomous investment runtime for builders who want the useful parts of LLMs without letting an LLM become the trading engine.
 
-EvoQ is a long-running autonomous investment runtime built around one idea: autonomy only matters if it stays governable.
+The product splits responsibilities deliberately:
 
-The system combines:
+- **Dashboard-first owner workflow**: Data, Research, Strategy, Trading, Learning, Evolution, System, and Incidents are operated from the web dashboard.
+- **Quant-first signal path**: market data, historical bars, factors, factor snapshots, PIT replay backtests, costs, baselines, and lineage are deterministic.
+- **LLM-assisted research layer**: LLMs can propose ideas, summarize evidence, challenge assumptions, and diagnose failures, but cannot bypass quant/risk gates.
+- **Paper-first execution**: broker-facing behavior is gated by market session state, account snapshots, reconciliation, provider health, stale-data checks, and explicit promotion decisions.
+- **Codex execution plane**: Codex-style workers implement, test, document, and evolve the system; they do not become the system of record.
 
-- Discord-based owner control
-- a web dashboard for monitoring trading, learning, evolution, incidents, and runtime state
-- Codex-centered worker execution behind a governed control plane
-- durable memory and proposal workflows instead of prompt residue
-- paper-first activation, approval gates, canaries, and rollback paths
+## Current Capabilities
 
-This is not an "unlimited agents talking to each other" stack. It is a productized runtime for keeping research, self-improvement, and trading moving forward without turning operations into chaos.
-
-## Why This Architecture
-
-Most autonomous trading projects still force the owner to babysit prompts, terminals, and manual scripts.
-
-EvoQ treats the problem as an operating-system problem instead:
-
-- one authoritative Core instead of multiple competing masters
-- one durable runtime database instead of context-only state
-- governed workflows instead of ad hoc agent chatter
-- Discord and dashboard surfaces instead of terminal-only interaction
-- explicit paper-to-live progression instead of blind live switching
-
-## What You Get
-
-| Surface | What it does |
+| Area | What works now |
 |---|---|
-| Discord control plane | natural-language status, approvals, pauses, deploy-draft changes, governed config updates |
-| Dashboard | operator visibility for trading, learning, evolution, incidents, and system health |
-| Core runtime | authority node for supervision, risk, memory, config, and execution governance |
-| Worker plane | Codex-heavy research and execution tasks without becoming the system of record |
-| VPS deploy path | single-VPS-first install that can later scale to `Core + Worker` |
+| Local runtime | Windows/PowerShell local API + dashboard startup and smoke validation |
+| Dashboard | Owner workbench, research, strategy, data, trading, learning, evolution, system, and incident pages |
+| Market data | Providers, watchlists, quote snapshots, freshness, local replay bars, historical bars API |
+| Factor engine | `momentum_close_return`, `reversal_close_return`, `realized_volatility`, `dollar_volume_liquidity` |
+| Backtesting | PIT factor replay backtest with cost/slippage, baseline comparison, input-bar lineage, and equity curve |
+| Strategy lifecycle | research brief -> hypothesis -> spec -> backtest -> paper run -> promotion / withdrawal |
+| Execution readiness | market session, broker snapshot, reconciliation, provider incidents, overrides, stale quote blocking |
+| Deployment docs | single-VPS-first runbooks, Core/Worker scale-out docs, backup/restore, break-glass guidance |
 
-## Market Modes
+## How It Compares To Familiar Open-Source Patterns
 
-One deployment chooses one market mode:
+EvoQ is intentionally closer to a governed operating system than a single notebook or bot:
 
-| Mode | Supports today | Notes |
-|---|---|---|
-| `us` | US equities, US options, governed mixed sleeves, short-equity paths with borrow and margin gates | Alpaca-backed paper and live-gated progression |
-| `cn` | China A-share research, ranking, calendar-aware supervision, paper-first operation | CN live broker execution is not shipped yet |
+- Like **Qlib**, it treats quant research as a pipeline from data to models/signals/backtests.
+- Like **OpenBB**, it values a usable research surface instead of hiding everything behind scripts.
+- Like **FinGPT-style projects**, it uses LLMs for financial research and reasoning, but keeps deterministic finance logic outside the LLM.
 
-If you want both markets active at the same time, run separate deployments.
+The key difference: EvoQ is optimized for an owner-operated, dashboard-first, paper-first runtime with explicit gates before anything capital-facing.
 
-## Current Honest Boundaries
+## Quick Start: Local Product Run
 
-- `CN live` broker execution is not shipped yet.
-- Portfolio sleeve attribution is still conservative.
-- Universal maintenance-margin, borrow-fee, and locate modeling is not fully closed for every product path.
+### Prerequisites
 
-## Memory And Learning
+- Python 3.11+
+- Node.js 20+
+- PowerShell
+- `npm ci` run once in `apps/dashboard-web`
+- Python dependencies installed with `python -m pip install -e ".[dev]"`
 
-The product deliberately keeps two memory layers:
+### Start the local runtime
 
-- runtime learning mesh
-- promoted long-term memory
-
-Raw research, evidence items, and insight candidates live in durable runtime state. Promoted principles, causal cases, and feature-map lineage stay repo-backed under `memory/` and `evo/feature_map.json`.
-
-That split matters: the owner can tell the difference between material that has merely been collected and material that has been promoted into durable operating memory.
-
-## Deployment Shape
-
-Recommended first deployment:
-
-- `1 Discord bot`
-- `1 VPS`
-- `single_vps_compact`
-- local `Postgres`
-- `paper` broker posture first
-
-Scale later only if you actually need stronger isolation:
-
-- keep `Core` as the authority node
-- add `1 Worker VPS` for Codex-heavy execution and research
-- keep broker-facing secrets on Core only
-
-Useful helpers:
-
-- `./ops/bin/bootstrap-node.sh core`
-- `./ops/bin/bootstrap-node.sh worker`
-
-## Deploy In 60 Seconds
-
-Typical first deploy on Debian or Ubuntu:
-
-```bash
-sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> evoq && sudo chown -R "$USER":"$USER" /opt/evoq && cd /opt/evoq && ./ops/bin/quickstart-single-vps.sh
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.ps1
 ```
 
-Draft-first bring-up:
+Then open:
 
-```bash
-cd /opt/evoq
-./ops/bin/onboard-single-vps.sh --no-start
-./ops/bin/core-up.sh
-./ops/bin/core-smoke.sh
-./ops/bin/system-doctor.sh
+- Dashboard: `http://127.0.0.1:3000`
+- API health: `http://127.0.0.1:8000/healthz`
+
+The local script uses SQLite at `.runtime/evoq-local.db` and a local dashboard API token by default.
+
+### Verify it
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
 ```
 
-Keep the first activation in `paper` mode.
+Expected result:
 
-## Architecture At A Glance
+```text
+EvoQ local smoke passed.
+```
+
+## First Useful Workflow
+
+Use this path to understand the product quickly:
+
+1. **Data**: register a provider such as `local-replay`.
+2. **Data**: paste replay OHLCV bars into the historical-bar importer.
+3. **Data**: generate factor snapshots, starting with `momentum_close_return`.
+4. **Workbench / Research**: create a research brief and let the audit gate classify it.
+5. **Strategy**: promote a ready brief into a hypothesis and create a deterministic strategy spec.
+6. **Strategy**: run a factor replay backtest with cost, slippage, baseline refs, and PIT controls.
+7. **Strategy**: record a paper run and a promotion decision only when evidence is clean.
+8. **Trading**: check execution readiness before any broker-facing action.
+9. **Incidents**: approve/reject pending actions and use overrides for pause/resume.
+
+For a beginner-friendly Chinese walkthrough, start with [EVOQ-BEGINNER-README.md](docs/next-gen/EVOQ-BEGINNER-README.md).
+
+## Safety Model
+
+EvoQ has hard product boundaries:
+
+- LLM output does **not** place trades.
+- Backtests do **not** pass without cost assumptions, baselines, PIT controls, and data lineage.
+- Paper execution is blocked by stale market data, missing market sessions, broker snapshot age, reconciliation mismatch, provider incidents, or active overrides.
+- Live readiness is report-only unless explicitly configured and approved; the report endpoint cannot place orders.
+- Broker credentials should stay on the Core runtime, not on worker nodes.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-  Owner[Owner] --> Discord[Discord Bot]
-  Owner --> Dashboard[Dashboard]
-  Discord --> Core[Core Control Plane]
-  Dashboard --> Core
-  Core --> Postgres[(Postgres)]
-  Core --> Governance[Governance, Risk, and Supervisor Loops]
-  Core --> Broker[Broker and Market Adapters]
-  Governance --> Queue[Codex Work Queue]
-  Queue --> Worker[Worker Execution Plane]
-  Worker --> Providers[Model Providers or Relay]
-  Worker --> Research[Search, Browser, and Data Sources]
-  Worker --> Core
+  Owner[Owner] --> Dashboard[Dashboard]
+  Owner --> Telegram[Telegram / light gateway]
+  Dashboard --> API[FastAPI Core]
+  Telegram --> API
+  API --> DB[(Runtime DB)]
+  API --> Data[Market Data + Historical Bars]
+  API --> Factors[Deterministic Factor Engine]
+  Factors --> Backtests[PIT Replay Backtests]
+  Backtests --> Strategy[Strategy Lifecycle]
+  Strategy --> Risk[Risk + Readiness Gates]
+  Risk --> Paper[Paper Broker / Sim]
+  API --> Codex[Codex Worker Queue]
+  Codex --> Docs[Implementation, tests, docs, evolution]
 ```
 
-The design rule is simple: one authoritative Core, one runtime database, and a worker plane that can scale without multiplying masters.
+Design rule: **one authoritative Core, one runtime database, deterministic finance logic, LLMs as research/challenge support, and owner-visible gates.**
 
 ## Repository Layout
 
 | Path | Purpose |
 |---|---|
-| `src/quant_evo_nextgen` | backend runtime, services, workflows, control plane |
-| `apps/dashboard-web` | operator dashboard |
-| `ops` | deployment scripts, smoke checks, update helpers, systemd installers |
-| `docs/next-gen` | architecture, runbooks, deployment guides, operator docs |
-| `tests` | regression and service-level coverage |
+| `src/quant_evo_nextgen` | backend API, contracts, services, DB models, control-plane logic |
+| `apps/dashboard-web` | Next.js operator dashboard |
+| `alembic/versions` | database migrations |
+| `ops/tools` | local Windows start, smoke, and test helpers |
+| `ops/production` | Core/Worker deployment examples |
+| `docs/next-gen` | current product docs, user manual, deployment runbooks, reviews |
+| `workspace` | repo-backed memory, knowledge, candidate strategies, trading artifacts |
+| `legacy/original-system` | archived earlier project material |
+| `tests` | regression coverage for services and API behavior |
 
-## Start Here
+## Validation Commands
 
-1. [Product Overview](docs/next-gen/PRODUCT-OVERVIEW.md)
-2. [FAQ](docs/next-gen/FAQ.md)
-3. [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
-4. [First Paper Run Checklist](docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md)
-5. [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
-6. [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
-7. [Docs Index](docs/next-gen/README.md)
+```powershell
+cd apps\dashboard-web
+npm run build
+cd ..\..
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps1 -q
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
+```
 
-## Relay Support
+Latest local validation in this workspace:
 
-This system supports OpenAI-compatible relay endpoints and Codex-compatible execution.
+- Dashboard build: passed
+- Backend/service tests: `135 passed`
+- Local smoke: passed
 
-When you use a relay, configure:
+## Deployment
 
-- `QE_OPENAI_API_KEY`
-- `QE_OPENAI_BASE_URL`
+Recommended first deployment:
 
-## Project Health
+- one VPS
+- `single_vps_compact`
+- local Postgres
+- paper broker posture
+- dashboard as the main owner surface
+- Telegram only as a light alert/approval gateway
 
-- [LICENSE](LICENSE)
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- [CONTRIBUTING.md](CONTRIBUTING.md)
-- [SECURITY.md](SECURITY.md)
-- [SUPPORT.md](SUPPORT.md)
-- [Pull Request Template](.github/PULL_REQUEST_TEMPLATE.md)
+Start with:
 
-## Documentation
+1. [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
+2. [VPS Deployment Runbook](docs/next-gen/VPS-DEPLOYMENT-RUNBOOK.md)
+3. [First Paper Run Checklist](docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md)
+4. [Break Glass Runbook](docs/next-gen/BREAK-GLASS-RUNBOOK.md)
 
-- [Product Overview](docs/next-gen/PRODUCT-OVERVIEW.md)
-- [FAQ](docs/next-gen/FAQ.md)
-- [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
-- [VPS Deployment Runbook](docs/next-gen/VPS-DEPLOYMENT-RUNBOOK.md)
-- [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
-- [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
-- [GSTACK Full Product Re-Review](docs/next-gen/GSTACK-FULL-PRODUCT-REREVIEW.md)
-- [Multi-Market Quant Architecture Review](docs/next-gen/MULTI-MARKET-QUANT-ARCHITECTURE-REVIEW.md)
-- [Three Core Points Research and Optimization Plan](docs/next-gen/THREE-CORE-POINTS-RESEARCH-AND-OPTIMIZATION-PLAN.md)
+## Documentation Map
+
+| Goal | Read |
+|---|---|
+| New user overview | [Beginner README](docs/next-gen/EVOQ-BEGINNER-README.md) |
+| Daily operation | [User Manual](docs/next-gen/EVOQ-USER-MANUAL.md) |
+| Product scope | [Product Overview](docs/next-gen/PRODUCT-OVERVIEW.md) |
+| Current delivery state | [Complete Delivery Plan](docs/next-gen/EVOQ-COMPLETE-DELIVERY-PLAN.md) |
+| All docs | [Docs Index](docs/next-gen/README.md) |
+| Environment variables | [Environment Parameters](docs/env-params.md) |
+| Security | [Security Policy](SECURITY.md) |
+| Contributing | [Contributing Guide](CONTRIBUTING.md) |
+
+## Project Status
+
+EvoQ is ready for local dashboard-first paper-mode experimentation and continued VPS deployment hardening. Treat live trading as locked behind explicit configuration, readiness reporting, paper evidence, and owner approval.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

@@ -379,7 +379,7 @@ class DeployConfigService:
                 "QE_RSSHUB_BASE_URL": "",
                 "QE_PLAYWRIGHT_BROWSER_ENABLED": "false",
                 "QE_PLAYWRIGHT_BROWSER_ENDPOINT": "",
-                "QE_SKILL_LIBRARY_ROOT": "skills",
+                "QE_SKILL_LIBRARY_ROOT": "workspace/skills",
             }
         return {
             "QE_ENV": "production",
@@ -392,7 +392,7 @@ class DeployConfigService:
             "QE_RSSHUB_BASE_URL": "",
             "QE_PLAYWRIGHT_BROWSER_ENABLED": "false",
             "QE_PLAYWRIGHT_BROWSER_ENDPOINT": "",
-            "QE_SKILL_LIBRARY_ROOT": "skills",
+            "QE_SKILL_LIBRARY_ROOT": "workspace/skills",
         }
 
     def _apply_market_mode(self, values: dict[str, str], market_mode: str) -> None:

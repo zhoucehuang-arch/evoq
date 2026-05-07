@@ -8,9 +8,9 @@ Why is this change needed?
 
 ## Verification
 
-- [ ] `py -m pytest -q`
-- [ ] `py -m compileall src tests alembic/versions`
+- [ ] `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps1 -q`
 - [ ] `npm run build` in `apps/dashboard-web`
+- [ ] `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1` when API/dashboard behavior changes
 - [ ] Other verification described below
 
 Verification details:

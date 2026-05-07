@@ -8,7 +8,7 @@ If you are starting from a local folder and want to publish to GitHub first, the
 
 Recommended first deployment shape:
 
-- `1 VPS` using the `single_vps_compact` profile
+- `1 VPS` or `1 local machine` using the `single_vps_compact` profile
 - bootstrap only the Core env
 - let the Core stack also host `codex-fabric-runner`
 
@@ -27,7 +27,7 @@ Repo path on both machines:
 - The repo is cloned on both nodes at `/opt/evoq`.
 - Core and Worker can reach each other over Tailscale or another private network path.
 - Postgres is not exposed to the open internet.
-- The owner will operate primarily from Discord and the dashboard.
+- The owner will operate primarily from Telegram and the dashboard.
 - The relay/API key is OpenAI-compatible and works with Codex CLI.
 
 If you are starting from a fresh Ubuntu or Debian VPS, you can install the host prerequisites first:
@@ -37,16 +37,16 @@ cd /opt/evoq
 sudo ./ops/bin/install-host-deps.sh
 ```
 
-## 2.1 Simplest One-VPS Path
+## 2.1 Simplest One-Host Path
 
-If you want the shortest deploy path first, use the single-VPS profile:
+If you want the shortest deploy path first, use the single-host single-VPS profile:
 
 ```bash
 cd /opt/evoq
 ./ops/bin/quickstart-single-vps.sh
 ```
 
-This keeps the authority model inside the Core runtime, but also starts the Codex worker runtime on the same host. It is the recommended first product path when you want one VPS only.
+This keeps the authority model inside the Core runtime, but also starts the Codex worker runtime on the same host. It is the recommended first product path when you want one host only.
 
 If you prefer to separate host preparation from app onboarding, you can also use:
 
@@ -72,7 +72,7 @@ py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relayb
 py -m quant_evo_nextgen.runner.deploy_config --repo-root . set-field core relaykey <secret>
 ```
 
-## 3. Core VPS
+## 3. Core Host
 
 ### 3.1 Bootstrap the Core env file
 
@@ -110,12 +110,8 @@ The init helper writes the canonical template, prompts for required values, and 
 Must fill:
 
 - `QE_POSTGRES_PASSWORD`
-- `QE_DISCORD_TOKEN`
-- `QE_DISCORD_GUILD_ID`
-- `QE_DISCORD_CONTROL_CHANNEL_ID`
-- `QE_DISCORD_APPROVALS_CHANNEL_ID`
-- `QE_DISCORD_ALERTS_CHANNEL_ID`
-- `QE_DISCORD_ALLOWED_USER_IDS`
+- `QE_TELEGRAM_BOT_TOKEN`
+- `QE_TELEGRAM_ALLOWED_USER_IDS`
 - `QE_OPENAI_API_KEY`
 - `QE_OPENAI_BASE_URL` if using a relay
 - `QE_DASHBOARD_ACCESS_USERNAME`
@@ -146,7 +142,7 @@ Only switch the default broker to Alpaca after the first clean paper-mode deploy
 Only switch `QE_POSTGRES_BIND_HOST` away from `127.0.0.1` after you have a private-network address ready for the Worker VPS.
 `./ops/bin/core-up.sh` reruns preflight automatically and will stop before Docker bring-up if the env file is still invalid.
 If `QE_EDGE_PUBLIC_HOST` is set, `./ops/bin/core-up.sh` also starts the bundled Caddy reverse proxy from `ops/production/core/docker-compose.edge.yml`. Keep `QE_API_BIND_HOST=127.0.0.1` and `QE_DASHBOARD_BIND_HOST=127.0.0.1` in that mode so the edge proxy remains the only public surface.
-If `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`, `./ops/bin/core-up.sh` also starts `codex-fabric-runner` on the Core VPS so a second machine is not required.
+If `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`, `./ops/bin/core-up.sh` also starts `codex-fabric-runner` on the Core host so a second machine is not required.
 
 ## 4. Worker VPS
 
@@ -180,7 +176,7 @@ Rules:
 
 - `QE_POSTGRES_URL` must point to Core Postgres over a private network path.
 - Do not place broker credentials on the Worker VPS.
-- On the Core VPS, change `QE_POSTGRES_BIND_HOST` from `127.0.0.1` to the Core node's private-network IP or Tailscale IP before bringing the Worker online.
+- On the Core host, change `QE_POSTGRES_BIND_HOST` from `127.0.0.1` to the Core node's private-network IP or Tailscale IP before bringing the Worker online.
 `./ops/bin/worker-up.sh` reruns preflight automatically and will stop if the Worker env still points to `localhost`, `127.0.0.1`, `postgres`, or carries Core-only secrets.
 Do not bootstrap the Worker env when the topology is `single_vps_compact`; that profile is intentionally Core-only.
 
@@ -197,7 +193,7 @@ What this does:
 - starts Postgres
 - waits for Postgres health
 - runs `alembic upgrade head`
-- starts API, supervisor, Discord shell, and dashboard
+- starts API, supervisor, Telegram gateway, and dashboard
 - starts the bundled edge proxy too when `QE_EDGE_PUBLIC_HOST` is configured
 - `core-smoke.sh` runs doctor, API health, API doctor endpoint, and dashboard reachability checks from inside the compose network
 
@@ -211,7 +207,7 @@ cd /opt/evoq
 
 ## 7. Enable On Boot
 
-On Core VPS:
+On Core host:
 
 ```bash
 cd /opt/evoq
@@ -229,7 +225,7 @@ sudo ./ops/bin/install-systemd.sh worker /opt/evoq
 
 If the repo on the VPS is tracked from GitHub and you want the simplest safe update path:
 
-Core VPS:
+Core host:
 
 ```bash
 cd /opt/evoq
@@ -247,7 +243,7 @@ This helper refuses to run on a dirty working tree, performs `git pull --ff-only
 
 ## 8. First Post-Deploy Checks
 
-Run on Core VPS:
+Run on Core host:
 
 ```bash
 cd /opt/evoq
@@ -262,13 +258,13 @@ Then confirm:
 - `/api/v1/system/doctor` should be reviewed together with worker reachability, broker sync state, smoke checks, and the current paper/live activation posture before treating the deployment as production-ready
 - `http://127.0.0.1:${QE_API_HOST_PORT:-8000}/healthz` returns `ok: true`
 - dashboard loads on the configured dashboard host and port
-- Discord bot responds only in the configured control path
+- Telegram bot responds only in the configured control path
 - trading dashboard shows broker snapshots after the first broker sync cycle
 - `./ops/bin/worker-smoke.sh` reports no `fail` and confirms the Worker container can see `codex`
 
 ## 9. Backup
 
-Create a backup on Core VPS:
+Create a backup on Core host:
 
 ```bash
 cd /opt/evoq
@@ -288,7 +284,7 @@ Minimum cadence:
 
 ## 10. Restore
 
-Restore on Core VPS:
+Restore on Core host:
 
 ```bash
 cd /opt/evoq
@@ -323,11 +319,11 @@ curl -X POST http://127.0.0.1:8000/api/v1/operator-overrides \
 
 ### 11.3 Safe operating posture
 
-If broker state, Discord control, or relay quality is uncertain:
+If broker state, Telegram control, or relay quality is uncertain:
 
 - keep `QE_DEFAULT_BROKER_ADAPTER=paper_sim`
 - keep live promotion paused
-- keep Discord allowlist narrow
+- keep Telegram allowlist narrow
 - run `core-smoke.sh` before resuming normal automation
 
 ## 12. Security Minimums
@@ -335,7 +331,7 @@ If broker state, Discord control, or relay quality is uncertain:
 - Bind API and dashboard to localhost unless they sit behind a reverse proxy.
 - Keep Postgres on `127.0.0.1` until the Worker private-network path is ready, then bind it only to a private-network address or a tightly controlled firewall rule.
 - Keep broker credentials on Core only.
-- Keep `QE_DISCORD_ALLOWED_USER_IDS` populated before exposing the bot.
+- Keep `QE_TELEGRAM_ALLOWED_USER_IDS` populated before exposing the bot.
 - Use a strong `QE_POSTGRES_PASSWORD`.
 - Keep `QE_DASHBOARD_ACCESS_PASSWORD` and `QE_DASHBOARD_API_TOKEN` strong and secret.
 - Keep the API on localhost even when the dashboard is public through the bundled edge proxy.

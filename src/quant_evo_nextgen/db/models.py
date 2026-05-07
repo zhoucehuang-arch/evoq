@@ -416,6 +416,115 @@ class SourceHealthModel(Base, LineageMixin, TimestampMixin):
     last_validated_at: Mapped[Any | None] = mapped_column(DateTime(timezone=True))
 
 
+class MarketDataProviderModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "md_provider"
+
+    provider_key: Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
+    display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    provider_type: Mapped[str] = mapped_column(String(40), default="data_vendor", nullable=False, index=True)
+    market_coverage: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    supports_realtime: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    supports_historical: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    supports_fundamentals: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    supports_news: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    entitlement_state: Mapped[str] = mapped_column(String(40), default="unknown", nullable=False, index=True)
+    health_status: Mapped[str] = mapped_column(String(40), default="unknown", nullable=False, index=True)
+    latency_ms: Mapped[int | None] = mapped_column(Integer)
+    freshness_sla_seconds: Mapped[int] = mapped_column(Integer, default=120, nullable=False)
+    last_heartbeat_at: Mapped[Any | None] = mapped_column(DateTime(timezone=True))
+    notes: Mapped[str | None] = mapped_column(Text)
+
+
+class WatchlistModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "md_watchlist"
+
+    watchlist_key: Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
+    display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    market_scope: Mapped[str] = mapped_column(String(40), default="us_equities", nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(Text)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class WatchlistItemModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "md_watchlist_item"
+
+    watchlist_id: Mapped[str] = mapped_column(ForeignKey("md_watchlist.id"), nullable=False, index=True)
+    symbol: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    instrument_key: Mapped[str | None] = mapped_column(String(200), index=True)
+    market: Mapped[str] = mapped_column(String(40), default="us_equities", nullable=False, index=True)
+    venue: Mapped[str | None] = mapped_column(String(80), index=True)
+    currency: Mapped[str] = mapped_column(String(16), default="USD", nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
+    metadata_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class MarketQuoteSnapshotModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "md_quote_snapshot"
+
+    provider_key: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    symbol: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    market: Mapped[str] = mapped_column(String(40), default="us_equities", nullable=False, index=True)
+    venue: Mapped[str | None] = mapped_column(String(80), index=True)
+    bid: Mapped[float | None] = mapped_column(Float)
+    ask: Mapped[float | None] = mapped_column(Float)
+    last: Mapped[float | None] = mapped_column(Float)
+    volume: Mapped[float | None] = mapped_column(Float)
+    as_of: Mapped[Any] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    source_latency_ms: Mapped[int | None] = mapped_column(Integer)
+    is_realtime: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class MarketDataIngestionRunModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "md_ingestion_run"
+
+    provider_key: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    adapter_key: Mapped[str] = mapped_column(String(120), default="local_replay", nullable=False, index=True)
+    source_ref: Mapped[str | None] = mapped_column(String(500))
+    market: Mapped[str] = mapped_column(String(40), default="us_equities", nullable=False, index=True)
+    symbols: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    bar_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    started_at: Mapped[Any] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    completed_at: Mapped[Any | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+
+
+class HistoricalBarModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "md_historical_bar"
+
+    ingestion_run_id: Mapped[str | None] = mapped_column(ForeignKey("md_ingestion_run.id"), index=True)
+    provider_key: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    symbol: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    market: Mapped[str] = mapped_column(String(40), default="us_equities", nullable=False, index=True)
+    venue: Mapped[str | None] = mapped_column(String(80), index=True)
+    timeframe: Mapped[str] = mapped_column(String(40), default="1d", nullable=False, index=True)
+    bar_start: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    open: Mapped[float] = mapped_column(Float, nullable=False)
+    high: Mapped[float] = mapped_column(Float, nullable=False)
+    low: Mapped[float] = mapped_column(Float, nullable=False)
+    close: Mapped[float] = mapped_column(Float, nullable=False)
+    volume: Mapped[float | None] = mapped_column(Float)
+    adjusted_close: Mapped[float | None] = mapped_column(Float)
+    is_adjusted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class FactorSnapshotModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "factor_snapshot"
+
+    factor_code: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    factor_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    symbol: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    market: Mapped[str] = mapped_column(String(40), default="us_equities", nullable=False, index=True)
+    as_of: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    rank: Mapped[int | None] = mapped_column(Integer, index=True)
+    percentile: Mapped[float | None] = mapped_column(Float)
+    lookback_bars: Mapped[int] = mapped_column(Integer, nullable=False)
+    input_bar_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    lineage_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
 class DocumentModel(Base, LineageMixin, TimestampMixin):
     __tablename__ = "mem_document"
 
@@ -477,6 +586,36 @@ class HypothesisModel(Base, LineageMixin, TimestampMixin):
     evaluation_plan: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     invalidation_conditions: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     current_stage: Mapped[str] = mapped_column(String(80), default="hypothesis", nullable=False, index=True)
+
+
+class StrategyResearchBriefModel(Base, LineageMixin, TimestampMixin):
+    __tablename__ = "strat_research_brief"
+
+    source_insight_id: Mapped[str | None] = mapped_column(ForeignKey("mem_insight.id"), index=True)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    thesis: Mapped[str] = mapped_column(Text, nullable=False)
+    opportunity_kind: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    target_market: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    signal_definition: Mapped[str] = mapped_column(Text, nullable=False)
+    expected_mechanism: Mapped[str] = mapped_column(Text, nullable=False)
+    llm_provider: Mapped[str | None] = mapped_column(String(120))
+    llm_model: Mapped[str | None] = mapped_column(String(120))
+    llm_model_cutoff: Mapped[str | None] = mapped_column(String(120))
+    prompt_hash: Mapped[str | None] = mapped_column(String(120))
+    tool_refs: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    evidence_refs: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    data_requirements: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    point_in_time_controls: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    evaluation_plan: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    cost_model_requirements: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    baseline_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    invalidation_conditions: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    risk_controls_required: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    attack_tests_required: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    audit_status: Mapped[str] = mapped_column(String(80), default="needs_evidence", nullable=False, index=True)
+    audit_notes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    readiness_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    promoted_hypothesis_id: Mapped[str | None] = mapped_column(ForeignKey("strat_hypothesis.id"), index=True)
 
 
 class StrategySpecModel(Base, LineageMixin, TimestampMixin):

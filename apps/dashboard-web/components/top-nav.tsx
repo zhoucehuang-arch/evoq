@@ -4,7 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Overview" },
+  { href: "/", label: "Workbench" },
+  { href: "/research", label: "Research" },
+  { href: "/strategy", label: "Strategy" },
+  { href: "/data", label: "Data" },
   { href: "/trading", label: "Trading" },
   { href: "/learning", label: "Learning" },
   { href: "/evolution", label: "Evolution" },

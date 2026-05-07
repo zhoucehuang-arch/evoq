@@ -25,9 +25,8 @@ This project mixes product surfaces, automation, and trading-system safety conce
 
 For most backend or contract changes:
 
-```bash
-py -m pytest -q
-py -m compileall src tests alembic/versions
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps1 -q
 ```
 
 For dashboard changes:
@@ -35,6 +34,12 @@ For dashboard changes:
 ```bash
 cd apps/dashboard-web
 npm run build
+```
+
+For local product smoke:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
 ```
 
 If your change affects deployment or owner operations, review the relevant runbooks and examples as part of the change.

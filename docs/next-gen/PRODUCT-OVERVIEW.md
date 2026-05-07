@@ -1,135 +1,166 @@
 # Product Overview
 
-EvoQ is an autonomous investment platform built around three ideas:
+EvoQ is a dashboard-first autonomous investment runtime for quant research, paper trading, and governed system evolution.
 
-1. the owner should be able to operate the system mainly through Discord and a dashboard
-2. research, strategy, and trading should happen inside governed workflows instead of ad hoc prompts
-3. the system should be deployable on VPS infrastructure and maintainable over long periods of time
+The core product idea is simple:
+
+1. owners should understand and operate the system mainly through the dashboard
+2. LLMs should help with research, evidence synthesis, critique, and diagnosis
+3. deterministic quant logic should own data, factors, backtests, risk checks, and execution gates
+4. every capital-facing step should remain paper-first and auditable until explicit readiness and approval gates are clean
 
 ## Why This Project Exists
 
-Many autonomous-investment projects can produce impressive demos but weak operating posture.
+Many “AI trading” projects blur three things that should stay separate:
 
-This project is deliberately optimized for a different outcome:
+- idea generation
+- quantitative measurement
+- execution authority
 
-- a non-terminal-first owner experience
-- durable system memory and governed write paths
-- long-running supervision instead of one-shot prompting
-- paper-first activation instead of accidental live escalation
+EvoQ keeps those boundaries explicit.
 
-The target is not just a clever agent loop. The target is an operating system for autonomous research, controlled strategy evolution, and governed trading.
+LLMs are useful for reading, summarizing, challenging, and explaining. They are not trusted as the tick-to-trade engine. The quant path stores market data, computes factors, records lineage, runs backtests, evaluates paper runs, and blocks unsafe readiness states.
 
 ## Who It Is For
 
-- owners who want to talk to the system in Discord and review it in a dashboard
-- operators who want multi-agent challenge and refinement without creating many sovereign daemons
-- builders who want a design that can start on one VPS and scale the worker plane later without changing the product shell
+- owners who want a non-terminal-first operating surface
+- builders exploring financial LLM systems without giving LLMs direct trade authority
+- quant/system engineers who want reproducible gates around factors, backtests, paper execution, incidents, and approvals
+- operators who want a single-VPS-first product that can later scale into Core + Worker topology
 
 ## Who It Is Not For
 
-- people looking for a toy bot or a single-script strategy runner
-- operators who do not want approval, audit, or rollback boundaries
-- anyone treating live trading as something to switch on before paper-mode evidence is clean
+- anyone looking for an immediate live-trading bot
+- users who want to bypass paper evidence and approval gates
+- teams that do not want durable audit records, risk controls, or rollback paths
+- high-frequency traders looking for low-latency tick execution
 
 ## Main Capabilities
 
-### 1. Research and learning
+### Dashboard operation
 
-- gathers information from APIs, search, scrape, and browser fallback paths
-- stores research outputs as durable documents and evidence
-- promotes learning into reusable insights and principles
+The dashboard exposes:
 
-### 2. Multi-agent review
+- Workbench / owner idea intake
+- Research briefs and audit status
+- Strategy lifecycle
+- Market data and factor workbench
+- Trading readiness
+- Learning memory
+- Evolution proposals
+- System doctor
+- Incidents and approvals
 
-- uses specialized roles to plan, challenge, and refine work
-- keeps debate inside structured workflows
-- turns discussion into explicit decisions rather than leaving it in prompt residue
+### Market data and factors
 
-### 3. Strategy lifecycle
+The current local path supports:
 
-- supports hypothesis creation
-- tracks strategy specs, backtests, paper runs, promotions, and withdrawals
-- keeps strategy movement visible and auditable
+- provider registry
+- watchlists
+- quote snapshots
+- freshness checks
+- local replay historical bars
+- ingestion run records
+- factor snapshots
 
-### 4. Governed execution
+Supported deterministic factors:
 
-- routes execution through controlled workers
-- records approvals, overrides, incidents, and rollbacks
-- keeps trading and self-improvement inside explicit governance boundaries
+- `momentum_close_return`
+- `reversal_close_return`
+- `realized_volatility`
+- `dollar_volume_liquidity`
 
-### 5. Owner operations
+### Strategy evidence
 
-- Discord is the main write surface
-- Dashboard is the main read and review surface
-- SSH is mainly for deployment, upgrades, restore, and break-glass work
+Strategy records cover:
+
+- hypothesis
+- strategy spec
+- PIT factor replay backtest
+- cost and slippage model
+- baseline comparison
+- input-bar lineage
+- equity curve
+- paper run
+- promotion or withdrawal decision
+
+### Execution readiness
+
+Trading readiness checks include:
+
+- approved production strategy
+- active market session
+- broker account snapshot
+- broker reconciliation
+- active trading overrides
+- provider incidents
+- stale market-data quote blocking
+
+The live-readiness report endpoint is report-only and cannot place orders.
 
 ## Recommended Runtime Shape
 
+### Local development
+
+Use the Windows/PowerShell local tools first:
+
+- `ops/tools/start_local.ps1`
+- `ops/tools/smoke_local.ps1`
+- `ops/tools/run_tests.ps1`
+
 ### Single-VPS first
 
-- one VPS running `single_vps_compact`
-- Core remains the authority node
-- the same machine also hosts the Codex worker runtime
-- Discord and dashboard stay the main owner surfaces
+Recommended first real deployment:
+
+- one VPS
+- `single_vps_compact`
+- local Postgres
+- paper broker posture
+- dashboard-first owner operation
+- Telegram as light alert/approval gateway
 
 ### Scale out later
 
-- keep `Core` as the authority node
-- add `1 Worker VPS` for heavier Codex execution and research
+When needed:
+
+- keep Core as the authority node
+- add a Worker VPS for heavier Codex/research execution
 - keep broker-facing secrets on Core only
 
 ## Market Mode
 
-The product supports both US and China-market operation, but one deployment chooses one market mode:
+One deployment chooses one market mode:
 
-- `QE_DEPLOYMENT_MARKET_MODE=us`
-  - activates `us_equities` and `us_options`
-- `QE_DEPLOYMENT_MARKET_MODE=cn`
-  - activates `cn_equities`
+- `us`: US equities/options research and paper/live-gated progression
+- `cn`: China A-share research/ranking/paper-first operation
 
-This is a product rule, not just a doc suggestion. It keeps one runtime easier to govern and keeps market-specific broker truth explicit.
+Running both markets at once should use separate deployments.
 
-## Current Trading Surface
+## Current Boundaries
 
-- `US` mode currently supports governed equities, options, multi-leg option structure, and Alpaca-backed paper/live progression.
-- `CN` mode currently supports A-share research, ranking, market-session governance, and paper-first operation.
-- The current honest boundaries are:
-  - `CN live` broker execution is not shipped yet
-  - sleeve attribution is still conservative in some cross-strategy cases
-  - universal maintenance-margin and borrow-fee modeling is not fully closed across every product path
-
-## Daily Operator Model
-
-Most of the time, the owner should be able to:
-
-- ask for status in Discord
-- review decisions and incidents in the dashboard
-- approve or pause actions in Discord
-- rely on SSH only when deploying, upgrading, restoring, or recovering
-
-## First Safe Operating Posture
-
-- deploy `single_vps_compact` first unless you already need stronger isolation
-- start in `paper` mode
-- verify smoke checks before trusting automation
-- keep Discord access limited to explicit owner accounts and channels
-- keep broker credentials on Core only
-- add the Worker later when you want more isolation or more research throughput
+- Live trading is not the default path.
+- CN live broker execution is not shipped.
+- Broker integrations still require environment-specific verification.
+- Backtests are only useful when data lineage, cost assumptions, baseline comparison, and PIT controls are present.
+- LLM output must be grounded and reviewed before it becomes strategy evidence.
 
 ## What Good Looks Like
 
-When the system is behaving as intended:
+A healthy EvoQ run should show:
 
-- the owner can handle most control actions from Discord
-- the dashboard makes trading, learning, evolution, and incidents legible at a glance
-- worker activity stays productive without becoming the authority layer
-- paper and live transitions remain deliberate, evidence-based, and reversible
+- dashboard pages reachable
+- API doctor clean or explainable
+- market data freshness visible
+- deterministic factors generated from stored bars
+- strategy backtests gated by cost/baseline/lineage
+- paper runs recorded before promotion
+- execution readiness showing explicit blockers/warnings
+- no unresolved incidents hiding behind vague success messages
 
-## Where To Read Next
+## Start Here
 
-- [FAQ.md](FAQ.md)
-- [GITHUB-TO-VPS-DEPLOYMENT.md](GITHUB-TO-VPS-DEPLOYMENT.md)
-- [FIRST-PAPER-RUN-CHECKLIST.md](FIRST-PAPER-RUN-CHECKLIST.md)
-- [OPERATOR-JOURNEYS.md](OPERATOR-JOURNEYS.md)
-- [OWNER-OPERATION-QUICKSTART.md](OWNER-OPERATION-QUICKSTART.md)
-- [VPS-DEPLOYMENT-RUNBOOK.md](VPS-DEPLOYMENT-RUNBOOK.md)
+- [Root README](../../README.md)
+- [Beginner README](EVOQ-BEGINNER-README.md)
+- [User Manual](EVOQ-USER-MANUAL.md)
+- [GitHub Landing Page Guide](GITHUB-README-GUIDE.md)
+- [Complete Delivery Plan](EVOQ-COMPLETE-DELIVERY-PLAN.md)

@@ -45,7 +45,7 @@ This document summarizes the main environment parameters used during deployment.
 - `QE_RSSHUB_BASE_URL`: optional RSSHub endpoint.
 - `QE_PLAYWRIGHT_BROWSER_ENABLED`: enable governed Playwright fallback.
 - `QE_PLAYWRIGHT_BROWSER_ENDPOINT`: Playwright browser endpoint.
-- `QE_SKILL_LIBRARY_ROOT`: local skill library root when needed by Codex workers.
+- `QE_SKILL_LIBRARY_ROOT`: local skill library root when needed by Codex workers, defaulting to `workspace/skills`.
 
 ## Broker
 

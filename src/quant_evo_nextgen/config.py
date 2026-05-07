@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     browser_fallback_endpoint: str | None = None
     playwright_browser_enabled: bool | None = None
     playwright_browser_endpoint: str | None = None
-    skill_library_root: str = "skills"
+    skill_library_root: str = "workspace/skills"
 
     heartbeat_interval_seconds: int = 60
     dashboard_title: str = "EvoQ Terminal"

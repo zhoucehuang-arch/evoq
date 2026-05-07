@@ -1,12 +1,12 @@
 # GitHub to VPS Deployment Guide
 
-This guide is for the owner who wants to publish the repository on GitHub first, then deploy it to VPS nodes with `git clone`, and later maintain it with `git pull`.
+This guide is for the owner who wants to publish the repository on GitHub first, then deploy it to a local machine or VPS nodes with `git clone`, and later maintain it with `git pull`.
 
 ## Recommended Starting Point
 
 The product currently supports two valid deployment shapes:
 
-- simplest first deploy: `1 VPS` with `single_vps_compact`
+- simplest first deploy: `1 local machine` or `1 VPS` with `single_vps_compact`
 - stronger long-term isolation: `1 Core VPS + 1 Worker VPS`
 
 If this is your first real deployment, start with `1 VPS` unless you already know you need the two-node shape.
@@ -14,8 +14,8 @@ If this is your first real deployment, start with `1 VPS` unless you already kno
 ## What You Need Before You Start
 
 - a GitHub repository for this project
-- one Ubuntu or Debian VPS for the first deploy
-- Discord bot token, guild ID, channel IDs, and allowed owner user IDs
+- one Ubuntu, Debian, or local Linux machine for the first deploy
+- Telegram bot token and allowed owner user IDs
 - an OpenAI-compatible API key or relay key
 - `QE_OPENAI_BASE_URL` if you use a relay
 - a market choice for this deployment: `us` or `cn`
@@ -42,9 +42,9 @@ git commit -m "Update deployment-ready runtime"
 git push
 ```
 
-## 2. Deploy the Single-VPS Product Path
+## 2. Deploy the Single-Host Product Path
 
-Run on the VPS:
+Run on the local machine or VPS:
 
 ```bash
 cd /opt
@@ -58,11 +58,11 @@ This creates the simplest supported product shape:
 
 - Core services
 - dashboard
-- Discord bot
+- Telegram bot
 - Postgres
 - Codex runner on the same host
 
-If you want the practical one-liner first-deploy path on a Debian or Ubuntu VPS, use:
+If you want the practical one-liner first-deploy path on a Debian, Ubuntu, or local Linux host, use:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> evoq && sudo chown -R "$USER":"$USER" /opt/evoq && cd /opt/evoq && ./ops/bin/quickstart-single-vps.sh
@@ -78,12 +78,8 @@ Minimum values:
 
 - `QE_POSTGRES_PASSWORD`
 - `QE_DEPLOYMENT_MARKET_MODE`
-- `QE_DISCORD_TOKEN`
-- `QE_DISCORD_GUILD_ID`
-- `QE_DISCORD_CONTROL_CHANNEL_ID`
-- `QE_DISCORD_APPROVALS_CHANNEL_ID`
-- `QE_DISCORD_ALERTS_CHANNEL_ID`
-- `QE_DISCORD_ALLOWED_USER_IDS`
+- `QE_TELEGRAM_BOT_TOKEN`
+- `QE_TELEGRAM_ALLOWED_USER_IDS`
 - `QE_OPENAI_API_KEY`
 - `QE_OPENAI_BASE_URL` if you use a relay
 - `QE_DASHBOARD_ACCESS_USERNAME`
@@ -145,7 +141,7 @@ cd /opt/evoq
 Also check:
 
 - dashboard loads
-- Discord bot responds only in the allowed owner path
+- Telegram bot responds only in the allowed owner path
 - `./ops/bin/system-doctor.sh` reports no `fail`
 - `/api/v1/system/doctor` reports no `fail`
 
@@ -159,7 +155,7 @@ Recommended order:
 2. confirm the deployment market mode is correct for this VPS
 3. keep the broker path in `paper`
 4. let the first broker sync and reconciliation finish cleanly
-5. verify dashboard, Discord, and doctor all agree on runtime health
+5. verify dashboard, Telegram, and doctor all agree on runtime health
 6. only then consider a paper-broker path or later live approval
 
 ## 7. Scale to Core + Worker Later

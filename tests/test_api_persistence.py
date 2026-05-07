@@ -507,16 +507,105 @@ def test_dashboard_api_routes_require_shared_token_when_configured(tmp_path: Pat
     with TestClient(app) as client:
         overview_response = client.get("/api/v1/dashboard/overview")
         doctor_response = client.get("/api/v1/system/doctor")
+        research_response = client.get("/api/v1/strategy/research-briefs")
+        strategy_response = client.get("/api/v1/strategy/hypotheses")
+        market_data_response = client.get("/api/v1/market-data/providers")
+        historical_bars_response = client.get("/api/v1/market-data/historical-bars")
+        approvals_response = client.get("/api/v1/approvals")
+        overrides_response = client.get("/api/v1/operator-overrides")
         health_response = client.get("/healthz")
         authorized_overview = client.get(
             "/api/v1/dashboard/overview",
             headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
         )
+        authorized_research = client.get(
+            "/api/v1/strategy/research-briefs",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_strategy = client.get(
+            "/api/v1/strategy/hypotheses",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_market_data = client.get(
+            "/api/v1/market-data/providers",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_replay_ingest = client.post(
+            "/api/v1/market-data/replay-bars",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+            json={
+                "provider_key": "local-replay",
+                "bars": [
+                    {
+                        "symbol": "AAPL",
+                        "bar_start": "2026-05-04T00:00:00Z",
+                        "open": 100,
+                        "high": 102,
+                        "low": 99,
+                        "close": 101,
+                    },
+                    {
+                        "symbol": "AAPL",
+                        "bar_start": "2026-05-05T00:00:00Z",
+                        "open": 101,
+                        "high": 104,
+                        "low": 100,
+                        "close": 103,
+                    },
+                    {
+                        "symbol": "AAPL",
+                        "bar_start": "2026-05-06T00:00:00Z",
+                        "open": 103,
+                        "high": 107,
+                        "low": 102,
+                        "close": 106,
+                    },
+                ],
+            },
+        )
+        authorized_factor_generation = client.post(
+            "/api/v1/market-data/factors/generate",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+            json={"provider_key": "local-replay", "symbols": ["AAPL"], "lookback_bars": 3},
+        )
+        authorized_historical_bars = client.get(
+            "/api/v1/market-data/historical-bars",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_factors = client.get(
+            "/api/v1/market-data/factors",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_approvals = client.get(
+            "/api/v1/approvals",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_overrides = client.get(
+            "/api/v1/operator-overrides",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
 
         assert overview_response.status_code == 401
         assert doctor_response.status_code == 401
+        assert research_response.status_code == 401
+        assert strategy_response.status_code == 401
+        assert market_data_response.status_code == 401
+        assert historical_bars_response.status_code == 401
+        assert approvals_response.status_code == 401
+        assert overrides_response.status_code == 401
         assert health_response.status_code == 200
         assert authorized_overview.status_code == 200
+        assert authorized_research.status_code == 200
+        assert authorized_strategy.status_code == 200
+        assert authorized_market_data.status_code == 200
+        assert authorized_replay_ingest.status_code == 200
+        assert authorized_factor_generation.status_code == 200
+        assert authorized_historical_bars.status_code == 200
+        assert authorized_historical_bars.json()[0]["symbol"] == "AAPL"
+        assert authorized_factors.status_code == 200
+        assert authorized_factors.json()[0]["factor_code"] == "momentum_close_return"
+        assert authorized_approvals.status_code == 200
+        assert authorized_overrides.status_code == 200
 
 
 def test_api_exposes_learning_documents_and_insights_in_dashboard(tmp_path: Path) -> None:
@@ -697,6 +786,13 @@ def test_api_exposes_strategy_lab_lifecycle_and_trading_dashboard(tmp_path: Path
                     "sharpe_ratio": 1.42,
                     "total_return_pct": 18.6,
                     "max_drawdown_pct": 9.4,
+                    "baseline_return_pct": 7.2,
+                    "excess_return_pct": 11.4,
+                    "cost_model": {"cost_bps": 5, "slippage_bps": 5},
+                    "baseline_refs": ["cash", "equal_weight_sector"],
+                    "point_in_time_controls": ["walk_forward_split", "as_of_filter"],
+                    "input_bar_ids": [f"bar-{index}" for index in range(120)],
+                    "lineage": {"input_bar_ids": [f"bar-{index}" for index in range(120)]},
                 },
                 "artifact_path": "artifacts/backtests/mr-vol-001.html",
                 "created_by": "tester",
@@ -766,6 +862,63 @@ def test_api_exposes_strategy_lab_lifecycle_and_trading_dashboard(tmp_path: Path
         assert backtests_payload[0]["sample_size"] == 240
         assert paper_runs_payload[0]["deployment_label"] == "paper-alpha"
         assert promotions_payload[0]["decision"] == "approved"
+
+
+def test_api_exposes_strategy_research_brief_audit_gate(tmp_path: Path) -> None:
+    _seed_repo_state(tmp_path)
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'api-strategy-research.db'}",
+        db_bootstrap_on_start=True,
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        brief_response = client.post(
+            "/api/v1/strategy/research-briefs",
+            json={
+                "title": "LLM post-earnings reversal factor",
+                "thesis": "LLM evidence synthesis found a testable post-earnings liquidity reversal.",
+                "opportunity_kind": "factor",
+                "target_market": "us-equities",
+                "signal_definition": "Score abnormal news attention against spread normalization.",
+                "expected_mechanism": "Attention shocks fade after liquidity recovers.",
+                "llm_provider": "openai",
+                "llm_model": "gpt-research",
+                "llm_model_cutoff": "2026-01",
+                "prompt_hash": "sha256:api-test",
+                "tool_refs": [{"tool": "pit_news_replay", "run_id": "api-news-001"}],
+                "evidence_refs": [{"type": "paper", "ref": "post_earnings_drift"}],
+                "data_requirements": ["point-in-time news", "minute bars", "spreads"],
+                "point_in_time_controls": ["Replay only data visible at each timestamp."],
+                "evaluation_plan": ["Purged walk-forward backtest.", "20-session paper run."],
+                "cost_model_requirements": ["Spread and slippage model by volume bucket."],
+                "baseline_refs": ["cash", "equal_weight_sector"],
+                "invalidation_conditions": ["No uplift versus baseline.", "Negative after costs."],
+                "risk_controls_required": ["Single-name cap 2%.", "Gross exposure cap 20%."],
+                "attack_tests_required": ["Leakage replay.", "Bad-source injection."],
+                "created_by": "tester",
+            },
+        )
+        assert brief_response.status_code == 200
+        brief_payload = brief_response.json()
+        assert brief_payload["audit_status"] == "ready_for_spec"
+        assert brief_payload["readiness_score"] == 1.0
+
+        promote_response = client.post(
+            f"/api/v1/strategy/research-briefs/{brief_payload['id']}/hypothesis",
+            json={"created_by": "tester"},
+        )
+        list_response = client.get("/api/v1/strategy/research-briefs")
+        hypotheses_response = client.get("/api/v1/strategy/hypotheses")
+
+        assert promote_response.status_code == 200
+        assert list_response.status_code == 200
+        assert hypotheses_response.status_code == 200
+        assert promote_response.json()["title"] == "LLM post-earnings reversal factor"
+        assert list_response.json()[0]["promoted_hypothesis_id"] == promote_response.json()["id"]
+        assert list_response.json()[0]["status"] == "promoted"
+        assert hypotheses_response.json()[0]["current_stage"] == "hypothesis"
 
 
 def test_api_exposes_execution_readiness_and_trading_dashboard(tmp_path: Path) -> None:
@@ -865,15 +1018,19 @@ def test_api_exposes_execution_readiness_and_trading_dashboard(tmp_path: Path) -
         assert reconciliation_response.status_code == 200
 
         readiness_response = client.get("/api/v1/execution/readiness")
+        live_report_response = client.get("/api/v1/execution/live-readiness-report")
         trading_response = client.get("/api/v1/dashboard/trading")
 
         assert readiness_response.status_code == 200
+        assert live_report_response.status_code == 200
         assert trading_response.status_code == 200
 
         readiness_payload = readiness_response.json()
+        live_report_payload = live_report_response.json()
         trading_payload = trading_response.json()
 
         assert readiness_payload["status"] == "ready"
+        assert live_report_payload["status"] == readiness_payload["status"]
         assert readiness_payload["trading_allowed"] is True
         assert trading_payload["execution_readiness"]["status"] == "ready"
         assert trading_payload["latest_account_snapshot"]["provider_key"] == "alpaca-paper"

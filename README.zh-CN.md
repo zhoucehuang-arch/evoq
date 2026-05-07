@@ -1,172 +1,187 @@
 # EvoQ
 
-[English](README.md)
+[English README](README.md)
 
-EvoQ 是一套面向 VPS 长期运行的 Discord 优先自治投资系统。
+EvoQ 是一个 **Dashboard 优先** 的量化研究与 paper-trading 运行时：LLM 负责研究、解释、挑战和诊断；确定性量化链路负责数据、因子、回测、风险和执行门禁。
 
-它把研究采集、多角色评审、受治理的策略迭代、交易执行、风控、审批、长期记忆和 Dashboard 监控收敛到同一套产品里。目标不是堆更多 agent，而是在可治理、可审计、可回滚、可持续运行的前提下，让系统长期推进研究、学习、自进化与投资。
+> 这不是金融建议，也不是“让 LLM 直接下单”的项目。第一次使用请保持 paper 模式，先验证数据、因子、回测、paper、风控和审批。
 
-## 这是什么
+## 一句话理解
 
-EvoQ 的核心定位是一个可长期运行的自治投资运行时，而不是一次性的 prompt 编排。
+EvoQ 想解决的是：如何让“金融 + 量化 + 大模型”的系统长期运行，同时仍然可审计、可暂停、可回滚、可解释。
 
-它提供：
+它的核心分工是：
 
-- Discord 优先的 owner 控制与审批入口
-- 用于监控交易、学习、进化、事故和系统状态的 Web Dashboard
-- 以 Codex 为主执行引擎的 Worker 平面
-- 基于持久化状态和治理工作流的长期记忆与演进机制
-- `paper-first`、审批门、canary 和 rollback 路径
+- **Dashboard 是主操作界面**：Data、Research、Strategy、Trading、Learning、Evolution、System、Incidents 都在 dashboard 上看和操作。
+- **量化核心是确定性的**：market data、historical bars、factor snapshots、PIT replay backtest、成本、baseline、lineage 都由系统计算和记录。
+- **LLM 是研究和治理助手**：它可以提出想法、总结证据、挑战假设、诊断失败，但不能绕过回测、paper、风险和审批。
+- **交易路径 paper-first**：没有干净的 market session、broker snapshot、reconciliation、freshness、promotion 和 approval，不应该进入 capital-facing 执行。
 
-## 为什么是这种架构
+## 当前能做什么
 
-很多“自动投资”项目最后都会退化成需要人持续盯命令行、盯 prompt、盯脚本的系统。
-
-EvoQ 把问题当作“运行时系统”来解决：
-
-- 一个权威 Core，而不是多个互相竞争的主控
-- 一个持久化运行时数据库，而不是只靠上下文
-- 受治理的工作流，而不是随意的 agent 对话
-- Discord 和 Dashboard 作为主要交互面，而不是终端优先
-- 明确的 `paper -> live` 渐进式激活路径，而不是直接切到 live
-
-## 截图
-
-概览页面：
-
-![EvoQ dashboard overview](docs/assets/dashboard-overview-evoq.png)
-
-移动端页面：
-
-![EvoQ dashboard mobile](docs/assets/dashboard-mobile-evoq.png)
-
-## 你会得到什么
-
-| 模块 | 作用 |
+| 模块 | 当前能力 |
 |---|---|
-| Discord control plane | 自然语言状态查询、审批、暂停、配置变更草案 |
-| Dashboard | 观察交易、学习、进化、事故和系统健康 |
-| Core runtime | 风控、记忆、配置、执行治理和系统监督 |
-| Worker plane | 承担 Codex 驱动的研究与执行任务，但不成为系统事实来源 |
-| VPS deploy path | 单 VPS 优先，可在后续扩展到 `Core + Worker` |
+| 本地运行 | Windows/PowerShell 一键启动 API + Dashboard，并可 smoke 验证 |
+| Dashboard | Workbench、Research、Strategy、Data、Trading、Learning、Evolution、System、Incidents |
+| 市场数据 | provider、watchlist、quote、freshness、local replay bars、historical bars API |
+| 因子 | `momentum_close_return`、`reversal_close_return`、`realized_volatility`、`dollar_volume_liquidity` |
+| 回测 | 从 factor snapshots 运行 PIT replay backtest，包含成本、滑点、baseline、lineage、equity curve |
+| 策略生命周期 | research brief -> hypothesis -> spec -> backtest -> paper run -> promotion / withdrawal |
+| 执行门禁 | market session、broker snapshot、reconciliation、provider incident、override、stale quote blocking |
+| 部署文档 | 单 VPS 优先，后续 Core/Worker 扩展，backup/restore，break-glass runbook |
 
-## 市场模式
+## 和同类开源项目的关系
 
-一套部署实例只能选择一个市场模式：
+EvoQ 借鉴了几类优秀项目的组织方式：
 
-| 模式 | 当前支持 | 说明 |
-|---|---|---|
-| `us` | 美股正股、美股期权、受治理的混合 sleeves、带 borrow 和 margin gate 的做空路径 | 基于 Alpaca 的 paper-first 和 live-gated 路径 |
-| `cn` | A 股研究、选股、时段治理、paper-first 运行 | `CN live` 券商执行暂未交付 |
+- 类似 Qlib，把量化研究看成从数据到信号、回测、上线的 pipeline。
+- 类似 OpenBB，重视研究入口和可用的操作界面，而不只是脚本。
+- 类似 FinGPT 方向，把 LLM 放在金融研究和理解层，但不让 LLM 直接控制交易事实。
 
-如果你希望美股和 A 股同时运行，应该部署两套独立实例。
+EvoQ 的不同点是：它更关注 owner 可以长期运行的 **dashboard-first、paper-first、quant-first、LLM-governed** 产品形态。
 
-## 当前边界
+## 本地快速启动
 
-- `CN live` 券商执行还没有完成。
-- 组合 sleeve attribution 仍然保持保守。
-- 通用的 maintenance margin、borrow fee 和 locate 建模还没有覆盖所有产品路径。
+### 前置条件
 
-## 记忆与学习
+- Python 3.11+
+- Node.js 20+
+- PowerShell
+- 在 `apps/dashboard-web` 执行过 `npm ci`
+- 在仓库根目录执行过 `python -m pip install -e ".[dev]"`
 
-系统有意分成两层记忆：
+### 启动
 
-- 运行时学习网格
-- 提升后的长期记忆
-
-原始研究、证据和 insight 候选存放在持久化运行时状态里。被正式提升后的原则、因果案例和 feature-map lineage 则保存在仓库内的 `memory/` 与 `evo/feature_map.json` 中。
-
-这种分层能让 owner 明确区分“刚采集到的内容”和“已经被提升为长期操作记忆的内容”。
-
-## 推荐部署形态
-
-建议的首次部署：
-
-- `1 Discord bot`
-- `1 VPS`
-- `single_vps_compact`
-- 本地 `Postgres`
-- 先保持 `paper` 模式
-
-只有在确实需要更强隔离或更高研究吞吐时，再扩展到：
-
-- 保持 `Core` 作为唯一权威节点
-- 增加 `1 Worker VPS`
-- broker 凭据只放在 Core
-
-## 60 秒部署
-
-在 Debian 或 Ubuntu VPS 上，最短路径是：
-
-```bash
-sudo apt-get update && sudo apt-get install -y git && cd /opt && sudo git clone <your-github-repo-url> evoq && sudo chown -R "$USER":"$USER" /opt/evoq && cd /opt/evoq && ./ops/bin/quickstart-single-vps.sh
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.ps1
 ```
 
-如果你希望先生成部署草稿，再手动启动：
+打开：
 
-```bash
-cd /opt/evoq
-./ops/bin/onboard-single-vps.sh --no-start
-./ops/bin/core-up.sh
-./ops/bin/core-smoke.sh
-./ops/bin/system-doctor.sh
+- Dashboard: `http://127.0.0.1:3000`
+- API health: `http://127.0.0.1:8000/healthz`
+
+默认使用 SQLite：`.runtime/evoq-local.db`。
+
+### 验证
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
 ```
 
-第一次激活请保持在 `paper` 模式。
+看到下面结果说明本地产品入口可用：
 
-## 架构总览
+```text
+EvoQ local smoke passed.
+```
+
+## 第一次应该怎么玩
+
+建议按这个顺序理解：
+
+1. 在 **Data** 页面注册 `local-replay` provider。
+2. 在 **Data** 页面粘贴 OHLCV historical bars。
+3. 在 **Data** 页面生成 factor snapshots。
+4. 在 **Workbench / Research** 创建 research brief。
+5. 在 **Research** 查看 brief 是 `Ready`、`Needs evidence` 还是 `Blocked`。
+6. 在 **Strategy** 把 ready brief 推进到 hypothesis，再创建 deterministic spec。
+7. 在 **Strategy** 使用 `Factor replay` 生成 PIT backtest。
+8. 在 **Strategy** 记录 paper run 和 promotion decision。
+9. 在 **Trading** 查看 execution readiness。
+10. 在 **Incidents** 处理 approvals，并在需要时 pause/resume。
+
+更适合新手的说明见：[EVOQ-BEGINNER-README.md](docs/next-gen/EVOQ-BEGINNER-README.md)。
+
+## 安全边界
+
+- LLM 不直接交易。
+- Backtest 缺少成本、baseline、PIT controls、input-bar lineage 时不能通过 gate。
+- 已有行情数据但 quote 超过 48 小时，会阻断 execution readiness。
+- live readiness endpoint 只生成报告，不下单。
+- broker credentials 应该留在 Core，不放在 Worker。
+- 实盘前必须先有 paper evidence、risk readiness 和 owner approval。
+
+## 架构简图
 
 ```mermaid
 flowchart LR
-  Owner[Owner] --> Discord[Discord Bot]
-  Owner --> Dashboard[Dashboard]
-  Discord --> Core[Core Control Plane]
-  Dashboard --> Core
-  Core --> Postgres[(Postgres)]
-  Core --> Governance[Governance, Risk, and Supervisor Loops]
-  Core --> Broker[Broker and Market Adapters]
-  Governance --> Queue[Codex Work Queue]
-  Queue --> Worker[Worker Execution Plane]
-  Worker --> Providers[Model Providers or Relay]
-  Worker --> Research[Search, Browser, and Data Sources]
-  Worker --> Core
+  Owner[Owner] --> Dashboard[Dashboard]
+  Owner --> Telegram[Telegram / light gateway]
+  Dashboard --> API[FastAPI Core]
+  Telegram --> API
+  API --> DB[(Runtime DB)]
+  API --> Data[Market Data + Historical Bars]
+  API --> Factors[Deterministic Factor Engine]
+  Factors --> Backtests[PIT Replay Backtests]
+  Backtests --> Strategy[Strategy Lifecycle]
+  Strategy --> Risk[Risk + Readiness Gates]
+  Risk --> Paper[Paper Broker / Sim]
+  API --> Codex[Codex Worker Queue]
 ```
 
-设计原则很简单：一个权威 Core、一个运行时数据库、一个可扩展但不多主的 Worker 平面。
+设计规则：**一个权威 Core，一个运行时数据库，确定性金融逻辑，LLM 只做研究/挑战/治理辅助。**
 
 ## 仓库结构
 
 | 路径 | 作用 |
 |---|---|
-| `src/quant_evo_nextgen` | 后端运行时、服务、工作流和控制面 |
-| `apps/dashboard-web` | Dashboard 前端 |
-| `ops` | 部署脚本、smoke checks、更新工具、systemd 安装器 |
-| `docs/next-gen` | 架构、部署、runbook 和操作文档 |
-| `tests` | 回归测试和服务级验证 |
+| `src/quant_evo_nextgen` | 后端 API、contracts、services、DB models、控制面 |
+| `apps/dashboard-web` | Next.js Dashboard |
+| `alembic/versions` | 数据库迁移 |
+| `ops/tools` | 本地 Windows 启动、测试、smoke 工具 |
+| `ops/production` | Core/Worker 部署示例 |
+| `docs/next-gen` | 当前产品文档、用户手册、部署 runbook、评审 |
+| `workspace` | 仓库内 memory、knowledge、strategies、trading artifacts |
+| `legacy/original-system` | 早期系统归档 |
+| `tests` | 服务和 API 回归测试 |
 
-## 推荐阅读顺序
+## 常用验证命令
 
-1. [Product Overview](docs/next-gen/PRODUCT-OVERVIEW.md)
-2. [FAQ](docs/next-gen/FAQ.md)
-3. [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
-4. [First Paper Run Checklist](docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md)
-5. [Owner Operation Quickstart](docs/next-gen/OWNER-OPERATION-QUICKSTART.md)
-6. [Current Delivery Status](docs/next-gen/CURRENT-DELIVERY-STATUS.md)
-7. [Docs Index](docs/next-gen/README.md)
+```powershell
+cd apps\dashboard-web
+npm run build
+cd ..\..
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps1 -q
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
+```
 
-## 中转支持
+当前本地验证结果：
 
-系统支持 OpenAI 兼容中转和 Codex 兼容执行。
+- Dashboard build：通过
+- 后端/服务测试：`135 passed`
+- Local smoke：通过
 
-需要配置：
+## 部署入口
 
-- `QE_OPENAI_API_KEY`
-- `QE_OPENAI_BASE_URL`
+首次建议：
 
-## 项目规范
+- 一台 VPS
+- `single_vps_compact`
+- 本地 Postgres
+- paper 模式
+- Dashboard 主操作
+- Telegram 只做轻提醒和审批入口
 
-- [LICENSE](LICENSE)
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- [CONTRIBUTING.md](CONTRIBUTING.md)
-- [SECURITY.md](SECURITY.md)
-- [SUPPORT.md](SUPPORT.md)
+阅读顺序：
+
+1. [GitHub to VPS Deployment Guide](docs/next-gen/GITHUB-TO-VPS-DEPLOYMENT.md)
+2. [VPS Deployment Runbook](docs/next-gen/VPS-DEPLOYMENT-RUNBOOK.md)
+3. [First Paper Run Checklist](docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md)
+4. [Break Glass Runbook](docs/next-gen/BREAK-GLASS-RUNBOOK.md)
+
+## 文档地图
+
+| 目标 | 文档 |
+|---|---|
+| 新手理解 | [Beginner README](docs/next-gen/EVOQ-BEGINNER-README.md) |
+| 日常使用 | [User Manual](docs/next-gen/EVOQ-USER-MANUAL.md) |
+| 产品定位 | [Product Overview](docs/next-gen/PRODUCT-OVERVIEW.md) |
+| 当前计划和状态 | [Complete Delivery Plan](docs/next-gen/EVOQ-COMPLETE-DELIVERY-PLAN.md) |
+| 全部文档 | [Docs Index](docs/next-gen/README.md) |
+| 环境变量 | [Environment Parameters](docs/env-params.md) |
+| 安全 | [Security Policy](SECURITY.md) |
+| 贡献 | [Contributing Guide](CONTRIBUTING.md) |
+
+## License
+
+MIT。见 [LICENSE](LICENSE)。

@@ -1,5 +1,13 @@
+import { decideApprovalAction } from "@/app/actions";
 import { fetchIncidents } from "@/lib/dashboard";
 import type { DashboardFrontendStatus } from "@/lib/types";
+
+type IncidentsPageProps = {
+  searchParams?: Promise<{
+    approval?: string;
+    code?: string;
+  }>;
+};
 
 type MetricTone = "good" | "warn" | "bad" | "neutral";
 
@@ -69,12 +77,31 @@ function severityTone(severity: string): MetricTone {
   return "good";
 }
 
-export default async function IncidentsPage() {
+function approvalMessage(status?: string, code?: string): string | null {
+  switch (status) {
+    case "approved":
+      return "Approval decision recorded as approved.";
+    case "rejected":
+      return "Approval decision recorded as rejected.";
+    case "missing":
+      return "The dashboard could not read the approval id or decision.";
+    case "failed":
+      return `Approval action failed${code ? ` with HTTP ${code}` : ""}.`;
+    case "unavailable":
+      return "The backend was unavailable, so the approval action did not complete.";
+    default:
+      return null;
+  }
+}
+
+export default async function IncidentsPage({ searchParams }: IncidentsPageProps) {
+  const params = searchParams ? await searchParams : undefined;
   const incidents = await fetchIncidents();
   const frontendStatus = incidents.frontend_status;
   const criticalPressure = incidents.active_incidents.filter((incident) => ["critical", "high"].includes(incident.severity.toLowerCase())).length;
   const highRiskApprovals = incidents.pending_approvals.filter((approval) => approval.risk_level.toLowerCase() === "high").length;
   const unresolvedRecent = incidents.recent_incidents.filter((incident) => !["resolved", "closed"].includes(incident.status.toLowerCase())).length;
+  const message = approvalMessage(params?.approval, params?.code);
 
   const topMetrics = [
     {
@@ -280,6 +307,7 @@ export default async function IncidentsPage() {
         <article className="panel">
           <div className="section-kicker">Approval Queue</div>
           <h3>Pending approvals</h3>
+          {message ? <div className="form-status form-status-warn">{message}</div> : null}
           <div className="stack">
             {incidents.pending_approvals.map((approval) => (
               <article key={approval.id} className="stack-card">
@@ -289,6 +317,22 @@ export default async function IncidentsPage() {
                 </span>
                 <p className="callout">requested by {approval.requested_by}</p>
                 <p className="callout">created {dateLabel(approval.created_at)}</p>
+                <div className="action-row">
+                  <form action={decideApprovalAction}>
+                    <input type="hidden" name="approval_id" value={approval.id} />
+                    <input type="hidden" name="decision" value="approved" />
+                    <button className="secondary-action" type="submit">
+                      Approve
+                    </button>
+                  </form>
+                  <form action={decideApprovalAction}>
+                    <input type="hidden" name="approval_id" value={approval.id} />
+                    <input type="hidden" name="decision" value="rejected" />
+                    <button className="secondary-action secondary-action-danger" type="submit">
+                      Reject
+                    </button>
+                  </form>
+                </div>
               </article>
             ))}
             {incidents.pending_approvals.length === 0 ? <div className="tile-meta">No approval is waiting right now.</div> : null}

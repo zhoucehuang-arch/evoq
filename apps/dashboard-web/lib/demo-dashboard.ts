@@ -30,7 +30,7 @@ export function buildDemoOverview(): DashboardOverview {
       { label: "Active overrides", value: "1", tone: "warn", hint: "One guarded exposure override" },
     ],
     highlights: [
-      "Discord owner control, dashboard monitoring, and governed research loops are online.",
+      "Telegram light control, dashboard monitoring, and governed research loops are online.",
       "The runtime is still in paper-first posture even though multiple sleeves are execution-ready.",
       "Codex work is queued behind governed approvals instead of acting as an unbounded control plane.",
       "Long-term memory remains separated from raw research intake so promotion stays explicit.",
@@ -926,7 +926,7 @@ export function buildDemoSystem(): DashboardSystem {
     ],
     highlights: [
       "The authority core keeps runtime config, owner preferences, and governed change history visible in one place.",
-      "System state should explain whether the stack is trustworthy before the owner acts through Discord.",
+      "System state should explain whether the stack is trustworthy before the owner acts through Telegram.",
       "Single-VPS operation remains the default posture; worker scale-out is optional, not required.",
     ],
     providers: [
@@ -948,7 +948,7 @@ export function buildDemoSystem(): DashboardSystem {
       },
       {
         provider_key: "discord",
-        display_name: "Discord Relay",
+        display_name: "Telegram Gateway",
         health_status: "healthy",
         api_style: "im-relay",
         is_primary: true,
@@ -1031,7 +1031,7 @@ export function buildDemoSystem(): DashboardSystem {
         status: "completed",
         started_at: "2026-03-25T13:52:00.000Z",
         ended_at: "2026-03-25T13:55:00.000Z",
-        latest_event_summary: "Discord relay health stayed green across command and approval paths.",
+        latest_event_summary: "Telegram gateway health stayed green across command and approval paths.",
       },
       {
         id: "wf-system-002",

@@ -1,5 +1,14 @@
+import { pauseDomainAction, resumeDomainAction } from "@/app/actions";
 import { fetchTrading } from "@/lib/dashboard";
 import type { DashboardFrontendStatus } from "@/lib/types";
+
+type TradingPageProps = {
+  searchParams?: Promise<{
+    control?: string;
+    code?: string;
+    domain?: string;
+  }>;
+};
 
 type MetricTone = "good" | "warn" | "bad" | "neutral";
 
@@ -65,7 +74,25 @@ function dateLabel(value: string | null | undefined): string {
   });
 }
 
-export default async function TradingPage() {
+function controlMessage(control?: string, code?: string, domain?: string): string | null {
+  switch (control) {
+    case "paused":
+      return `${domain ?? "Domain"} paused.`;
+    case "resumed":
+      return `${domain ?? "Domain"} resumed.`;
+    case "missing":
+      return "The dashboard could not read the domain control request.";
+    case "failed":
+      return `Domain control failed${code ? ` with HTTP ${code}` : ""}.`;
+    case "unavailable":
+      return "The backend was unavailable, so the domain control action did not complete.";
+    default:
+      return null;
+  }
+}
+
+export default async function TradingPage({ searchParams }: TradingPageProps) {
+  const params = searchParams ? await searchParams : undefined;
   const trading = await fetchTrading();
   const frontendStatus = trading.frontend_status;
   const readiness = trading.execution_readiness;
@@ -73,6 +100,7 @@ export default async function TradingPage() {
   const activeWarnings = readiness.warnings.length;
   const blockedReasons = readiness.blocked_reasons.length;
   const optionWatchCount = trading.expiring_option_positions.length;
+  const controlNote = controlMessage(params?.control, params?.code, params?.domain);
 
   const topMetrics = [
     {
@@ -419,6 +447,7 @@ export default async function TradingPage() {
         <article className="panel">
           <div className="section-kicker">Controls</div>
           <h3>Domain controls</h3>
+          {controlNote ? <div className="form-status form-status-warn">{controlNote}</div> : null}
           <div className="tile-grid">
             {trading.domain_states.map((state) => (
               <article key={state.domain} className="tile">
@@ -429,6 +458,20 @@ export default async function TradingPage() {
                 <div className="tile-meta">pending approvals {state.pending_approval_count}</div>
                 <div className="tile-meta">active overrides {state.override_count}</div>
                 {state.latest_reason ? <p className="callout">{state.latest_reason}</p> : null}
+                <div className="action-row">
+                  <form action={pauseDomainAction}>
+                    <input type="hidden" name="domain" value={state.domain} />
+                    <button className="secondary-action secondary-action-danger" type="submit">
+                      Pause
+                    </button>
+                  </form>
+                  <form action={resumeDomainAction}>
+                    <input type="hidden" name="domain" value={state.domain} />
+                    <button className="secondary-action" type="submit">
+                      Resume
+                    </button>
+                  </form>
+                </div>
               </article>
             ))}
             {trading.domain_states.length === 0 ? <div className="tile-meta">No governed domain state yet.</div> : null}

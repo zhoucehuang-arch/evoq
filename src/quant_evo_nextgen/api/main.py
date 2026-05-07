@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 import secrets
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -44,17 +44,29 @@ from quant_evo_nextgen.contracts.state import (
     EvolutionImprovementProposalSummary,
     EvolutionPromotionDecisionCreate,
     EvolutionPromotionDecisionSummary,
+    FactorGenerationRequest,
+    FactorReplayBacktestCreate,
+    FactorSnapshotSummary,
     GoalCreate,
     GoalSummary,
+    HistoricalBarSummary,
     IncidentCreate,
     IncidentSummary,
     InstrumentDefinitionSummary,
     InstrumentDefinitionUpsert,
     LearningDocumentSummary,
     LearningInsightSummary,
+    MarketDataFreshnessSummary,
+    MarketDataIngestionRunSummary,
+    MarketDataProviderSummary,
+    MarketDataProviderUpsert,
+    MarketDataReplayIngestCreate,
+    MarketQuoteSnapshotCreate,
+    MarketQuoteSnapshotSummary,
     MarketSessionStateCreate,
     MarketSessionStateSummary,
     OperatorOverrideCreate,
+    OperatorOverrideReleaseCreate,
     OperatorOverrideSummary,
     OrderCancelCreate,
     OrderIntentCreate,
@@ -84,9 +96,16 @@ from quant_evo_nextgen.contracts.state import (
     SourceHealthSummary,
     StrategyHypothesisCreate,
     StrategyHypothesisSummary,
+    StrategyResearchBriefCreate,
+    StrategyResearchBriefPromotionCreate,
+    StrategyResearchBriefSummary,
     StrategySpecCreate,
     StrategySpecSummary,
     SupervisorLoopSummary,
+    WatchlistItemSummary,
+    WatchlistItemUpsert,
+    WatchlistSummary,
+    WatchlistUpsert,
     WithdrawalDecisionCreate,
     WithdrawalDecisionSummary,
     WorkflowRunSummary,
@@ -98,6 +117,7 @@ from quant_evo_nextgen.services.doctor import DoctorService
 from quant_evo_nextgen.services.evolution import EvolutionService
 from quant_evo_nextgen.services.execution import ExecutionService
 from quant_evo_nextgen.services.learning import LearningService
+from quant_evo_nextgen.services.market_data import MarketDataService
 from quant_evo_nextgen.services.repo_state import RepoStateService
 from quant_evo_nextgen.services.state_store import StateStore
 from quant_evo_nextgen.services.strategy_lab import StrategyLabService
@@ -113,6 +133,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     learning_service = LearningService(database.session_factory)
     strategy_service = StrategyLabService(database.session_factory)
     execution_service = ExecutionService(database.session_factory, runtime_settings)
+    market_data_service = MarketDataService(database.session_factory)
     evolution_service = EvolutionService(database.session_factory)
     dashboard_service = DashboardService(
         repo_state_service,
@@ -139,6 +160,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.learning_service = learning_service
         app.state.strategy_service = strategy_service
         app.state.execution_service = execution_service
+        app.state.market_data_service = market_data_service
         app.state.evolution_service = evolution_service
         app.state.dashboard_service = dashboard_service
         try:
@@ -306,6 +328,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> OperatorOverrideSummary:
         return _state_store(request).create_operator_override(payload)
 
+    @app.post("/api/v1/operator-overrides/release", response_model=list[OperatorOverrideSummary])
+    async def release_operator_overrides(
+        payload: OperatorOverrideReleaseCreate,
+        request: Request,
+    ) -> list[OperatorOverrideSummary]:
+        return _state_store(request).release_operator_overrides(payload)
+
     @app.get("/api/v1/operator-overrides", response_model=list[OperatorOverrideSummary])
     async def list_operator_overrides(request: Request) -> list[OperatorOverrideSummary]:
         return _state_store(request).list_operator_overrides()
@@ -337,6 +366,99 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/v1/source-health", response_model=list[SourceHealthSummary])
     async def list_source_health(request: Request) -> list[SourceHealthSummary]:
         return _state_store(request).list_source_health()
+
+    @app.post("/api/v1/market-data/providers", response_model=MarketDataProviderSummary)
+    async def upsert_market_data_provider(
+        payload: MarketDataProviderUpsert,
+        request: Request,
+    ) -> MarketDataProviderSummary:
+        return _market_data_service(request).upsert_provider(payload)
+
+    @app.get("/api/v1/market-data/providers", response_model=list[MarketDataProviderSummary])
+    async def list_market_data_providers(request: Request) -> list[MarketDataProviderSummary]:
+        return _market_data_service(request).list_providers()
+
+    @app.post("/api/v1/market-data/watchlists", response_model=WatchlistSummary)
+    async def upsert_watchlist(
+        payload: WatchlistUpsert,
+        request: Request,
+    ) -> WatchlistSummary:
+        return _market_data_service(request).upsert_watchlist(payload)
+
+    @app.get("/api/v1/market-data/watchlists", response_model=list[WatchlistSummary])
+    async def list_watchlists(request: Request) -> list[WatchlistSummary]:
+        return _market_data_service(request).list_watchlists()
+
+    @app.post("/api/v1/market-data/watchlists/{watchlist_key}/items", response_model=WatchlistItemSummary)
+    async def upsert_watchlist_item(
+        watchlist_key: str,
+        payload: WatchlistItemUpsert,
+        request: Request,
+    ) -> WatchlistItemSummary:
+        return _market_data_service(request).upsert_watchlist_item(watchlist_key, payload)
+
+    @app.get("/api/v1/market-data/watchlists/{watchlist_key}/items", response_model=list[WatchlistItemSummary])
+    async def list_watchlist_items(watchlist_key: str, request: Request) -> list[WatchlistItemSummary]:
+        return _market_data_service(request).list_watchlist_items(watchlist_key)
+
+    @app.post("/api/v1/market-data/quotes", response_model=MarketQuoteSnapshotSummary)
+    async def record_market_quote_snapshot(
+        payload: MarketQuoteSnapshotCreate,
+        request: Request,
+    ) -> MarketQuoteSnapshotSummary:
+        return _market_data_service(request).record_quote_snapshot(payload)
+
+    @app.get("/api/v1/market-data/quotes", response_model=list[MarketQuoteSnapshotSummary])
+    async def list_market_quote_snapshots(
+        request: Request,
+        symbol: str | None = None,
+    ) -> list[MarketQuoteSnapshotSummary]:
+        return _market_data_service(request).list_quote_snapshots(symbol=symbol)
+
+    @app.post("/api/v1/market-data/replay-bars", response_model=MarketDataIngestionRunSummary)
+    async def ingest_market_data_replay_bars(
+        payload: MarketDataReplayIngestCreate,
+        request: Request,
+    ) -> MarketDataIngestionRunSummary:
+        return _market_data_service(request).ingest_replay_bars(payload)
+
+    @app.get("/api/v1/market-data/ingestion-runs", response_model=list[MarketDataIngestionRunSummary])
+    async def list_market_data_ingestion_runs(request: Request) -> list[MarketDataIngestionRunSummary]:
+        return _market_data_service(request).list_ingestion_runs()
+
+    @app.get("/api/v1/market-data/historical-bars", response_model=list[HistoricalBarSummary])
+    async def list_market_data_historical_bars(
+        request: Request,
+        symbol: str | None = None,
+        market: str | None = None,
+        timeframe: str | None = None,
+    ) -> list[HistoricalBarSummary]:
+        return _market_data_service(request).list_historical_bars(symbol=symbol, market=market, timeframe=timeframe)
+
+    @app.post("/api/v1/market-data/factors/generate", response_model=list[FactorSnapshotSummary])
+    async def generate_market_data_factors(
+        payload: FactorGenerationRequest,
+        request: Request,
+    ) -> list[FactorSnapshotSummary]:
+        try:
+            return _market_data_service(request).generate_factor_snapshots(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/v1/market-data/factors", response_model=list[FactorSnapshotSummary])
+    async def list_market_data_factors(
+        request: Request,
+        factor_code: str | None = None,
+        symbol: str | None = None,
+    ) -> list[FactorSnapshotSummary]:
+        return _market_data_service(request).list_factor_snapshots(factor_code=factor_code, symbol=symbol)
+
+    @app.get("/api/v1/market-data/freshness", response_model=MarketDataFreshnessSummary)
+    async def get_market_data_freshness(
+        request: Request,
+        watchlist_key: str | None = None,
+    ) -> MarketDataFreshnessSummary:
+        return _market_data_service(request).get_freshness(watchlist_key=watchlist_key)
 
     @app.get("/api/v1/learning/documents", response_model=list[LearningDocumentSummary])
     async def list_learning_documents(request: Request) -> list[LearningDocumentSummary]:
@@ -392,6 +514,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/v1/execution/readiness", response_model=ExecutionReadinessSummary)
     async def get_execution_readiness(request: Request) -> ExecutionReadinessSummary:
+        return _execution_service(request).get_execution_readiness()
+
+    @app.get("/api/v1/execution/live-readiness-report", response_model=ExecutionReadinessSummary)
+    async def get_live_readiness_report(request: Request) -> ExecutionReadinessSummary:
         return _execution_service(request).get_execution_readiness()
 
     @app.post("/api/v1/execution/instruments", response_model=InstrumentDefinitionSummary)
@@ -499,6 +625,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> StrategyHypothesisSummary:
         return _strategy_service(request).create_hypothesis(payload)
 
+    @app.post("/api/v1/strategy/research-briefs", response_model=StrategyResearchBriefSummary)
+    async def create_strategy_research_brief(
+        payload: StrategyResearchBriefCreate,
+        request: Request,
+    ) -> StrategyResearchBriefSummary:
+        try:
+            return _strategy_service(request).create_research_brief(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/v1/strategy/research-briefs", response_model=list[StrategyResearchBriefSummary])
+    async def list_strategy_research_briefs(request: Request) -> list[StrategyResearchBriefSummary]:
+        return _strategy_service(request).list_research_briefs()
+
+    @app.post("/api/v1/strategy/research-briefs/{brief_id}/hypothesis", response_model=StrategyHypothesisSummary)
+    async def promote_strategy_research_brief(
+        brief_id: str,
+        payload: StrategyResearchBriefPromotionCreate,
+        request: Request,
+    ) -> StrategyHypothesisSummary:
+        try:
+            return _strategy_service(request).promote_research_brief_to_hypothesis(brief_id, payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/api/v1/strategy/hypotheses", response_model=list[StrategyHypothesisSummary])
     async def list_strategy_hypotheses(request: Request) -> list[StrategyHypothesisSummary]:
         return _strategy_service(request).list_hypotheses()
@@ -514,6 +665,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/v1/strategy/backtests", response_model=BacktestRunSummary)
     async def record_strategy_backtest(payload: BacktestRunCreate, request: Request) -> BacktestRunSummary:
         return _strategy_service(request).record_backtest(payload)
+
+    @app.post("/api/v1/strategy/backtests/factor-replay", response_model=BacktestRunSummary)
+    async def run_strategy_factor_replay_backtest(
+        payload: FactorReplayBacktestCreate,
+        request: Request,
+    ) -> BacktestRunSummary:
+        try:
+            return _strategy_service(request).run_factor_replay_backtest(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/v1/strategy/backtests", response_model=list[BacktestRunSummary])
     async def list_strategy_backtests(request: Request) -> list[BacktestRunSummary]:
@@ -632,6 +793,10 @@ def _execution_service(request: Request) -> ExecutionService:
     return request.app.state.execution_service
 
 
+def _market_data_service(request: Request) -> MarketDataService:
+    return request.app.state.market_data_service
+
+
 def _strategy_service(request: Request) -> StrategyLabService:
     return request.app.state.strategy_service
 
@@ -644,7 +809,7 @@ app = create_app()
 
 
 def _requires_dashboard_api_token(path: str) -> bool:
-    return path.startswith("/api/v1/dashboard/") or path in {
+    return path.startswith("/api/v1/dashboard/") or path.startswith("/api/v1/strategy/") or path.startswith("/api/v1/market-data/") or path.startswith("/api/v1/approvals") or path.startswith("/api/v1/operator-overrides") or path in {
         "/api/v1/system/status",
         "/api/v1/system/doctor",
     }

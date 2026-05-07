@@ -239,7 +239,7 @@ class SupervisorService:
                 f"deployment_market_mode={market_mode}, active_sleeves={sleeve_text}, "
                 f"market_calendar={self.settings.market_calendar}, market_timezone={self.settings.market_timezone}."
             ),
-            write_scope=["knowledge/", "memory/", "docs/next-gen/"],
+            write_scope=["workspace/knowledge/", "workspace/memory/", "docs/next-gen/"],
             allowed_tools=["shell", "web"],
             search_enabled=True,
             risk_tier="R2",
@@ -363,7 +363,7 @@ class SupervisorService:
             worker_class="strategy_worker",
             objective="Run a bounded strategy evaluation cycle and recommend the next governed research or validation actions.",
             context_summary=context_summary,
-            write_scope=["strategies/", "trading/", "docs/next-gen/", "memory/"],
+            write_scope=["workspace/strategies/", "workspace/trading/", "docs/next-gen/", "workspace/memory/"],
             allowed_tools=["shell"],
             search_enabled=False,
             risk_tier="R3",
@@ -484,7 +484,7 @@ class SupervisorService:
                 f"recent_relevant_workflows={len(recent_workflows)}, "
                 f"capability_score={capability_review.overall_score_pct}, stall_state={capability_review.stall_state}."
             ),
-            write_scope=["docs/next-gen/", "memory/", "knowledge/"],
+            write_scope=["docs/next-gen/", "workspace/memory/", "workspace/knowledge/"],
             allowed_tools=["shell", "web"],
             search_enabled=True,
             risk_tier="R2",
@@ -589,7 +589,7 @@ class SupervisorService:
                     f"Capability_score={review.overall_score_pct}, stall_state={review.stall_state}, "
                     f"top_gaps={[gap.summary for gap in review.capability_gaps[:3]]}."
                 ),
-                write_scope=["docs/next-gen/", "memory/", "knowledge/"],
+                write_scope=["docs/next-gen/", "workspace/memory/", "workspace/knowledge/"],
                 allowed_tools=["shell", "web"],
                 search_enabled=True,
                 risk_tier="R2",

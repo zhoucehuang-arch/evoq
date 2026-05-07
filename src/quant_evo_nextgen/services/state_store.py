@@ -18,6 +18,7 @@ from quant_evo_nextgen.contracts.state import (
     IncidentCreate,
     IncidentSummary,
     OperatorOverrideCreate,
+    OperatorOverrideReleaseCreate,
     OperatorOverrideSummary,
     OwnerPreferenceSummary,
     OwnerPreferenceUpsert,
@@ -711,6 +712,24 @@ class StateStore:
             session.commit()
             session.refresh(override)
             return self._override_summary(override)
+
+    def release_operator_overrides(
+        self,
+        payload: OperatorOverrideReleaseCreate | dict[str, Any],
+    ) -> list[OperatorOverrideSummary]:
+        request = OperatorOverrideReleaseCreate.model_validate(payload)
+        with self.session_factory() as session:
+            overrides = session.scalars(
+                select(OperatorOverrideModel).where(
+                    OperatorOverrideModel.scope == request.scope,
+                    OperatorOverrideModel.is_active.is_(True),
+                )
+            ).all()
+            for override in overrides:
+                override.is_active = False
+                override.status = "released"
+            session.commit()
+            return [self._override_summary(override) for override in overrides]
 
     def list_operator_overrides(
         self,

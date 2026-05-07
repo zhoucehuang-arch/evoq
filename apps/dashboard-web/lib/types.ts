@@ -167,6 +167,147 @@ export interface ProviderProfileCard {
   base_url?: string | null;
 }
 
+export interface MarketDataProviderCard {
+  id: string;
+  provider_key: string;
+  display_name: string;
+  provider_type: string;
+  market_coverage: string[];
+  supports_realtime: boolean;
+  supports_historical: boolean;
+  supports_fundamentals: boolean;
+  supports_news: boolean;
+  entitlement_state: string;
+  health_status: string;
+  latency_ms?: number | null;
+  freshness_sla_seconds: number;
+  last_heartbeat_at?: string | null;
+  notes?: string | null;
+  updated_at: string;
+}
+
+export interface WatchlistCard {
+  id: string;
+  watchlist_key: string;
+  display_name: string;
+  market_scope: string;
+  description?: string | null;
+  is_default: boolean;
+  item_count: number;
+  updated_at: string;
+}
+
+export interface WatchlistItemCard {
+  id: string;
+  watchlist_key: string;
+  symbol: string;
+  instrument_key?: string | null;
+  market: string;
+  venue?: string | null;
+  currency: string;
+  priority: number;
+  metadata_payload: Record<string, unknown>;
+  updated_at: string;
+}
+
+export interface MarketQuoteSnapshotCard {
+  id: string;
+  provider_key: string;
+  symbol: string;
+  market: string;
+  venue?: string | null;
+  bid?: number | null;
+  ask?: number | null;
+  last?: number | null;
+  volume?: number | null;
+  as_of: string;
+  source_latency_ms?: number | null;
+  is_realtime: boolean;
+  created_at: string;
+}
+
+export interface MarketDataFreshnessItemCard {
+  symbol: string;
+  market: string;
+  provider_key?: string | null;
+  status: "fresh" | "stale" | "missing";
+  age_seconds?: number | null;
+  last_quote_at?: string | null;
+  last_price?: number | null;
+  provider_health?: string | null;
+  reason?: string | null;
+}
+
+export interface MarketDataFreshnessCard {
+  watchlist_key?: string | null;
+  generated_at: string;
+  fresh: number;
+  stale: number;
+  missing: number;
+  items: MarketDataFreshnessItemCard[];
+}
+
+export interface MarketDataIngestionRunCard {
+  id: string;
+  provider_key: string;
+  adapter_key: string;
+  source_ref?: string | null;
+  market: string;
+  symbols: string[];
+  bar_count: number;
+  started_at: string;
+  completed_at?: string | null;
+  error_message?: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface HistoricalBarCard {
+  id: string;
+  ingestion_run_id?: string | null;
+  provider_key: string;
+  symbol: string;
+  market: string;
+  venue?: string | null;
+  timeframe: string;
+  bar_start: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number | null;
+  adjusted_close?: number | null;
+  is_adjusted: boolean;
+  created_at: string;
+}
+
+export interface FactorSnapshotCard {
+  id: string;
+  factor_code: string;
+  factor_name: string;
+  symbol: string;
+  market: string;
+  as_of: string;
+  value: number;
+  rank?: number | null;
+  percentile?: number | null;
+  lookback_bars: number;
+  input_bar_ids: string[];
+  lineage_payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface MarketDataWorkbenchPayload {
+  providers: MarketDataProviderCard[];
+  watchlists: WatchlistCard[];
+  watchlist_items: WatchlistItemCard[];
+  quotes: MarketQuoteSnapshotCard[];
+  ingestion_runs: MarketDataIngestionRunCard[];
+  historical_bars: HistoricalBarCard[];
+  factor_snapshots: FactorSnapshotCard[];
+  freshness: MarketDataFreshnessCard;
+}
+
 export interface SupervisorLoopCard {
   loop_key: string;
   workflow_code: string;
@@ -251,15 +392,76 @@ export interface StrategyLabMetrics {
   production_count: number;
 }
 
+export interface StrategyResearchBriefCard {
+  id: string;
+  source_insight_id?: string | null;
+  title: string;
+  opportunity_kind: string;
+  target_market: string;
+  audit_status: string;
+  audit_notes: string[];
+  readiness_score: number;
+  promoted_hypothesis_id?: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface StrategyHypothesisCard {
+  id: string;
+  source_insight_id?: string | null;
+  title: string;
+  thesis: string;
+  target_market: string;
+  current_stage: string;
+  status: string;
+  created_at: string;
+}
+
 export interface StrategySpecCard {
   id: string;
+  hypothesis_id?: string;
   spec_code: string;
+  version_label?: string;
   title: string;
   target_market: string;
   current_stage: string;
   latest_backtest_gate?: string | null;
   latest_paper_gate?: string | null;
+  status?: string;
   created_at: string;
+}
+
+export interface BacktestRunSummaryCard extends BacktestRunCard {
+  gate_notes: string[];
+  metrics_json: Record<string, unknown>;
+  artifact_path?: string | null;
+}
+
+export interface PaperRunSummaryCard extends PaperRunCard {
+  gate_notes: string[];
+  metrics_json: Record<string, unknown>;
+  capital_allocated?: number | null;
+  status: string;
+}
+
+export interface PromotionDecisionCard {
+  id: string;
+  strategy_spec_id: string;
+  paper_run_id?: string | null;
+  target_stage: string;
+  decision: string;
+  rationale: string;
+  decided_by: string;
+  decided_at: string;
+  created_at: string;
+}
+
+export interface StrategyLifecyclePayload {
+  hypotheses: StrategyHypothesisCard[];
+  specs: StrategySpecCard[];
+  backtests: BacktestRunSummaryCard[];
+  paper_runs: PaperRunSummaryCard[];
+  promotion_decisions: PromotionDecisionCard[];
 }
 
 export interface BacktestRunCard {

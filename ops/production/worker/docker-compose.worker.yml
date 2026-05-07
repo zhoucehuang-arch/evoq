@@ -4,7 +4,7 @@ services:
   codex-fabric-runner:
     build:
       context: ../../..
-      dockerfile: docker/codex-runner.Dockerfile
+      dockerfile: ops/docker/codex-runner.Dockerfile
     restart: unless-stopped
     env_file:
       - ${QE_WORKER_RUNTIME_ENV_FILE:-./worker.env}

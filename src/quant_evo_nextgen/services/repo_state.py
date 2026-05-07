@@ -23,6 +23,8 @@ class RepoStateSnapshot:
 class RepoStateService:
     def __init__(self, repo_root: Path) -> None:
         self.repo_root = repo_root
+        workspace_root = repo_root / "workspace"
+        self.data_root = workspace_root if workspace_root.exists() else repo_root
 
     def collect(self) -> RepoStateSnapshot:
         feature_map = self._load_feature_map()
@@ -30,11 +32,11 @@ class RepoStateService:
         return RepoStateSnapshot(
             generated_at=datetime.now(tz=UTC),
             repo_root=self.repo_root,
-            candidates=self._count_files(self.repo_root / "strategies" / "candidates"),
-            staging=self._count_files(self.repo_root / "strategies" / "staging"),
-            production=self._count_files(self.repo_root / "strategies" / "production"),
-            principles=self._count_files(self.repo_root / "memory" / "principles"),
-            causal_cases=self._count_files(self.repo_root / "memory" / "causal"),
+            candidates=self._count_files(self.data_root / "strategies" / "candidates"),
+            staging=self._count_files(self.data_root / "strategies" / "staging"),
+            production=self._count_files(self.data_root / "strategies" / "production"),
+            principles=self._count_files(self.data_root / "memory" / "principles"),
+            causal_cases=self._count_files(self.data_root / "memory" / "causal"),
             occupied_feature_cells=feature_map["occupied_feature_cells"],
             feature_coverage_pct=feature_map["feature_coverage_pct"],
             total_generations=feature_map["total_generations"],
@@ -54,7 +56,7 @@ class RepoStateService:
         return count
 
     def _load_feature_map(self) -> dict[str, int | float]:
-        feature_map_path = self.repo_root / "evo" / "feature_map.json"
+        feature_map_path = self.data_root / "evo" / "feature_map.json"
         if not feature_map_path.exists():
             return {
                 "occupied_feature_cells": 0,

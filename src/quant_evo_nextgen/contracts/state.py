@@ -114,6 +114,12 @@ class OperatorOverrideSummary(BaseModel):
     created_at: datetime
 
 
+class OperatorOverrideReleaseCreate(BaseModel):
+    scope: str
+    released_by: str = "operator"
+    reason: str | None = None
+
+
 class WorkflowRunSummary(BaseModel):
     id: str
     workflow_code: str
@@ -249,6 +255,246 @@ class SourceHealthSummary(BaseModel):
     updated_at: datetime
 
 
+class MarketDataProviderUpsert(BaseModel):
+    provider_key: str
+    display_name: str
+    provider_type: Literal["broker", "data_vendor", "scraper", "internal", "custom"] = "data_vendor"
+    market_coverage: list[str] = Field(default_factory=lambda: ["us_equities"])
+    supports_realtime: bool = False
+    supports_historical: bool = True
+    supports_fundamentals: bool = False
+    supports_news: bool = False
+    entitlement_state: str = "unknown"
+    health_status: str = "unknown"
+    latency_ms: int | None = None
+    freshness_sla_seconds: int = 120
+    last_heartbeat_at: datetime | None = None
+    notes: str | None = None
+    created_by: str = "operator"
+    origin_type: str = "manual"
+    origin_id: str | None = None
+    status: str = "active"
+
+
+class MarketDataProviderSummary(BaseModel):
+    id: str
+    provider_key: str
+    display_name: str
+    provider_type: str
+    market_coverage: list[str] = Field(default_factory=list)
+    supports_realtime: bool
+    supports_historical: bool
+    supports_fundamentals: bool
+    supports_news: bool
+    entitlement_state: str
+    health_status: str
+    latency_ms: int | None = None
+    freshness_sla_seconds: int
+    last_heartbeat_at: datetime | None = None
+    notes: str | None = None
+    updated_at: datetime
+
+
+class WatchlistUpsert(BaseModel):
+    watchlist_key: str
+    display_name: str
+    market_scope: str = "us_equities"
+    description: str | None = None
+    is_default: bool = False
+    created_by: str = "operator"
+    origin_type: str = "manual"
+    origin_id: str | None = None
+    status: str = "active"
+
+
+class WatchlistSummary(BaseModel):
+    id: str
+    watchlist_key: str
+    display_name: str
+    market_scope: str
+    description: str | None = None
+    is_default: bool
+    item_count: int = 0
+    updated_at: datetime
+
+
+class WatchlistItemUpsert(BaseModel):
+    symbol: str
+    instrument_key: str | None = None
+    market: str = "us_equities"
+    venue: str | None = None
+    currency: str = "USD"
+    priority: int = 100
+    metadata_payload: dict[str, Any] = Field(default_factory=dict)
+    created_by: str = "operator"
+    origin_type: str = "manual"
+    origin_id: str | None = None
+    status: str = "active"
+
+
+class WatchlistItemSummary(BaseModel):
+    id: str
+    watchlist_key: str
+    symbol: str
+    instrument_key: str | None = None
+    market: str
+    venue: str | None = None
+    currency: str
+    priority: int
+    metadata_payload: dict[str, Any] = Field(default_factory=dict)
+    updated_at: datetime
+
+
+class MarketQuoteSnapshotCreate(BaseModel):
+    provider_key: str
+    symbol: str
+    market: str = "us_equities"
+    venue: str | None = None
+    bid: float | None = None
+    ask: float | None = None
+    last: float | None = None
+    volume: float | None = None
+    as_of: datetime | None = None
+    source_latency_ms: int | None = None
+    is_realtime: bool = False
+    payload: dict[str, Any] = Field(default_factory=dict)
+    created_by: str = "system"
+    origin_type: str = "market_data"
+    origin_id: str | None = None
+    status: str = "active"
+
+
+class MarketQuoteSnapshotSummary(BaseModel):
+    id: str
+    provider_key: str
+    symbol: str
+    market: str
+    venue: str | None = None
+    bid: float | None = None
+    ask: float | None = None
+    last: float | None = None
+    volume: float | None = None
+    as_of: datetime
+    source_latency_ms: int | None = None
+    is_realtime: bool
+    created_at: datetime
+
+
+class MarketDataFreshnessItem(BaseModel):
+    symbol: str
+    market: str
+    provider_key: str | None = None
+    status: Literal["fresh", "stale", "missing"]
+    age_seconds: int | None = None
+    last_quote_at: datetime | None = None
+    last_price: float | None = None
+    provider_health: str | None = None
+    reason: str | None = None
+
+
+class MarketDataFreshnessSummary(BaseModel):
+    watchlist_key: str | None = None
+    generated_at: datetime
+    fresh: int
+    stale: int
+    missing: int
+    items: list[MarketDataFreshnessItem] = Field(default_factory=list)
+
+
+class HistoricalBarCreate(BaseModel):
+    symbol: str
+    market: str = "us_equities"
+    venue: str | None = None
+    timeframe: str = "1d"
+    bar_start: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float | None = None
+    adjusted_close: float | None = None
+    is_adjusted: bool = False
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class HistoricalBarSummary(BaseModel):
+    id: str
+    ingestion_run_id: str | None = None
+    provider_key: str
+    symbol: str
+    market: str
+    venue: str | None = None
+    timeframe: str
+    bar_start: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float | None = None
+    adjusted_close: float | None = None
+    is_adjusted: bool
+    created_at: datetime
+
+
+class MarketDataReplayIngestCreate(BaseModel):
+    provider_key: str = "local-replay"
+    adapter_key: str = "local_replay"
+    source_ref: str | None = None
+    market: str = "us_equities"
+    timeframe: str = "1d"
+    bars: list[HistoricalBarCreate] = Field(default_factory=list)
+    created_by: str = "operator"
+    origin_type: str = "market_data_replay"
+    origin_id: str | None = None
+    status: str = "completed"
+
+
+class MarketDataIngestionRunSummary(BaseModel):
+    id: str
+    provider_key: str
+    adapter_key: str
+    source_ref: str | None = None
+    market: str
+    symbols: list[str] = Field(default_factory=list)
+    bar_count: int
+    started_at: datetime
+    completed_at: datetime | None = None
+    error_message: str | None = None
+    status: str
+    created_at: datetime
+
+
+class FactorGenerationRequest(BaseModel):
+    factor_code: str = "momentum_close_return"
+    factor_name: str = "Close-to-close momentum return"
+    provider_key: str | None = None
+    symbols: list[str] = Field(default_factory=list)
+    market: str = "us_equities"
+    timeframe: str = "1d"
+    lookback_bars: int = Field(default=3, ge=2)
+    as_of: datetime | None = None
+    created_by: str = "system"
+    origin_type: str = "factor_engine"
+    origin_id: str | None = None
+    status: str = "active"
+
+
+class FactorSnapshotSummary(BaseModel):
+    id: str
+    factor_code: str
+    factor_name: str
+    symbol: str
+    market: str
+    as_of: datetime
+    value: float
+    rank: int | None = None
+    percentile: float | None = None
+    lookback_bars: int
+    input_bar_ids: list[str] = Field(default_factory=list)
+    lineage_payload: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+
+
 class LearningDocumentSummary(BaseModel):
     id: str
     codex_run_id: str | None = None
@@ -281,6 +527,62 @@ class LearningInsightSummary(BaseModel):
     confidence: float | None = None
     quarantine_reason: str | None = None
     created_at: datetime
+
+
+class StrategyResearchBriefCreate(BaseModel):
+    source_insight_id: str | None = None
+    title: str
+    thesis: str
+    opportunity_kind: Literal[
+        "factor",
+        "event",
+        "regime",
+        "microstructure",
+        "portfolio_overlay",
+        "execution",
+        "risk_overlay",
+        "other",
+    ] = "factor"
+    target_market: str
+    signal_definition: str
+    expected_mechanism: str
+    llm_provider: str | None = None
+    llm_model: str | None = None
+    llm_model_cutoff: str | None = None
+    prompt_hash: str | None = None
+    tool_refs: list[dict[str, Any]] = Field(default_factory=list)
+    evidence_refs: list[dict[str, Any]] = Field(default_factory=list)
+    data_requirements: list[str] = Field(default_factory=list)
+    point_in_time_controls: list[str] = Field(default_factory=list)
+    evaluation_plan: list[str] = Field(default_factory=list)
+    cost_model_requirements: list[str] = Field(default_factory=list)
+    baseline_refs: list[str] = Field(default_factory=list)
+    invalidation_conditions: list[str] = Field(default_factory=list)
+    risk_controls_required: list[str] = Field(default_factory=list)
+    attack_tests_required: list[str] = Field(default_factory=list)
+    created_by: str = "operator"
+    origin_type: str = "llm_research"
+    origin_id: str | None = None
+    status: str = "candidate"
+
+
+class StrategyResearchBriefSummary(BaseModel):
+    id: str
+    source_insight_id: str | None = None
+    title: str
+    opportunity_kind: str
+    target_market: str
+    audit_status: str
+    audit_notes: list[str]
+    readiness_score: float
+    promoted_hypothesis_id: str | None = None
+    status: str
+    created_at: datetime
+
+
+class StrategyResearchBriefPromotionCreate(BaseModel):
+    created_by: str = "operator"
+    status: str = "active"
 
 
 class StrategyHypothesisCreate(BaseModel):
@@ -348,6 +650,25 @@ class BacktestRunCreate(BaseModel):
     artifact_path: str | None = None
     created_by: str = "operator"
     origin_type: str = "manual"
+    origin_id: str | None = None
+    status: str = "recorded"
+
+
+class FactorReplayBacktestCreate(BaseModel):
+    strategy_spec_id: str
+    factor_code: str = "momentum_close_return"
+    market: str = "us_equities"
+    timeframe: str = "1d"
+    provider_key: str | None = None
+    as_of: datetime | None = None
+    top_n: int = Field(default=5, ge=1)
+    min_percentile: float = Field(default=0.0, ge=0.0, le=1.0)
+    cost_bps: float = Field(default=5.0, ge=0.0)
+    slippage_bps: float = Field(default=5.0, ge=0.0)
+    baseline_refs: list[str] = Field(default_factory=lambda: ["cash", "equal_weight_factor_universe"])
+    point_in_time_controls: list[str] = Field(default_factory=lambda: ["factor_as_of_filter", "input_bar_lineage"])
+    created_by: str = "operator"
+    origin_type: str = "factor_replay_backtest"
     origin_id: str | None = None
     status: str = "recorded"
 

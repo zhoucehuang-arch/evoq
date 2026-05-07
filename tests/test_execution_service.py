@@ -1,8 +1,9 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
 from quant_evo_nextgen.config import Settings
+from quant_evo_nextgen.contracts.state import MarketQuoteSnapshotCreate
 from quant_evo_nextgen.db.models import PositionRecordModel
 from quant_evo_nextgen.db.session import Database
 from quant_evo_nextgen.services.broker import (
@@ -19,6 +20,7 @@ from quant_evo_nextgen.services.broker import (
     PositionState,
 )
 from quant_evo_nextgen.services.execution import ExecutionService
+from quant_evo_nextgen.services.market_data import MarketDataService
 from quant_evo_nextgen.services.state_store import StateStore
 from quant_evo_nextgen.services.strategy_lab import StrategyLabService
 
@@ -240,6 +242,61 @@ def test_execution_service_reports_ready_when_session_snapshot_and_reconciliatio
     assert readiness.market_open is True
     assert readiness.reconciliation_status == "matched"
     assert readiness.active_trading_overrides == 0
+
+
+def test_execution_readiness_blocks_when_market_data_quote_is_stale(tmp_path: Path) -> None:
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'execution-stale-market-data.db'}")
+    database.create_schema()
+
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'execution-stale-market-data.db'}",
+        db_bootstrap_on_start=True,
+        market_calendar="CRYPTO_24X7",
+        market_timezone="UTC",
+    )
+    state_store = StateStore(database.session_factory)
+    state_store.bootstrap_reference_data(settings)
+    _promote_production_strategy(database)
+
+    service = ExecutionService(database.session_factory, settings)
+    service.synthesize_market_session_state(now=datetime.now(tz=UTC))
+    snapshot = service.record_broker_account_snapshot(
+        {
+            "provider_key": "alpaca-paper",
+            "account_ref": "paper-main",
+            "environment": "paper",
+            "equity": 10000.0,
+            "cash": 10000.0,
+            "buying_power": 10000.0,
+            "created_by": "tester",
+        }
+    )
+    service.record_reconciliation_run(
+        {
+            "provider_key": "alpaca-paper",
+            "account_ref": "paper-main",
+            "account_snapshot_id": snapshot.id,
+            "environment": "paper",
+            "internal_equity": 10000.0,
+            "created_by": "tester",
+        }
+    )
+    MarketDataService(database.session_factory).record_quote_snapshot(
+        MarketQuoteSnapshotCreate(
+            provider_key="local-replay",
+            symbol="AAPL",
+            last=100.0,
+            as_of=datetime.now(tz=UTC) - timedelta(days=3),
+            created_by="tester",
+        )
+    )
+
+    readiness = service.get_execution_readiness()
+
+    assert readiness.status == "blocked"
+    assert readiness.trading_allowed is False
+    assert any("stale" in reason.lower() for reason in readiness.blocked_reasons)
 
 
 def test_execution_service_supports_cn_equity_market_sessions(tmp_path: Path) -> None:

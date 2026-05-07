@@ -13,10 +13,13 @@ class SkillSummary:
 
 
 class SkillCatalogService:
-    def __init__(self, repo_root: Path, skill_root: str | Path = "skills") -> None:
+    def __init__(self, repo_root: Path, skill_root: str | Path = "workspace/skills") -> None:
         self.repo_root = repo_root.resolve()
         raw_root = Path(skill_root)
         self.skill_root = raw_root if raw_root.is_absolute() else (self.repo_root / raw_root).resolve()
+        legacy_root = self.repo_root / "skills"
+        if not self.skill_root.exists() and legacy_root.exists():
+            self.skill_root = legacy_root.resolve()
 
     def discover(self) -> list[SkillSummary]:
         if not self.skill_root.exists():

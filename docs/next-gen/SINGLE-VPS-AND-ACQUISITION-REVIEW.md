@@ -44,8 +44,8 @@ This page records the current optimization checklist for the "single VPS first" 
 - The Core stack can host the Codex worker runtime when the single-VPS topology is selected.
 - The acquisition stack now treats SearXNG, RSSHub, repo-local skills, and Playwright as first-class layers.
 - Two repo-local acquisition skills are now expected:
-  - `skills/search-rss-intake/SKILL.md`
-  - `skills/playwright-browser-intake/SKILL.md`
+  - `workspace/skills/search-rss-intake/SKILL.md`
+  - `workspace/skills/playwright-browser-intake/SKILL.md`
 
 ## What This Slice Does Not Claim
 

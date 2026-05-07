@@ -47,6 +47,7 @@ from quant_evo_nextgen.db.models import (
     IncidentModel,
     InstrumentDefinitionModel,
     MarketCalendarStateModel,
+    MarketQuoteSnapshotModel,
     OrderIntentModel,
     OrderLegModel,
     OrderRecordModel,
@@ -1758,6 +1759,12 @@ class ExecutionService:
                 environment=self.settings.default_broker_environment,
                 broker_adapter=self.settings.default_broker_adapter,
             )
+            latest_quote = session.scalar(
+                select(MarketQuoteSnapshotModel).order_by(
+                    MarketQuoteSnapshotModel.as_of.desc(),
+                    MarketQuoteSnapshotModel.created_at.desc(),
+                )
+            )
 
         blocked_reasons: list[str] = []
         warnings: list[str] = []
@@ -1782,6 +1789,15 @@ class ExecutionService:
             blocked_reasons.append(f"Primary provider health is `{provider_health}`.")
         elif provider_health in {None, "unknown"}:
             warnings.append("Primary provider health is still unknown.")
+
+        if latest_quote is not None:
+            quote_age_seconds = int((datetime.now(tz=UTC) - _coerce_utc(latest_quote.as_of)).total_seconds())
+            if quote_age_seconds > 172800:
+                blocked_reasons.append(
+                    f"Latest market data quote for {latest_quote.symbol} is stale by more than 48 hours."
+                )
+            elif quote_age_seconds > 86400:
+                warnings.append(f"Latest market data quote for {latest_quote.symbol} is older than 24 hours.")
 
         broker_snapshot_age_seconds: int | None = None
         if latest_snapshot is None:

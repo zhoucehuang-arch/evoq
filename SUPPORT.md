@@ -5,8 +5,11 @@
 For most questions, start with:
 
 1. [README.md](README.md)
-2. [docs/next-gen/README.md](docs/next-gen/README.md)
-3. [docs/next-gen/FAQ.md](docs/next-gen/FAQ.md)
+2. [README.zh-CN.md](README.zh-CN.md) if you prefer Chinese
+3. [docs/next-gen/EVOQ-BEGINNER-README.md](docs/next-gen/EVOQ-BEGINNER-README.md)
+4. [docs/next-gen/EVOQ-USER-MANUAL.md](docs/next-gen/EVOQ-USER-MANUAL.md)
+5. [docs/next-gen/README.md](docs/next-gen/README.md)
+6. [docs/next-gen/FAQ.md](docs/next-gen/FAQ.md)
 
 ## Deployment and operations help
 
@@ -21,10 +24,11 @@ Use these first:
 
 Check these first:
 
-- `./ops/bin/core-smoke.sh`
-- `./ops/bin/worker-smoke.sh`
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1` for local Windows runs
+- `./ops/bin/core-smoke.sh` for Core VPS deployments
+- `./ops/bin/worker-smoke.sh` for Worker VPS deployments
 - `/api/v1/system/doctor`
-- dashboard health and Discord responsiveness
+- dashboard health and Telegram/Discord gateway responsiveness, depending on your deployment
 
 ## Filing a useful issue
 

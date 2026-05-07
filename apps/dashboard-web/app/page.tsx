@@ -1,7 +1,10 @@
 import { fetchOverview } from "@/lib/dashboard";
+import { createResearchBriefAction } from "@/app/actions";
 
 type OverviewPageProps = {
   searchParams?: Promise<{
+    brief?: string;
+    code?: string;
     demo?: string;
   }>;
 };
@@ -119,6 +122,7 @@ function SignalColumn({
 export default async function OverviewPage({ searchParams }: OverviewPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const overview = await fetchOverview({ demo: params?.demo === "1" });
+  const briefStatus = params?.brief;
   const activeSleeves = overview.system.active_sleeves.length
     ? overview.system.active_sleeves.join(" / ")
     : "unconfigured";
@@ -244,9 +248,9 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
 
   const deployFlow = [
     "Push the repository to GitHub.",
-    "Clone the stack to /opt/evoq on a single Ubuntu VPS.",
+    "Clone the stack to /opt/evoq on one local Linux host or a single Ubuntu VPS.",
     "Run ./ops/bin/quickstart-single-vps.sh or use onboard-single-vps first if you want a reviewable draft.",
-    "Confirm the market mode, then fill Discord, relay, and dashboard secrets.",
+    "Confirm the market mode, then fill Telegram, relay, and dashboard secrets.",
     "Pass doctor, smoke, and broker-sync checks in paper mode before touching any real capital.",
     "Only add a second Worker VPS when you truly need stronger isolation or higher Codex throughput.",
   ];
@@ -254,15 +258,26 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
   const activationChecks = [
     "./ops/bin/core-smoke.sh returns no fail",
     "./ops/bin/system-doctor.sh returns no fail",
-    "Dashboard and Discord agree on runtime health",
+    "Dashboard and Telegram agree on runtime health",
     "Broker sync and reconciliation look healthy in paper mode",
     "No unresolved incident is hiding behind a stale or broken freshness state",
   ];
 
+  const briefStatusMessage =
+    briefStatus === "created"
+      ? "Research brief created. It is now ready for audit, evidence review, and possible hypothesis promotion."
+      : briefStatus === "missing"
+        ? "Add at least a short idea before creating a research brief."
+        : briefStatus === "failed"
+          ? `The backend rejected the research brief request${params?.code ? ` with HTTP ${params.code}` : ""}.`
+          : briefStatus === "unavailable"
+            ? "The backend was unavailable, so the research brief was not created."
+            : null;
+
   const supportedSurface = [
     "US mode supports governed US equities, US options, mixed sleeves, and short-equity paths with borrow and margin gates.",
     "CN mode supports A-share research, ranking, calendar-aware supervision, and paper-first operation.",
-    "Discord remains the write surface while the dashboard acts as the decision and observation terminal.",
+    "Dashboard is the write and review surface while Telegram stays a light gateway.",
   ];
 
   const honestBoundaries = [
@@ -281,6 +296,109 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
             <div className="metric-note">{metric.note}</div>
           </article>
         ))}
+      </section>
+
+      <section className="panel workbench-panel" aria-label="Research idea intake">
+        <div className="panel-heading">
+          <div>
+            <div className="section-kicker">Simple Entry</div>
+            <h2 className="headline">Start with an idea. EvoQ turns it into a governed research object.</h2>
+            <p className="panel-copy">
+              Keep it short if you are exploring, or expand the advanced fields when you already have a strategy design.
+              The brief enters audit and evidence review before it can become a strategy hypothesis.
+            </p>
+          </div>
+          <div className="panel-badge-row">
+            <span className="panel-badge">Dashboard-first</span>
+            <span className="panel-badge">LLM research</span>
+            <span className="panel-badge">Codex implementation later</span>
+          </div>
+        </div>
+
+        {briefStatusMessage ? (
+          <div className={`form-status ${briefStatus === "created" ? "form-status-good" : "form-status-warn"}`}>
+            {briefStatusMessage}
+          </div>
+        ) : null}
+
+        <form action={createResearchBriefAction} className="idea-form">
+          <div className="idea-primary-grid">
+            <label className="field field-wide">
+              <span>Idea or strategy thought</span>
+              <textarea
+                name="idea"
+                rows={5}
+                placeholder="Example: Study whether post-earnings drift plus volume expansion can produce a stable US equities factor after costs."
+                required
+              />
+            </label>
+            <div className="field-stack">
+              <label className="field">
+                <span>Market</span>
+                <select name="target_market" defaultValue="us">
+                  <option value="us">US</option>
+                  <option value="cn">CN</option>
+                  <option value="global">Global research</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Kind</span>
+                <select name="opportunity_kind" defaultValue="factor">
+                  <option value="factor">Factor</option>
+                  <option value="event">Event</option>
+                  <option value="regime">Regime</option>
+                  <option value="portfolio_overlay">Portfolio overlay</option>
+                  <option value="risk_overlay">Risk overlay</option>
+                  <option value="execution">Execution</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Optional title</span>
+                <input name="title" placeholder="Short working title" />
+              </label>
+            </div>
+          </div>
+
+          <details className="advanced-fields">
+            <summary>Advanced design fields</summary>
+            <div className="advanced-grid">
+              <label className="field">
+                <span>Thesis</span>
+                <textarea name="thesis" rows={3} placeholder="What should be true if this idea works?" />
+              </label>
+              <label className="field">
+                <span>Signal definition</span>
+                <textarea name="signal_definition" rows={3} placeholder="How should the factor or signal be computed?" />
+              </label>
+              <label className="field">
+                <span>Expected mechanism</span>
+                <textarea name="expected_mechanism" rows={3} placeholder="Why should the effect exist?" />
+              </label>
+              <label className="field">
+                <span>Data requirements</span>
+                <textarea name="data_requirements" rows={3} placeholder="One per line: prices, volume, fundamentals, news..." />
+              </label>
+              <label className="field">
+                <span>Evaluation plan</span>
+                <textarea name="evaluation_plan" rows={3} placeholder="One per line: PIT replay, baseline compare, walk-forward..." />
+              </label>
+              <label className="field">
+                <span>Invalidation conditions</span>
+                <textarea name="invalidation_conditions" rows={3} placeholder="One per line: high turnover, weak baseline, unstable regimes..." />
+              </label>
+            </div>
+          </details>
+
+          <div className="form-footer">
+            <div className="form-note">
+              This creates a research brief only. It cannot trade, promote, or change risk settings without later gates.
+            </div>
+            <button className="primary-action" type="submit">
+              Create research brief
+            </button>
+          </div>
+        </form>
       </section>
 
       <section className="overview-grid">
@@ -453,7 +571,7 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
       <section className="detail-grid two-col">
         <article className="panel">
           <div className="section-kicker">Operate</div>
-          <h3>Discord command rail</h3>
+          <h3>Light command rail</h3>
           <div className="command-list">
             {ownerPrompts.map((prompt) => (
               <code key={prompt} className="command-chip">

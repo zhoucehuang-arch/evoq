@@ -5,8 +5,8 @@ import { TopNav } from "@/components/top-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EvoQ Terminal",
-  description: "Autonomous investment dashboard",
+  title: "EvoQ Workbench",
+  description: "Dashboard-first quant research and paper trading workbench",
 };
 
 export default function RootLayout({
@@ -26,20 +26,20 @@ export default function RootLayout({
               <div className="brand">
                 <div className="brand-status-row">
                   <span className="brand-status-dot" />
-                  <span className="brand-status-label">Authority runtime</span>
+                  <span className="brand-status-label">Dashboard-first runtime</span>
                   <span className="brand-divider" />
-                  <span className="brand-status-label">Discord-first owner flow</span>
+                  <span className="brand-status-label">Telegram light gateway</span>
                 </div>
-                <span className="eyebrow">Autonomous Investment Runtime</span>
-                <h1 className="title">EvoQ Terminal</h1>
+                <span className="eyebrow">Quant Research And Paper Runtime</span>
+                <h1 className="title">EvoQ Workbench</h1>
                 <p className="subtitle">
-                  Use Discord for control and approvals. Use the dashboard as the operating terminal for risk, learning,
-                  strategy, and execution visibility.
+                  Use the dashboard for research, evidence, backtests, paper runs, and governance. Telegram stays light:
+                  alerts, quick approvals, pause, resume, and emergency control.
                 </p>
                 <div className="header-note-row">
                   <span className="header-note">Paper-first live gating</span>
-                  <span className="header-note">US and CN market modes</span>
-                  <span className="header-note">Codex-driven worker plane</span>
+                  <span className="header-note">Simple entry, deep workflow</span>
+                  <span className="header-note">Codex implementation lane</span>
                 </div>
               </div>
             </div>

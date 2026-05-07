@@ -95,6 +95,38 @@ def test_state_store_bootstrap_and_runtime_counts(tmp_path: Path) -> None:
     database.dispose()
 
 
+def test_state_store_releases_operator_overrides(tmp_path: Path) -> None:
+    database_path = tmp_path / "state-release-overrides.db"
+    database = Database(f"sqlite+pysqlite:///{database_path}")
+    database.create_schema()
+    store = StateStore(database.session_factory)
+
+    store.create_operator_override(
+        payload={
+            "scope": "trading",
+            "action": "pause",
+            "reason": "Owner safety hold",
+            "activated_by": "tester",
+        }
+    )
+
+    assert len(store.list_operator_overrides(active_only=True)) == 1
+
+    released = store.release_operator_overrides(
+        {
+            "scope": "trading",
+            "released_by": "tester",
+            "reason": "Smoke resume check",
+        }
+    )
+
+    assert len(released) == 1
+    assert released[0].is_active is False
+    assert store.list_operator_overrides(active_only=True) == []
+
+    database.dispose()
+
+
 def test_state_store_tracks_runtime_config_proposals_and_revisions(tmp_path: Path) -> None:
     database_path = tmp_path / "runtime-config.db"
     database = Database(f"sqlite+pysqlite:///{database_path}")
