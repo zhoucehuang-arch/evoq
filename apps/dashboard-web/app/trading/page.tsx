@@ -1,4 +1,4 @@
-import { pauseDomainAction, resumeDomainAction } from "@/app/actions";
+import { TradingDomainControls } from "@/components/trading-domain-controls";
 import { fetchTrading } from "@/lib/dashboard";
 import type { DashboardFrontendStatus } from "@/lib/types";
 
@@ -444,39 +444,7 @@ export default async function TradingPage({ searchParams }: TradingPageProps) {
       </section>
 
       <section className="detail-grid two-col">
-        <article className="panel">
-          <div className="section-kicker">Controls</div>
-          <h3>Domain controls</h3>
-          {controlNote ? <div className="form-status form-status-warn">{controlNote}</div> : null}
-          <div className="tile-grid">
-            {trading.domain_states.map((state) => (
-              <article key={state.domain} className="tile">
-                <div className="tile-label">{state.domain}</div>
-                <div className={`tile-value ${state.is_paused ? "tone-warn" : "tone-good"}`}>
-                  {state.is_paused ? "Paused" : "Running"}
-                </div>
-                <div className="tile-meta">pending approvals {state.pending_approval_count}</div>
-                <div className="tile-meta">active overrides {state.override_count}</div>
-                {state.latest_reason ? <p className="callout">{state.latest_reason}</p> : null}
-                <div className="action-row">
-                  <form action={pauseDomainAction}>
-                    <input type="hidden" name="domain" value={state.domain} />
-                    <button className="secondary-action secondary-action-danger" type="submit">
-                      Pause
-                    </button>
-                  </form>
-                  <form action={resumeDomainAction}>
-                    <input type="hidden" name="domain" value={state.domain} />
-                    <button className="secondary-action" type="submit">
-                      Resume
-                    </button>
-                  </form>
-                </div>
-              </article>
-            ))}
-            {trading.domain_states.length === 0 ? <div className="tile-meta">No governed domain state yet.</div> : null}
-          </div>
-        </article>
+        <TradingDomainControls controlNote={controlNote} domainStates={trading.domain_states} />
 
         <article className="panel">
           <div className="section-kicker">Broker</div>

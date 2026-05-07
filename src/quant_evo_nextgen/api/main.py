@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from quant_evo_nextgen.api.errors import value_error_handler
 from quant_evo_nextgen.config import Settings, get_settings
 from quant_evo_nextgen.contracts.codex import (
     CodexArtifactSummary,
@@ -181,6 +182,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_exception_handler(ValueError, value_error_handler)
 
     @app.middleware("http")
     async def dashboard_surface_guard(request: Request, call_next):
@@ -809,7 +811,4 @@ app = create_app()
 
 
 def _requires_dashboard_api_token(path: str) -> bool:
-    return path.startswith("/api/v1/dashboard/") or path.startswith("/api/v1/strategy/") or path.startswith("/api/v1/market-data/") or path.startswith("/api/v1/approvals") or path.startswith("/api/v1/operator-overrides") or path in {
-        "/api/v1/system/status",
-        "/api/v1/system/doctor",
-    }
+    return path.startswith("/api/v1/")

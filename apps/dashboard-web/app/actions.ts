@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
-const DASHBOARD_API_TOKEN = (process.env.QE_DASHBOARD_API_TOKEN ?? "").trim();
+import { redirectTargetForPost } from "@/app/action-api";
 
 function stringValue(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -111,25 +110,11 @@ export async function createResearchBriefAction(formData: FormData) {
     status: "candidate",
   };
 
-  let redirectTarget = "/?brief=created";
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/strategy/research-briefs`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      redirectTarget = `/?brief=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/?brief=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/strategy/research-briefs", payload, {
+    success: "/?brief=created",
+    failurePrefix: "/?brief=failed&code=",
+    unavailable: "/?brief=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -141,28 +126,18 @@ export async function promoteResearchBriefAction(formData: FormData) {
     redirect("/research?brief=missing_id");
   }
 
-  let redirectTarget = "/research?brief=promoted";
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/strategy/research-briefs/${briefId}/hypothesis`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify({
-        created_by: "dashboard",
-        status: "active",
-      }),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      redirectTarget = `/research?brief=promote_failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/research?brief=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost(
+    `/api/v1/strategy/research-briefs/${briefId}/hypothesis`,
+    {
+      created_by: "dashboard",
+      status: "active",
+    },
+    {
+      success: "/research?brief=promoted",
+      failurePrefix: "/research?brief=promote_failed&code=",
+      unavailable: "/research?brief=unavailable",
+    },
+  );
 
   redirect(redirectTarget);
 }
@@ -175,29 +150,19 @@ export async function decideApprovalAction(formData: FormData) {
     redirect("/incidents?approval=missing");
   }
 
-  let redirectTarget = `/incidents?approval=${decision}`;
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/approvals/${approvalId}/decision`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify({
-        decision,
-        decided_by: "dashboard",
-        reason: "Owner decision from dashboard incident queue.",
-      }),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      redirectTarget = `/incidents?approval=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/incidents?approval=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost(
+    `/api/v1/approvals/${approvalId}/decision`,
+    {
+      decision,
+      decided_by: "dashboard",
+      reason: "Owner decision from dashboard incident queue.",
+    },
+    {
+      success: `/incidents?approval=${decision}`,
+      failurePrefix: "/incidents?approval=failed&code=",
+      unavailable: "/incidents?approval=unavailable",
+    },
+  );
 
   redirect(redirectTarget);
 }
@@ -226,23 +191,11 @@ export async function createStrategySpecAction(formData: FormData) {
     origin_type: "dashboard_strategy_lab",
   };
 
-  let redirectTarget = "/strategy?strategy=spec_created";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/strategy/specs`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/strategy?strategy=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/strategy?strategy=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/strategy/specs", payload, {
+    success: "/strategy?strategy=spec_created",
+    failurePrefix: "/strategy?strategy=failed&code=",
+    unavailable: "/strategy?strategy=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -280,23 +233,11 @@ export async function recordBacktestAction(formData: FormData) {
     origin_type: "dashboard_strategy_lab",
   };
 
-  let redirectTarget = "/strategy?strategy=backtest_recorded";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/strategy/backtests`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/strategy?strategy=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/strategy?strategy=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/strategy/backtests", payload, {
+    success: "/strategy?strategy=backtest_recorded",
+    failurePrefix: "/strategy?strategy=failed&code=",
+    unavailable: "/strategy?strategy=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -325,23 +266,11 @@ export async function runFactorReplayBacktestAction(formData: FormData) {
     origin_type: "dashboard_factor_replay_backtest",
   };
 
-  let redirectTarget = "/strategy?strategy=factor_backtest_recorded";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/strategy/backtests/factor-replay`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/strategy?strategy=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/strategy?strategy=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/strategy/backtests/factor-replay", payload, {
+    success: "/strategy?strategy=factor_backtest_recorded",
+    failurePrefix: "/strategy?strategy=failed&code=",
+    unavailable: "/strategy?strategy=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -367,23 +296,11 @@ export async function recordPaperRunAction(formData: FormData) {
     origin_type: "dashboard_strategy_lab",
   };
 
-  let redirectTarget = "/strategy?strategy=paper_recorded";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/strategy/paper-runs`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/strategy?strategy=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/strategy?strategy=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/strategy/paper-runs", payload, {
+    success: "/strategy?strategy=paper_recorded",
+    failurePrefix: "/strategy?strategy=failed&code=",
+    unavailable: "/strategy?strategy=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -407,23 +324,11 @@ export async function recordPromotionDecisionAction(formData: FormData) {
     origin_type: "dashboard_strategy_lab",
   };
 
-  let redirectTarget = `/strategy?strategy=promotion_${decision}`;
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/strategy/promotion-decisions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/strategy?strategy=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/strategy?strategy=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/strategy/promotion-decisions", payload, {
+    success: `/strategy?strategy=promotion_${decision}`,
+    failurePrefix: "/strategy?strategy=failed&code=",
+    unavailable: "/strategy?strategy=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -453,23 +358,11 @@ export async function upsertMarketDataProviderAction(formData: FormData) {
     origin_type: "dashboard_data_workbench",
   };
 
-  let redirectTarget = "/data?data=provider_saved";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/market-data/providers`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/data?data=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/data?data=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/market-data/providers", payload, {
+    success: "/data?data=provider_saved",
+    failurePrefix: "/data?data=failed&code=",
+    unavailable: "/data?data=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -491,23 +384,11 @@ export async function upsertWatchlistAction(formData: FormData) {
     origin_type: "dashboard_data_workbench",
   };
 
-  let redirectTarget = "/data?data=watchlist_saved";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/market-data/watchlists`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/data?data=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/data?data=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/market-data/watchlists", payload, {
+    success: "/data?data=watchlist_saved",
+    failurePrefix: "/data?data=failed&code=",
+    unavailable: "/data?data=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -531,23 +412,15 @@ export async function upsertWatchlistItemAction(formData: FormData) {
     origin_type: "dashboard_data_workbench",
   };
 
-  let redirectTarget = "/data?data=symbol_saved";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/market-data/watchlists/${encodeURIComponent(watchlistKey)}/items`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/data?data=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/data?data=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost(
+    `/api/v1/market-data/watchlists/${encodeURIComponent(watchlistKey)}/items`,
+    payload,
+    {
+      success: "/data?data=symbol_saved",
+      failurePrefix: "/data?data=failed&code=",
+      unavailable: "/data?data=unavailable",
+    },
+  );
 
   redirect(redirectTarget);
 }
@@ -575,23 +448,11 @@ export async function recordMarketQuoteAction(formData: FormData) {
     origin_type: "dashboard_data_workbench",
   };
 
-  let redirectTarget = "/data?data=quote_recorded";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/market-data/quotes`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/data?data=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/data?data=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/market-data/quotes", payload, {
+    success: "/data?data=quote_recorded",
+    failurePrefix: "/data?data=failed&code=",
+    unavailable: "/data?data=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -614,23 +475,11 @@ export async function ingestReplayBarsAction(formData: FormData) {
     origin_type: "dashboard_replay_import",
   };
 
-  let redirectTarget = "/data?data=replay_ingested";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/market-data/replay-bars`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/data?data=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/data?data=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/market-data/replay-bars", payload, {
+    success: "/data?data=replay_ingested",
+    failurePrefix: "/data?data=failed&code=",
+    unavailable: "/data?data=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -650,23 +499,11 @@ export async function generateFactorSnapshotsAction(formData: FormData) {
     origin_type: "dashboard_factor_generation",
   };
 
-  let redirectTarget = "/data?data=factors_generated";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/market-data/factors/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/data?data=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/data?data=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost("/api/v1/market-data/factors/generate", payload, {
+    success: "/data?data=factors_generated",
+    failurePrefix: "/data?data=failed&code=",
+    unavailable: "/data?data=unavailable",
+  });
 
   redirect(redirectTarget);
 }
@@ -677,30 +514,22 @@ export async function pauseDomainAction(formData: FormData) {
     redirect("/trading?control=missing");
   }
 
-  let redirectTarget = `/trading?control=paused&domain=${encodeURIComponent(domain)}`;
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/operator-overrides`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify({
-        scope: domain,
-        action: "pause",
-        reason: stringValue(formData, "reason") || `Owner paused ${domain} from dashboard.`,
-        activated_by: "dashboard",
-        created_by: "dashboard",
-        origin_type: "dashboard_control",
-      }),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/trading?control=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/trading?control=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost(
+    "/api/v1/operator-overrides",
+    {
+      scope: domain,
+      action: "pause",
+      reason: stringValue(formData, "reason") || `Owner paused ${domain} from dashboard.`,
+      activated_by: "dashboard",
+      created_by: "dashboard",
+      origin_type: "dashboard_control",
+    },
+    {
+      success: `/trading?control=paused&domain=${encodeURIComponent(domain)}`,
+      failurePrefix: "/trading?control=failed&code=",
+      unavailable: "/trading?control=unavailable",
+    },
+  );
 
   redirect(redirectTarget);
 }
@@ -711,27 +540,19 @@ export async function resumeDomainAction(formData: FormData) {
     redirect("/trading?control=missing");
   }
 
-  let redirectTarget = `/trading?control=resumed&domain=${encodeURIComponent(domain)}`;
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/operator-overrides/release`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(DASHBOARD_API_TOKEN ? { "X-Quant-Evo-Dashboard-Token": DASHBOARD_API_TOKEN } : {}),
-      },
-      body: JSON.stringify({
-        scope: domain,
-        released_by: "dashboard",
-        reason: stringValue(formData, "reason") || `Owner resumed ${domain} from dashboard.`,
-      }),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      redirectTarget = `/trading?control=failed&code=${response.status}`;
-    }
-  } catch {
-    redirectTarget = "/trading?control=unavailable";
-  }
+  const redirectTarget = await redirectTargetForPost(
+    "/api/v1/operator-overrides/release",
+    {
+      scope: domain,
+      released_by: "dashboard",
+      reason: stringValue(formData, "reason") || `Owner resumed ${domain} from dashboard.`,
+    },
+    {
+      success: `/trading?control=resumed&domain=${encodeURIComponent(domain)}`,
+      failurePrefix: "/trading?control=failed&code=",
+      unavailable: "/trading?control=unavailable",
+    },
+  );
 
   redirect(redirectTarget);
 }

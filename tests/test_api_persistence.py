@@ -387,7 +387,7 @@ def test_api_exposes_system_doctor_report(tmp_path: Path) -> None:
     with TestClient(app) as client:
         with client.app.state.database.session_scope() as session:
             session.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
-            session.execute(text("INSERT INTO alembic_version (version_num) VALUES ('20260320_0014')"))
+            session.execute(text("INSERT INTO alembic_version (version_num) VALUES ('20260508_0018')"))
 
         doctor_response = client.get("/api/v1/system/doctor")
         assert doctor_response.status_code == 200
@@ -513,6 +513,12 @@ def test_dashboard_api_routes_require_shared_token_when_configured(tmp_path: Pat
         historical_bars_response = client.get("/api/v1/market-data/historical-bars")
         approvals_response = client.get("/api/v1/approvals")
         overrides_response = client.get("/api/v1/operator-overrides")
+        execution_response = client.get("/api/v1/execution/readiness")
+        runtime_config_response = client.get("/api/v1/runtime-config")
+        codex_runs_response = client.get("/api/v1/codex/runs")
+        evolution_response = client.get("/api/v1/evolution/proposals")
+        goals_response = client.get("/api/v1/goals")
+        incidents_response = client.get("/api/v1/incidents")
         health_response = client.get("/healthz")
         authorized_overview = client.get(
             "/api/v1/dashboard/overview",
@@ -584,6 +590,30 @@ def test_dashboard_api_routes_require_shared_token_when_configured(tmp_path: Pat
             "/api/v1/operator-overrides",
             headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
         )
+        authorized_execution = client.get(
+            "/api/v1/execution/readiness",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_runtime_config = client.get(
+            "/api/v1/runtime-config",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_codex_runs = client.get(
+            "/api/v1/codex/runs",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_evolution = client.get(
+            "/api/v1/evolution/proposals",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_goals = client.get(
+            "/api/v1/goals",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
+        authorized_incidents = client.get(
+            "/api/v1/incidents",
+            headers={"X-Quant-Evo-Dashboard-Token": "shared-token"},
+        )
 
         assert overview_response.status_code == 401
         assert doctor_response.status_code == 401
@@ -593,6 +623,12 @@ def test_dashboard_api_routes_require_shared_token_when_configured(tmp_path: Pat
         assert historical_bars_response.status_code == 401
         assert approvals_response.status_code == 401
         assert overrides_response.status_code == 401
+        assert execution_response.status_code == 401
+        assert runtime_config_response.status_code == 401
+        assert codex_runs_response.status_code == 401
+        assert evolution_response.status_code == 401
+        assert goals_response.status_code == 401
+        assert incidents_response.status_code == 401
         assert health_response.status_code == 200
         assert authorized_overview.status_code == 200
         assert authorized_research.status_code == 200
@@ -606,6 +642,40 @@ def test_dashboard_api_routes_require_shared_token_when_configured(tmp_path: Pat
         assert authorized_factors.json()[0]["factor_code"] == "momentum_close_return"
         assert authorized_approvals.status_code == 200
         assert authorized_overrides.status_code == 200
+        assert authorized_execution.status_code == 200
+        assert authorized_runtime_config.status_code == 200
+        assert authorized_codex_runs.status_code == 200
+        assert authorized_evolution.status_code == 200
+        assert authorized_goals.status_code == 200
+        assert authorized_incidents.status_code == 200
+
+
+def test_api_maps_domain_value_errors_to_http_responses(tmp_path: Path) -> None:
+    _seed_repo_state(tmp_path)
+    settings = Settings(
+        repo_root=tmp_path,
+        postgres_url=f"sqlite+pysqlite:///{tmp_path / 'api-domain-errors.db'}",
+        db_bootstrap_on_start=True,
+        dashboard_api_token="shared-token",
+    )
+    app = create_app(settings)
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        headers = {"X-Quant-Evo-Dashboard-Token": "shared-token"}
+        missing_order_response = client.post(
+            "/api/v1/execution/order-records/missing/cancel",
+            headers=headers,
+            json={"reason": "operator probe"},
+        )
+        missing_config_response = client.post(
+            "/api/v1/runtime-config/proposals/missing/apply",
+            headers=headers,
+        )
+
+        assert missing_order_response.status_code == 404
+        assert missing_order_response.json()["detail"] == "Order record not found: missing"
+        assert missing_config_response.status_code == 404
+        assert missing_config_response.json()["detail"] == "Runtime config proposal not found: missing"
 
 
 def test_api_exposes_learning_documents_and_insights_in_dashboard(tmp_path: Path) -> None:

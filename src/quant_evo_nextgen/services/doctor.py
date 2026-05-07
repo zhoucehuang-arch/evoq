@@ -12,7 +12,7 @@ from quant_evo_nextgen.services.execution import ExecutionService
 from quant_evo_nextgen.services.state_store import StateStore
 
 
-EXPECTED_HEAD_REVISION = "20260320_0014"
+EXPECTED_HEAD_REVISION = "20260508_0018"
 
 
 @dataclass(slots=True)

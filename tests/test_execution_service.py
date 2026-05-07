@@ -2,9 +2,19 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
+from sqlalchemy import Numeric
+
 from quant_evo_nextgen.config import Settings
 from quant_evo_nextgen.contracts.state import MarketQuoteSnapshotCreate
-from quant_evo_nextgen.db.models import PositionRecordModel
+from quant_evo_nextgen.db.models import (
+    BrokerAccountSnapshotModel,
+    InstrumentDefinitionModel,
+    OptionLifecycleEventModel,
+    OrderIntentModel,
+    OrderLegModel,
+    OrderRecordModel,
+    PositionRecordModel,
+)
 from quant_evo_nextgen.db.session import Database
 from quant_evo_nextgen.services.broker import (
     BrokerAccountState,
@@ -23,6 +33,29 @@ from quant_evo_nextgen.services.execution import ExecutionService
 from quant_evo_nextgen.services.market_data import MarketDataService
 from quant_evo_nextgen.services.state_store import StateStore
 from quant_evo_nextgen.services.strategy_lab import StrategyLabService
+
+
+def test_execution_financial_columns_use_fixed_numeric_storage() -> None:
+    columns = [
+        BrokerAccountSnapshotModel.__table__.c.equity,
+        BrokerAccountSnapshotModel.__table__.c.cash,
+        BrokerAccountSnapshotModel.__table__.c.buying_power,
+        InstrumentDefinitionModel.__table__.c.strike_price,
+        OrderIntentModel.__table__.c.quantity,
+        OrderIntentModel.__table__.c.reference_price,
+        OrderIntentModel.__table__.c.requested_notional,
+        OrderRecordModel.__table__.c.filled_quantity,
+        OrderRecordModel.__table__.c.avg_fill_price,
+        OrderLegModel.__table__.c.ratio_quantity,
+        PositionRecordModel.__table__.c.notional_value,
+        PositionRecordModel.__table__.c.realized_pnl,
+        OptionLifecycleEventModel.__table__.c.cash_flow,
+    ]
+
+    assert all(isinstance(column.type, Numeric) for column in columns)
+    assert OrderIntentModel.__table__.c.quantity.type.scale == 10
+    assert OrderIntentModel.__table__.c.reference_price.type.scale == 8
+    assert PositionRecordModel.__table__.c.realized_pnl.type.precision == 24
 
 
 class ScriptedAsyncBrokerAdapter:

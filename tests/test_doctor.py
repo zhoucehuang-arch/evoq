@@ -26,7 +26,7 @@ def test_doctor_reports_ok_on_bootstrapped_runtime(tmp_path: Path) -> None:
     store.bootstrap_reference_data(settings)
     with database.session_scope() as session:
         session.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
-        session.execute(text("INSERT INTO alembic_version (version_num) VALUES ('20260320_0014')"))
+        session.execute(text("INSERT INTO alembic_version (version_num) VALUES ('20260508_0018')"))
     report = DoctorService(database.session_factory, settings).run()
     profiles = {profile["key"]: profile for profile in report["profiles"]}
 
@@ -251,7 +251,7 @@ def test_doctor_owner_target_profile_can_turn_ok_when_runtime_is_fully_live_read
     store.bootstrap_reference_data(settings)
     with database.session_scope() as session:
         session.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
-        session.execute(text("INSERT INTO alembic_version (version_num) VALUES ('20260320_0014')"))
+        session.execute(text("INSERT INTO alembic_version (version_num) VALUES ('20260508_0018')"))
 
     doctor = DoctorService(database.session_factory, settings)
     monkeypatch.setattr(
