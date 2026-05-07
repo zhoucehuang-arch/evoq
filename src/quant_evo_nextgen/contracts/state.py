@@ -467,6 +467,7 @@ class MarketDataIngestionRunSummary(BaseModel):
 class FactorGenerationRequest(BaseModel):
     factor_code: str = "momentum_close_return"
     factor_name: str = "Close-to-close momentum return"
+    custom_expression: str | None = None
     provider_key: str | None = None
     symbols: list[str] = Field(default_factory=list)
     market: str = "us_equities"
@@ -665,6 +666,7 @@ class FactorReplayBacktestCreate(BaseModel):
     min_percentile: float = Field(default=0.0, ge=0.0, le=1.0)
     cost_bps: float = Field(default=5.0, ge=0.0)
     slippage_bps: float = Field(default=5.0, ge=0.0)
+    cost_model: dict[str, Any] = Field(default_factory=dict)
     baseline_refs: list[str] = Field(default_factory=lambda: ["cash", "equal_weight_factor_universe"])
     point_in_time_controls: list[str] = Field(default_factory=lambda: ["factor_as_of_filter", "input_bar_lineage"])
     created_by: str = "operator"

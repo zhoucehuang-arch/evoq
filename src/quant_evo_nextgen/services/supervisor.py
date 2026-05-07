@@ -398,8 +398,12 @@ class SupervisorService:
         results = self.learning_service.ingest_completed_research_runs(
             limit=int(loop.budget_scope.get("max_documents_per_tick", 3))
         )
+        reflection_results = self.learning_service.ingest_strategy_experience_reflections(
+            limit=int(loop.budget_scope.get("max_reflections_per_tick", 2))
+        )
         ingested = [result for result in results if result.status == "ingested"]
         skipped = [result for result in results if result.status != "ingested"]
+        reflected = [result for result in reflection_results if result.status == "ingested"]
         if ingested:
             self.state_store.append_workflow_event(
                 workflow_run.id,
@@ -411,12 +415,24 @@ class SupervisorService:
                 },
                 created_by="supervisor",
             )
+        if reflected:
+            self.state_store.append_workflow_event(
+                workflow_run.id,
+                event_type="workflow.strategy_reflections_ingested",
+                summary=f"Ingested {len(reflected)} strategy experience reflection(s) into durable learning state.",
+                payload={
+                    "document_ids": [result.document_id for result in reflected if result.document_id],
+                    "source_ids": [result.source_id for result in reflected],
+                },
+                created_by="supervisor",
+            )
         return {
             "status": "completed",
             "workflow_run_id": workflow_run.id,
             "ingested_count": len(ingested),
+            "reflection_count": len(reflected),
             "skipped_count": len(skipped),
-            "document_ids": [result.document_id for result in ingested if result.document_id],
+            "document_ids": [result.document_id for result in [*ingested, *reflected] if result.document_id],
         }
 
     def _learning_synthesis(

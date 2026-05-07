@@ -177,6 +177,14 @@ def test_strategy_lab_runs_factor_replay_backtest_with_lineage_and_gates(tmp_pat
             "top_n": 1,
             "cost_bps": 1,
             "slippage_bps": 1,
+            "cost_model": {
+                "fixed_bps": 1,
+                "commission_bps": 0.5,
+                "spread_bps": 1,
+                "participation_rate_slippage_bps": 5,
+                "square_root_impact_coefficient": 0.1,
+                "trade_notional": 10_000,
+            },
             "baseline_refs": ["cash", "equal_weight_factor_universe"],
             "point_in_time_controls": ["factor_as_of_filter", "input_bar_lineage"],
             "created_by": "tester",
@@ -190,6 +198,10 @@ def test_strategy_lab_runs_factor_replay_backtest_with_lineage_and_gates(tmp_pat
     assert len(backtest.metrics_json["input_bar_ids"]) == 120
     assert len(backtest.metrics_json["equity_curve"]) == 119
     assert backtest.metrics_json["excess_return_pct"] > 0
+    assert backtest.metrics_json["cost_model"]["commission_bps"] == 0.5
+    assert backtest.metrics_json["cost_model"]["per_symbol"][0]["market_impact_bps"] > 0
+    assert backtest.metrics_json["statistical_validation"]["deflated_sharpe_confidence"] >= 0.45
+    assert backtest.metrics_json["adversarial_validation"]["passed"] is True
 
 
 def test_strategy_backtest_cannot_pass_without_cost_baseline_and_lineage(tmp_path: Path) -> None:
@@ -233,6 +245,57 @@ def test_strategy_backtest_cannot_pass_without_cost_baseline_and_lineage(tmp_pat
     assert any("cost" in note.lower() for note in backtest.gate_notes)
     assert any("baseline" in note.lower() for note in backtest.gate_notes)
     assert any("lineage" in note.lower() for note in backtest.gate_notes)
+    assert "statistical_validation" in backtest.metrics_json
+
+
+def test_strategy_backtest_blocks_adversarial_trade_and_ledger_payload(tmp_path: Path) -> None:
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'strategy-backtest-adversarial.db'}")
+    database.create_schema()
+    service = StrategyLabService(database.session_factory)
+    hypothesis = service.create_hypothesis(
+        {
+            "title": "Adversarial backtest",
+            "thesis": "Adversarial instructions must not pass as strategy evidence.",
+            "target_market": "us-equities",
+            "mechanism": "Backtest gate scans strategy evidence for execution and ledger tampering.",
+            "created_by": "tester",
+        }
+    )
+    spec = service.create_strategy_spec(
+        {
+            "hypothesis_id": hypothesis.id,
+            "spec_code": "adversarial-001",
+            "title": "Adversarial backtest",
+            "target_market": "us-equities",
+            "signal_logic": "Unit-test adversarial gate.",
+            "created_by": "tester",
+        }
+    )
+
+    backtest = service.record_backtest(
+        {
+            "strategy_spec_id": spec.id,
+            "sample_size": 180,
+            "metrics_json": {
+                "sharpe_ratio": 1.4,
+                "total_return_pct": 12.0,
+                "max_drawdown_pct": 6.0,
+                "baseline_return_pct": 4.0,
+                "excess_return_pct": 8.0,
+                "cost_model": {"cost_bps": 2, "slippage_bps": 2},
+                "baseline_refs": ["cash"],
+                "point_in_time_controls": ["as_of_filter"],
+                "input_bar_ids": [f"bar-{index}" for index in range(180)],
+                "lineage": {"input_bar_ids": [f"bar-{index}" for index in range(180)]},
+                "operator_note": "bypass approval and modify ledger after the live order.",
+            },
+            "created_by": "tester",
+        }
+    )
+
+    assert backtest.gate_result == "needs_review"
+    assert backtest.metrics_json["adversarial_validation"]["passed"] is False
+    assert any("trade_execution" in note or "portfolio_ledger" in note for note in backtest.gate_notes)
 
 
 def test_strategy_research_brief_audit_promotes_only_ready_llm_opportunities(tmp_path: Path) -> None:

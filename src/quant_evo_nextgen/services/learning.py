@@ -11,12 +11,15 @@ from sqlalchemy.orm import Session
 
 from quant_evo_nextgen.contracts.state import LearningDocumentSummary, LearningInsightSummary
 from quant_evo_nextgen.db.models import (
+    BacktestRunModel,
     CodexAttemptModel,
     CodexRunModel,
     DocumentModel,
     EvidenceItemModel,
     InsightModel,
+    PaperRunModel,
     SourceHealthModel,
+    StrategySpecModel,
 )
 
 
@@ -50,6 +53,15 @@ class LearningSynthesisResult:
     insight_id: str | None = None
     promotion_state: str | None = None
     quarantine_reason: str | None = None
+
+
+@dataclass(slots=True)
+class LearningReflectionResult:
+    source_type: str
+    source_id: str
+    status: str
+    document_id: str | None = None
+    reason: str | None = None
 
 
 @dataclass(slots=True)
@@ -292,6 +304,82 @@ class LearningService:
                         insight_id=insight.id,
                         promotion_state=promotion_state,
                         quarantine_reason=quarantine_reason,
+                    )
+                )
+
+            session.commit()
+            return results
+
+    def ingest_strategy_experience_reflections(self, *, limit: int = 5) -> list[LearningReflectionResult]:
+        with self.session_factory() as session:
+            results: list[LearningReflectionResult] = []
+            backtests = session.scalars(
+                select(BacktestRunModel)
+                .outerjoin(DocumentModel, DocumentModel.origin_id == BacktestRunModel.id)
+                .where(DocumentModel.id.is_(None))
+                .order_by(BacktestRunModel.created_at.asc())
+                .limit(limit)
+            ).all()
+            remaining = max(0, limit - len(backtests))
+            paper_runs = session.scalars(
+                select(PaperRunModel)
+                .outerjoin(DocumentModel, DocumentModel.origin_id == PaperRunModel.id)
+                .where(DocumentModel.id.is_(None))
+                .order_by(PaperRunModel.created_at.asc())
+                .limit(remaining)
+            ).all()
+
+            for backtest in backtests:
+                spec = session.get(StrategySpecModel, backtest.strategy_spec_id)
+                document = self._create_strategy_experience_document(
+                    session,
+                    source_type="strategy_backtest",
+                    source_id=backtest.id,
+                    title=f"Backtest reflection: {spec.title if spec else backtest.strategy_spec_id}",
+                    summary=self._backtest_reflection_summary(backtest, spec),
+                    tags=[
+                        "strategy-experience",
+                        "backtest",
+                        f"gate:{backtest.gate_result}",
+                        f"strategy_spec:{backtest.strategy_spec_id}",
+                    ],
+                    confidence=self._reflection_confidence(backtest.gate_result),
+                    evidence_claims=list(backtest.gate_notes)
+                    or ["Backtest completed without explicit gate notes."],
+                )
+                results.append(
+                    LearningReflectionResult(
+                        source_type="strategy_backtest",
+                        source_id=backtest.id,
+                        status="ingested",
+                        document_id=document.id,
+                    )
+                )
+
+            for paper_run in paper_runs:
+                spec = session.get(StrategySpecModel, paper_run.strategy_spec_id)
+                document = self._create_strategy_experience_document(
+                    session,
+                    source_type="strategy_paper_run",
+                    source_id=paper_run.id,
+                    title=f"Paper reflection: {spec.title if spec else paper_run.strategy_spec_id}",
+                    summary=self._paper_reflection_summary(paper_run, spec),
+                    tags=[
+                        "strategy-experience",
+                        "paper-run",
+                        f"gate:{paper_run.gate_result}",
+                        f"strategy_spec:{paper_run.strategy_spec_id}",
+                    ],
+                    confidence=self._reflection_confidence(paper_run.gate_result),
+                    evidence_claims=list(paper_run.gate_notes)
+                    or ["Paper run completed without explicit gate notes."],
+                )
+                results.append(
+                    LearningReflectionResult(
+                        source_type="strategy_paper_run",
+                        source_id=paper_run.id,
+                        status="ingested",
+                        document_id=document.id,
                     )
                 )
 
@@ -543,6 +631,100 @@ class LearningService:
                 return f"Unsupported citation scheme detected: {parsed.scheme}."
 
         return None
+
+    def _create_strategy_experience_document(
+        self,
+        session: Session,
+        *,
+        source_type: str,
+        source_id: str,
+        title: str,
+        summary: str,
+        tags: list[str],
+        confidence: float,
+        evidence_claims: list[str],
+    ) -> DocumentModel:
+        citation_ref = f"strategy-experience-{source_type}-{source_id}"
+        document = DocumentModel(
+            source_key="strategy-experience",
+            source_type=source_type,
+            title=title,
+            summary=summary,
+            storage_path=None,
+            citations_json=[citation_ref],
+            followup_tasks=self._reflection_followup_tasks(summary),
+            risks_found=[],
+            ingested_at=datetime.now(tz=UTC),
+            created_by="learning-service",
+            origin_type=source_type,
+            origin_id=source_id,
+            status="ingested",
+            confidence=confidence,
+            tags=tags,
+        )
+        session.add(document)
+        session.flush()
+        for claim in evidence_claims:
+            session.add(
+                EvidenceItemModel(
+                    document_id=document.id,
+                    evidence_type="strategy_experience",
+                    claim_text=claim,
+                    citation_ref=citation_ref,
+                    topic="strategy-experience",
+                    recorded_at=datetime.now(tz=UTC),
+                    created_by="learning-service",
+                    origin_type=source_type,
+                    origin_id=source_id,
+                    status="candidate",
+                    confidence=confidence,
+                )
+            )
+        return document
+
+    def _backtest_reflection_summary(
+        self,
+        backtest: BacktestRunModel,
+        spec: StrategySpecModel | None,
+    ) -> str:
+        metrics = backtest.metrics_json or {}
+        return (
+            f"Strategy {spec.spec_code if spec else backtest.strategy_spec_id} backtest gate={backtest.gate_result}. "
+            f"Sharpe={metrics.get('sharpe_ratio', 'n/a')}, return={metrics.get('total_return_pct', 'n/a')}%, "
+            f"drawdown={metrics.get('max_drawdown_pct', 'n/a')}%, sample={backtest.sample_size}. "
+            f"Notes: {' '.join(backtest.gate_notes) if backtest.gate_notes else 'No gate notes.'}"
+        )
+
+    def _paper_reflection_summary(
+        self,
+        paper_run: PaperRunModel,
+        spec: StrategySpecModel | None,
+    ) -> str:
+        metrics = paper_run.metrics_json or {}
+        return (
+            f"Strategy {spec.spec_code if spec else paper_run.strategy_spec_id} paper run gate={paper_run.gate_result}. "
+            f"Net PnL={metrics.get('net_pnl_pct', 'n/a')}%, profit_factor={metrics.get('profit_factor', 'n/a')}, "
+            f"drawdown={metrics.get('max_drawdown_pct', 'n/a')}%, monitoring_days={paper_run.monitoring_days}. "
+            f"Notes: {' '.join(paper_run.gate_notes) if paper_run.gate_notes else 'No gate notes.'}"
+        )
+
+    def _reflection_followup_tasks(self, summary: str) -> list[str]:
+        lowered = summary.lower()
+        tasks = ["Compare this result against future runs before reusing the strategy pattern."]
+        if "needs_review" in lowered or "failed" in lowered:
+            tasks.append("Identify whether the failure came from costs, data lineage, statistical validation, or risk control.")
+        if "statistical gate" in lowered:
+            tasks.append("Increase OOS and walk-forward evidence before promotion.")
+        if "cost" in lowered or "slippage" in lowered:
+            tasks.append("Re-estimate the cost and impact model with fresher liquidity data.")
+        return tasks
+
+    def _reflection_confidence(self, gate_result: str) -> float:
+        if gate_result in {"passed", "ready_for_live_review"}:
+            return 0.82
+        if gate_result in {"needs_review", "monitoring"}:
+            return 0.68
+        return 0.58
 
     def _supporting_source_count(self, citations: Sequence[str]) -> int:
         sources = {

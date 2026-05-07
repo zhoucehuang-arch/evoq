@@ -341,10 +341,10 @@ export default async function DataPage({ searchParams }: DataPageProps) {
 
           <article className="panel compact-panel">
             <div className="section-kicker">Factor engine</div>
-            <h3>Generate deterministic momentum</h3>
+            <h3>Generate deterministic factor</h3>
             <p className="panel-copy">
-              This first factor is deliberately boring and auditable: close-to-close return over the selected lookback.
-              LLMs can suggest ideas, but this kernel computes evidence deterministically.
+              LLMs can suggest ideas, but this kernel computes evidence deterministically, including custom linear
+              combinations from approved components.
             </p>
             <form action={generateFactorSnapshotsAction} className="stack tight-stack">
               <label className="field">
@@ -354,11 +354,26 @@ export default async function DataPage({ searchParams }: DataPageProps) {
                   <option value="reversal_close_return">reversal_close_return</option>
                   <option value="realized_volatility">realized_volatility</option>
                   <option value="dollar_volume_liquidity">dollar_volume_liquidity</option>
+                  <option value="intraday_return">intraday_return</option>
+                  <option value="overnight_gap">overnight_gap</option>
+                  <option value="range_position">range_position</option>
+                  <option value="volume_trend">volume_trend</option>
+                  <option value="risk_adjusted_momentum">risk_adjusted_momentum</option>
+                  <option value="liquidity_adjusted_momentum">liquidity_adjusted_momentum</option>
+                  <option value="custom_linear_combo">custom_linear_combo</option>
                 </select>
               </label>
               <label className="field">
                 <span>Factor name</span>
                 <input name="factor_name" defaultValue="Close-to-close momentum return" />
+              </label>
+              <label className="field">
+                <span>Custom expression</span>
+                <textarea
+                  name="custom_expression"
+                  rows={3}
+                  placeholder="0.6 * momentum + 0.3 * volume_trend - 0.1 * volatility"
+                />
               </label>
               <label className="field">
                 <span>Provider key optional</span>

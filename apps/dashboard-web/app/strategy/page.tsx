@@ -259,6 +259,22 @@ export default async function StrategyPage({ searchParams }: StrategyPageProps) 
                     <span>Slippage bps</span>
                     <input name="slippage_bps" type="number" min="0" step="0.1" defaultValue="5" />
                   </label>
+                  <label className="field">
+                    <span>Commission bps</span>
+                    <input name="commission_bps" type="number" min="0" step="0.1" defaultValue="0" />
+                  </label>
+                  <label className="field">
+                    <span>Impact coeff</span>
+                    <input name="square_root_impact_coefficient" type="number" min="0" step="0.01" defaultValue="0" />
+                  </label>
+                  <label className="field">
+                    <span>Participation slip bps</span>
+                    <input name="participation_rate_slippage_bps" type="number" min="0" step="0.1" defaultValue="0" />
+                  </label>
+                  <label className="field">
+                    <span>Trade notional</span>
+                    <input name="trade_notional" type="number" min="1" step="1000" defaultValue="100000" />
+                  </label>
                 </div>
                 <label className="field">
                   <span>Baseline refs</span>
@@ -416,6 +432,22 @@ export default async function StrategyPage({ searchParams }: StrategyPageProps) 
                 <label className="field">
                   <span>Slippage bps</span>
                   <input name="slippage_bps" type="number" min="0" step="0.1" defaultValue="5" />
+                </label>
+                <label className="field">
+                  <span>Commission bps</span>
+                  <input name="commission_bps" type="number" min="0" step="0.1" defaultValue="0" />
+                </label>
+                <label className="field">
+                  <span>Impact coeff</span>
+                  <input name="square_root_impact_coefficient" type="number" min="0" step="0.01" defaultValue="0" />
+                </label>
+                <label className="field">
+                  <span>Participation slip bps</span>
+                  <input name="participation_rate_slippage_bps" type="number" min="0" step="0.1" defaultValue="0" />
+                </label>
+                <label className="field">
+                  <span>Trade notional</span>
+                  <input name="trade_notional" type="number" min="1" step="1000" defaultValue="100000" />
                 </label>
               </div>
               <label className="field">

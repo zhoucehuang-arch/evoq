@@ -195,7 +195,41 @@ def test_market_data_service_ingests_replay_bars_and_generates_factor_lineage(tm
             symbols=["AAPL"],
         )
     )
+    custom = service.generate_factor_snapshots(
+        FactorGenerationRequest(
+            factor_code="custom_linear_combo",
+            factor_name="Custom momentum liquidity blend",
+            custom_expression="0.7 * momentum + 0.3 * volume_trend - 0.1 * volatility",
+            provider_key="local-replay",
+            lookback_bars=3,
+            symbols=["AAPL"],
+        )
+    )
+    range_position = service.generate_factor_snapshots(
+        FactorGenerationRequest(
+            factor_code="range_position",
+            factor_name="Close location in range",
+            provider_key="local-replay",
+            lookback_bars=3,
+            symbols=["AAPL"],
+        )
+    )
 
     assert reversal[0].value == -(106 / 101 - 1)
     assert volatility[0].value >= 0
     assert liquidity[0].value > 100_000
+    assert custom[0].lineage_payload["formula"] == "0.7 * momentum + 0.3 * volume_trend - 0.1 * volatility"
+    assert "momentum" in custom[0].lineage_payload["components"]
+    assert custom[0].lineage_payload["decay"]["status"] == "no_prior_snapshot"
+    assert 0 <= range_position[0].value <= 1
+
+    decayed = service.generate_factor_snapshots(
+        FactorGenerationRequest(
+            factor_code="momentum_close_return",
+            factor_name="Close-to-close momentum return",
+            provider_key="local-replay",
+            lookback_bars=2,
+            symbols=["AAPL"],
+        )
+    )
+    assert decayed[0].lineage_payload["decay"]["previous_value"] == factors[0].value

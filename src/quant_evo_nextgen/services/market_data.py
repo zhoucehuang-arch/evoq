@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from statistics import pstdev
 from typing import Callable
 
 from sqlalchemy import desc, func, select
@@ -34,6 +33,7 @@ from quant_evo_nextgen.db.models import (
     WatchlistItemModel,
     WatchlistModel,
 )
+from quant_evo_nextgen.services.factor_engine import evaluate_factor, factor_catalog, factor_decay_payload
 
 
 class MarketDataService:
@@ -331,17 +331,6 @@ class MarketDataService:
             return [self._historical_bar_summary(row) for row in rows]
 
     def generate_factor_snapshots(self, payload: FactorGenerationRequest) -> list[FactorSnapshotSummary]:
-        supported_factors = {
-            "momentum_close_return": "Close-to-close momentum return",
-            "reversal_close_return": "Close-to-close reversal score",
-            "realized_volatility": "Realized close-to-close volatility",
-            "dollar_volume_liquidity": "Average dollar-volume liquidity",
-        }
-        if payload.factor_code not in supported_factors:
-            raise ValueError(
-                "unsupported_factor_code: momentum_close_return, reversal_close_return, realized_volatility, dollar_volume_liquidity"
-            )
-
         with self._session_factory() as session:
             symbols = [symbol.strip().upper() for symbol in payload.symbols if symbol.strip()]
             if not symbols:
@@ -353,7 +342,7 @@ class MarketDataService:
                 ).all()
                 symbols = [row[0] for row in symbol_rows]
 
-            candidates: list[tuple[FactorSnapshotModel, float]] = []
+            candidates: list[tuple[FactorSnapshotModel, float, FactorSnapshotModel | None]] = []
             for symbol in symbols:
                 query = select(HistoricalBarModel).where(
                     HistoricalBarModel.symbol == symbol,
@@ -377,46 +366,30 @@ class MarketDataService:
                 ordered_bars = list(reversed(bars))
                 first_bar = ordered_bars[0]
                 latest_bar = ordered_bars[-1]
-                first_close = first_bar.adjusted_close if first_bar.is_adjusted and first_bar.adjusted_close else first_bar.close
-                latest_close = (
-                    latest_bar.adjusted_close
-                    if latest_bar.is_adjusted and latest_bar.adjusted_close
-                    else latest_bar.close
+                result = evaluate_factor(
+                    payload.factor_code,
+                    ordered_bars,
+                    custom_expression=payload.custom_expression,
                 )
-                if first_close == 0:
-                    continue
-                closes = [
-                    bar.adjusted_close if bar.is_adjusted and bar.adjusted_close else bar.close
-                    for bar in ordered_bars
-                ]
-                returns = [
-                    (closes[index] / closes[index - 1]) - 1.0
-                    for index in range(1, len(closes))
-                    if closes[index - 1] != 0
-                ]
-                if payload.factor_code == "momentum_close_return":
-                    value = (latest_close / first_close) - 1.0
-                    formula = "(latest_close / first_close) - 1"
-                elif payload.factor_code == "reversal_close_return":
-                    value = -((latest_close / first_close) - 1.0)
-                    formula = "-((latest_close / first_close) - 1)"
-                elif payload.factor_code == "realized_volatility":
-                    value = pstdev(returns) if len(returns) > 1 else 0.0
-                    formula = "population_stddev(close_to_close_returns)"
-                else:
-                    dollar_volumes = [
-                        close * (bar.volume or 0.0)
-                        for close, bar in zip(closes, ordered_bars, strict=True)
-                    ]
-                    value = sum(dollar_volumes) / len(dollar_volumes)
-                    formula = "average(close * volume)"
+                previous_snapshot = session.scalar(
+                    select(FactorSnapshotModel)
+                    .where(
+                        FactorSnapshotModel.factor_code == payload.factor_code,
+                        FactorSnapshotModel.symbol == symbol,
+                        FactorSnapshotModel.market == payload.market,
+                        FactorSnapshotModel.as_of <= latest_bar.bar_start,
+                    )
+                    .order_by(desc(FactorSnapshotModel.as_of), desc(FactorSnapshotModel.created_at))
+                    .limit(1)
+                )
+                definition = factor_catalog().get(payload.factor_code)
                 snapshot = FactorSnapshotModel(
                     factor_code=payload.factor_code,
-                    factor_name=payload.factor_name or supported_factors[payload.factor_code],
+                    factor_name=payload.factor_name or (definition.name if definition else "Custom linear factor"),
                     symbol=symbol,
                     market=payload.market,
                     as_of=latest_bar.bar_start,
-                    value=value,
+                    value=result.value,
                     lookback_bars=payload.lookback_bars,
                     input_bar_ids=[bar.id for bar in ordered_bars],
                     lineage_payload={
@@ -425,26 +398,37 @@ class MarketDataService:
                         "lookback_bars": payload.lookback_bars,
                         "start_bar_at": first_bar.bar_start.isoformat(),
                         "end_bar_at": latest_bar.bar_start.isoformat(),
-                        "formula": formula,
+                        "formula": result.formula,
+                        "components": result.components,
+                        "custom_expression": payload.custom_expression,
                     },
                     created_by=payload.created_by,
                     origin_type=payload.origin_type,
                     origin_id=payload.origin_id,
                     status=payload.status,
                 )
-                candidates.append((snapshot, value))
+                candidates.append((snapshot, result.value, previous_snapshot))
 
             ranked = sorted(candidates, key=lambda item: item[1], reverse=True)
             total = len(ranked)
-            for index, (snapshot, _) in enumerate(ranked, start=1):
+            for index, (snapshot, _, previous_snapshot) in enumerate(ranked, start=1):
                 snapshot.rank = index
                 snapshot.percentile = 1.0 if total == 1 else 1.0 - ((index - 1) / (total - 1))
+                snapshot.lineage_payload = {
+                    **(snapshot.lineage_payload or {}),
+                    "decay": factor_decay_payload(
+                        current_value=snapshot.value,
+                        previous_value=previous_snapshot.value if previous_snapshot else None,
+                        previous_rank=previous_snapshot.rank if previous_snapshot else None,
+                        current_rank=index,
+                    ),
+                }
                 session.add(snapshot)
 
             session.commit()
-            for snapshot, _ in ranked:
+            for snapshot, _, _ in ranked:
                 session.refresh(snapshot)
-            return [self._factor_snapshot_summary(snapshot) for snapshot, _ in ranked]
+            return [self._factor_snapshot_summary(snapshot) for snapshot, _, _ in ranked]
 
     def list_factor_snapshots(
         self,

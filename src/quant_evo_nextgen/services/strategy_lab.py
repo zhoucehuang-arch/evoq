@@ -37,6 +37,14 @@ from quant_evo_nextgen.db.models import (
     StrategySpecModel,
     WithdrawalDecisionModel,
 )
+from quant_evo_nextgen.services.adversarial import run_adversarial_checks
+from quant_evo_nextgen.services.cost_models import (
+    CostModelConfig,
+    aggregate_cost_pct,
+    cost_model_payload,
+    estimate_symbol_trade_cost,
+)
+from quant_evo_nextgen.services.statistical_validation import validate_backtest_statistics
 
 
 @dataclass(slots=True)
@@ -317,7 +325,25 @@ class StrategyLabService:
 
             gross_return_pct = round((sum(selected_values) / len(selected_values)) * 100, 6) if selected_values else 0.0
             baseline_return_pct = round((sum(all_values) / len(all_values)) * 100, 6) if all_values else 0.0
-            total_cost_pct = round((request.cost_bps + request.slippage_bps) / 100, 6)
+            cost_config = CostModelConfig.from_backtest_payload(
+                cost_bps=request.cost_bps,
+                slippage_bps=request.slippage_bps,
+                payload=request.cost_model,
+            )
+            bars_by_symbol = self._historical_bars_by_symbol(
+                session,
+                input_bar_ids=input_bar_ids,
+                selected_symbols=[snapshot.symbol for snapshot in selected],
+            )
+            cost_breakdowns = [
+                estimate_symbol_trade_cost(
+                    symbol=snapshot.symbol,
+                    bars=bars_by_symbol.get(snapshot.symbol, []),
+                    config=cost_config,
+                )
+                for snapshot in selected
+            ]
+            total_cost_pct = aggregate_cost_pct(cost_breakdowns)
             total_return_pct = round(gross_return_pct - total_cost_pct, 6)
             excess_return_pct = round(total_return_pct - baseline_return_pct, 6)
             factor_max_drawdown_pct = round(max([0.0, *[-value * 100 for value in selected_values if value < 0]]), 6)
@@ -353,9 +379,9 @@ class StrategyLabService:
                     "as_of": request.as_of.isoformat() if request.as_of else None,
                 },
                 "cost_model": {
+                    **cost_model_payload(cost_config, cost_breakdowns),
                     "cost_bps": request.cost_bps,
                     "slippage_bps": request.slippage_bps,
-                    "total_cost_pct": total_cost_pct,
                 },
                 "baseline_refs": request.baseline_refs,
                 "point_in_time_controls": request.point_in_time_controls,
@@ -607,6 +633,8 @@ class StrategyLabService:
         }
         notes = [f"Missing {label}." for label, present in required_groups.items() if not present]
         blockers = self._research_brief_blockers(request)
+        adversarial = run_adversarial_checks(request.model_dump())
+        blockers.extend(adversarial.notes)
         readiness_score = round(sum(1 for present in required_groups.values() if present) / len(required_groups), 3)
 
         if blockers:
@@ -671,6 +699,15 @@ class StrategyLabService:
             notes.append("Missing baseline comparison.")
         if not metrics.get("point_in_time_controls"):
             notes.append("Missing point-in-time replay controls.")
+        statistical = validate_backtest_statistics(metrics, sample_size=sample_size)
+        metrics["statistical_validation"] = statistical.metrics
+        notes.extend(statistical.notes)
+        adversarial = run_adversarial_checks(metrics)
+        metrics["adversarial_validation"] = {
+            "passed": adversarial.passed,
+            "risk_counts": adversarial.risk_counts,
+        }
+        notes.extend(adversarial.notes)
         lineage = metrics.get("lineage") if isinstance(metrics.get("lineage"), dict) else {}
         if not lineage.get("input_bar_ids") and not metrics.get("input_bar_ids"):
             notes.append("Missing data lineage from bars to signals.")
@@ -689,7 +726,15 @@ class StrategyLabService:
             note.startswith("Missing") or "baseline" in note.lower()
             for note in notes
         )
-        if governance_clear and sample_size >= 100 and sharpe_ratio >= 1.0 and max_drawdown_pct <= 15.0 and total_return_pct > 0:
+        if (
+            governance_clear
+            and statistical.passed
+            and adversarial.passed
+            and sample_size >= 100
+            and sharpe_ratio >= 1.0
+            and max_drawdown_pct <= 15.0
+            and total_return_pct > 0
+        ):
             return ("passed", ["Backtest satisfies the paper-candidate gate."])
         if max_drawdown_pct > 25.0 or total_return_pct < -5.0:
             return ("failed", notes or ["Backtest failed the hard safety gate."])
@@ -909,6 +954,25 @@ class StrategyLabService:
 
         hit_ratio = round(positive_days / len(curve), 6) if curve else 0.0
         return curve, round(max_drawdown * 100, 6), hit_ratio
+
+    def _historical_bars_by_symbol(
+        self,
+        session: Session,
+        *,
+        input_bar_ids: list[str],
+        selected_symbols: list[str],
+    ) -> dict[str, list[HistoricalBarModel]]:
+        if not input_bar_ids or not selected_symbols:
+            return {}
+        rows = session.scalars(
+            select(HistoricalBarModel)
+            .where(HistoricalBarModel.id.in_(input_bar_ids), HistoricalBarModel.symbol.in_(selected_symbols))
+            .order_by(HistoricalBarModel.symbol.asc(), HistoricalBarModel.bar_start.asc())
+        ).all()
+        bars_by_symbol: dict[str, list[HistoricalBarModel]] = {}
+        for row in rows:
+            bars_by_symbol.setdefault(row.symbol, []).append(row)
+        return bars_by_symbol
 
     def _count(self, session: Session, query: Any) -> int:
         value = session.scalar(query)

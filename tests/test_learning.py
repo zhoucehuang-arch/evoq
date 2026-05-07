@@ -10,6 +10,7 @@ from quant_evo_nextgen.services.dashboard import DashboardService
 from quant_evo_nextgen.services.learning import LearningService
 from quant_evo_nextgen.services.repo_state import RepoStateService
 from quant_evo_nextgen.services.state_store import StateStore
+from quant_evo_nextgen.services.strategy_lab import StrategyLabService
 from quant_evo_nextgen.services.supervisor import SupervisorService
 
 
@@ -527,6 +528,67 @@ def test_learning_service_can_resynthesize_existing_insights(
     assert insights[0].id == first_insight_id
     assert insights[0].citation_count == 3
     assert insights[0].promotion_state == "ready_for_review"
+
+    database.dispose()
+
+
+def test_learning_service_ingests_strategy_experience_reflections(tmp_path: Path) -> None:
+    _seed_repo_state(tmp_path)
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'learning-strategy-reflection.db'}")
+    database.create_schema()
+    learning_service = LearningService(database.session_factory)
+    strategy_service = StrategyLabService(database.session_factory)
+
+    hypothesis = strategy_service.create_hypothesis(
+        {
+            "title": "Reflection strategy",
+            "thesis": "Strategy experiment outcomes should become durable learning evidence.",
+            "target_market": "us-equities",
+            "mechanism": "Capture what passed or failed across sessions.",
+            "created_by": "tester",
+        }
+    )
+    spec = strategy_service.create_strategy_spec(
+        {
+            "hypothesis_id": hypothesis.id,
+            "spec_code": "reflection-001",
+            "title": "Reflection strategy",
+            "target_market": "us-equities",
+            "signal_logic": "Unit-test reflection path.",
+            "created_by": "tester",
+        }
+    )
+    strategy_service.record_backtest(
+        {
+            "strategy_spec_id": spec.id,
+            "sample_size": 160,
+            "metrics_json": {
+                "sharpe_ratio": 0.7,
+                "total_return_pct": 2.5,
+                "max_drawdown_pct": 9.0,
+                "baseline_return_pct": 2.0,
+                "excess_return_pct": 0.5,
+                "cost_model": {"cost_bps": 5, "slippage_bps": 5},
+                "baseline_refs": ["cash"],
+                "point_in_time_controls": ["as_of_filter"],
+                "input_bar_ids": [f"bar-{index}" for index in range(160)],
+                "lineage": {"input_bar_ids": [f"bar-{index}" for index in range(160)]},
+            },
+            "created_by": "tester",
+        }
+    )
+
+    reflected = learning_service.ingest_strategy_experience_reflections(limit=5)
+    synthesized = learning_service.synthesize_pending_insights(limit=5)
+    documents = learning_service.list_documents(limit=5, source_types=["strategy_backtest"])
+    insights = learning_service.list_insights(limit=5)
+
+    assert len(reflected) == 1
+    assert reflected[0].status == "ingested"
+    assert len(documents) == 1
+    assert "backtest gate" in documents[0].summary.lower()
+    assert len(synthesized) == 1
+    assert insights[0].topic_key == "strategy-experience"
 
     database.dispose()
 

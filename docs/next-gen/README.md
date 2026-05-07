@@ -10,6 +10,7 @@ Canonical current product truth lives in:
 - [PRODUCT-OVERVIEW.md](PRODUCT-OVERVIEW.md)
 - [GITHUB-TO-VPS-DEPLOYMENT.md](GITHUB-TO-VPS-DEPLOYMENT.md)
 - [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md)
+- [EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md](EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md)
 - [GITHUB-README-GUIDE.md](GITHUB-README-GUIDE.md)
 
 Some deeper review and architecture documents in this folder preserve historical reasoning and tradeoff analysis. Treat the canonical documents above as the current product contract when there is any tension.
@@ -28,6 +29,7 @@ Older files that mention Discord-first operation are historical design records u
 9. [OWNER-OPERATION-QUICKSTART.md](OWNER-OPERATION-QUICKSTART.md)
 10. [SINGLE-VPS-AND-ACQUISITION-REVIEW.md](SINGLE-VPS-AND-ACQUISITION-REVIEW.md)
 11. [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md)
+12. [EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md](EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md)
 
 ## Read By Goal
 
@@ -62,6 +64,7 @@ Older files that mention Discord-first operation are historical design records u
 ### I want to evaluate product readiness and risk
 
 - [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md)
+- [EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md](EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md)
 - [GSTACK-FULL-PRODUCT-REREVIEW.md](GSTACK-FULL-PRODUCT-REREVIEW.md)
 - [CORE-GOAL-COVERAGE-REVIEW.md](CORE-GOAL-COVERAGE-REVIEW.md)
 - [RISK-GOVERNANCE.md](RISK-GOVERNANCE.md)
@@ -99,6 +102,7 @@ Older files that mention Discord-first operation are historical design records u
 6. [OPERATOR-JOURNEYS.md](OPERATOR-JOURNEYS.md)
 7. [OWNER-OPERATION-QUICKSTART.md](OWNER-OPERATION-QUICKSTART.md)
 8. [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md)
+9. [EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md](EVOQ-HERMES-REVIEW-IMPLEMENTATION-PLAN.md)
 
 ### Deploy path
 
