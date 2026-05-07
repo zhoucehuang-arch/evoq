@@ -23,10 +23,13 @@ It is not trying to be a full architecture spec. It is the front door.
 
 ### If you want to run it locally
 
-1. [../../README.md](../../README.md#quick-start-local-product-run)
-2. [EVOQ-USER-MANUAL.md](EVOQ-USER-MANUAL.md)
-3. `ops/tools/start_local.ps1`
-4. `ops/tools/smoke_local.ps1`
+1. [../../README.md](../../README.md#quick-start-from-github-to-local-dashboard)
+2. Clone the repo or download the ZIP from GitHub.
+3. Install Python dependencies with `python -m pip install -e ".[dev]"`.
+4. Install dashboard dependencies with `npm ci` in `apps/dashboard-web`.
+5. Start with `ops/tools/start_local.ps1`.
+6. Verify with `ops/tools/smoke_local.ps1`.
+7. Continue with [EVOQ-USER-MANUAL.md](EVOQ-USER-MANUAL.md).
 
 ### If you want to deploy it
 

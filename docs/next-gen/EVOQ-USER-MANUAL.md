@@ -4,6 +4,15 @@
 
 ## 1. 启动方式
 
+如果你还没有把项目下载到本地，请先回到根目录的 [README.md](../../README.md#quick-start-from-github-to-local-dashboard)，按顺序完成：
+
+1. 安装 Git、Python、Node.js 和 PowerShell。
+2. `git clone https://github.com/zhoucehuang-arch/evoq.git` 或从 GitHub 下载 ZIP。
+3. 在仓库根目录安装 Python 依赖：`python -m pip install -e ".[dev]"`。
+4. 在 `apps/dashboard-web` 安装前端依赖：`npm ci`。
+
+完成这些步骤后，再执行下面的启动命令。
+
 ### 本机 Windows
 
 在仓库根目录运行：

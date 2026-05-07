@@ -2,6 +2,40 @@
 
 这是一份给第一次接触 EvoQ 的人看的简明说明。
 
+## 0. 第一次怎么把它跑起来
+
+如果你是从 GitHub 第一次看到这个项目，不要直接从启动命令开始。正确顺序是：
+
+1. 安装 Git、Python 3.11+、Node.js 20+ 和 PowerShell。
+2. 下载代码：
+   ```powershell
+   git clone https://github.com/zhoucehuang-arch/evoq.git
+   cd evoq
+   ```
+   如果不用 Git，也可以在 GitHub 页面点 **Code** -> **Download ZIP**，解压后在项目目录打开 PowerShell。
+3. 安装后端依赖：
+   ```powershell
+   python -m pip install --upgrade pip
+   python -m pip install -e ".[dev]"
+   ```
+4. 安装 Dashboard 依赖：
+   ```powershell
+   cd apps\dashboard-web
+   npm ci
+   cd ..\..
+   ```
+5. 启动本地系统：
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.ps1
+   ```
+6. 打开 Dashboard：`http://127.0.0.1:3000`。
+7. 验证：
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
+   ```
+
+看到 `EvoQ local smoke passed.` 才说明本地入口真的跑通了。
+
 ## 1. EvoQ 是什么
 
 EvoQ 是一个可以在本机或单 VPS 上运行的量化研究与交易准备系统。

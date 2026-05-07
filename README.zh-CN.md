@@ -40,17 +40,63 @@ EvoQ 借鉴了几类优秀项目的组织方式：
 
 EvoQ 的不同点是：它更关注 owner 可以长期运行的 **dashboard-first、paper-first、quant-first、LLM-governed** 产品形态。
 
-## 本地快速启动
+## 从 GitHub 到本地 Dashboard
 
-### 前置条件
+这是第一次使用 EvoQ 时最推荐的路径：先在 Windows 本地跑起来，使用本地 SQLite 和 paper/simulated 环境，不需要券商密钥，也不会进入实盘交易。
 
-- Python 3.11+
-- Node.js 20+
-- PowerShell
-- 在 `apps/dashboard-web` 执行过 `npm ci`
-- 在仓库根目录执行过 `python -m pip install -e ".[dev]"`
+### 1. 先安装基础工具
 
-### 启动
+请先安装：
+
+- Git：<https://git-scm.com/downloads>
+- Python 3.11 或更新版本：<https://www.python.org/downloads/>
+- Node.js 20 或更新版本：<https://nodejs.org/>
+- PowerShell：Windows 自带 PowerShell 或 PowerShell 7+
+
+打开一个新的 PowerShell，确认命令可用：
+
+```powershell
+git --version
+python --version
+node --version
+npm --version
+```
+
+### 2. 下载代码
+
+方式 A：用 Git 克隆：
+
+```powershell
+git clone https://github.com/zhoucehuang-arch/evoq.git
+cd evoq
+```
+
+方式 B：从 GitHub 下载 ZIP：
+
+1. 在 GitHub 页面点击 **Code** -> **Download ZIP**。
+2. 解压 ZIP。
+3. 在解压后的项目文件夹里打开 PowerShell。
+
+后面的命令都假设你已经在仓库根目录，也就是能看到 `README.md`、`src`、`apps`、`ops` 的那个目录。
+
+### 3. 安装依赖
+
+安装 Python 后端依赖：
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+安装 Dashboard 前端依赖：
+
+```powershell
+cd apps\dashboard-web
+npm ci
+cd ..\..
+```
+
+### 4. 启动本地运行时
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.ps1
@@ -58,18 +104,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.
 
 打开：
 
-- Dashboard: `http://127.0.0.1:3000`
-- API health: `http://127.0.0.1:8000/healthz`
+- Dashboard：`http://127.0.0.1:3000`
+- API health：`http://127.0.0.1:8000/healthz`
 
-默认使用 SQLite：`.runtime/evoq-local.db`。
+默认使用本地 SQLite 数据库：`.runtime/evoq-local.db`。
 
-### 验证
+### 5. 验证是否真的可用
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
 ```
 
-看到下面结果说明本地产品入口可用：
+看到下面结果，说明本地 API、Dashboard、Data、Strategy、Trading readiness、Approvals 和各个页面都能正常访问：
 
 ```text
 EvoQ local smoke passed.

@@ -59,17 +59,63 @@ EvoQ is intentionally closer to a governed operating system than a single notebo
 
 The key difference: EvoQ is optimized for an owner-operated, dashboard-first, paper-first runtime with explicit gates before anything capital-facing.
 
-## Quick Start: Local Product Run
+## Quick Start: From GitHub To Local Dashboard
 
-### Prerequisites
+This is the recommended first path for a new user on Windows. The dashboard and API run locally; no broker credentials or live-trading setup are required.
 
-- Python 3.11+
-- Node.js 20+
-- PowerShell
-- `npm ci` run once in `apps/dashboard-web`
-- Python dependencies installed with `python -m pip install -e ".[dev]"`
+### 1. Install prerequisites
 
-### Start the local runtime
+Install these first:
+
+- Git: <https://git-scm.com/downloads>
+- Python 3.11 or newer: <https://www.python.org/downloads/>
+- Node.js 20 or newer: <https://nodejs.org/>
+- PowerShell: Windows PowerShell or PowerShell 7+
+
+Check them in a new PowerShell window:
+
+```powershell
+git --version
+python --version
+node --version
+npm --version
+```
+
+### 2. Get the code
+
+Option A: clone with Git:
+
+```powershell
+git clone https://github.com/zhoucehuang-arch/evoq.git
+cd evoq
+```
+
+Option B: download ZIP from GitHub:
+
+1. Click **Code** -> **Download ZIP**.
+2. Extract the ZIP.
+3. Open PowerShell inside the extracted project folder.
+
+All commands below assume you are in the repository root, the folder that contains `README.md`, `src`, `apps`, and `ops`.
+
+### 3. Install project dependencies
+
+Install the Python backend dependencies:
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+Install the dashboard dependencies:
+
+```powershell
+cd apps\dashboard-web
+npm ci
+cd ..\..
+```
+
+### 4. Start the local runtime
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.ps1
@@ -82,7 +128,7 @@ Then open:
 
 The local script uses SQLite at `.runtime/evoq-local.db` and a local dashboard API token by default.
 
-### Verify it
+### 5. Verify the product is usable
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
@@ -93,6 +139,8 @@ Expected result:
 ```text
 EvoQ local smoke passed.
 ```
+
+If this passes, the dashboard, API, market-data endpoints, strategy endpoints, live-readiness report, approvals, and all dashboard pages are reachable locally.
 
 ## First Useful Workflow
 
