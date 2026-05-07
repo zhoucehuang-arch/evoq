@@ -185,7 +185,7 @@ When critical risk is detected:
 
 1. enter halt or safe mode
 2. freeze risky workflows
-3. alert through Discord and dashboard
+3. alert through the dashboard and light gateway
 4. open an incident record
 5. preserve evidence for recovery and review
 

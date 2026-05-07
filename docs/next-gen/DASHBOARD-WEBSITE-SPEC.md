@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The dashboard is the high-density observation layer for EvoQ. It is not a replacement for Discord. Discord remains the main control shell; the dashboard is the place to verify health, inspect history, and understand what the system is doing without reading raw logs.
+The dashboard is the primary owner workbench for EvoQ. It is where the owner reviews health, research evidence, market data, strategy backtests, paper runs, governance, incidents, and execution readiness. Telegram or another light gateway may handle alerts, quick approvals, pause/resume, and emergency actions, but it must not replace the dashboard as the main operating surface.
 
 Reference aesthetic:
 
@@ -123,7 +123,7 @@ Preferred data sources:
 
 Avoid:
 
-- reading Discord history as source of truth
+- reading chat or gateway history as source of truth
 - treating README text as operational state
 - coupling UI state to temporary workspace files
 

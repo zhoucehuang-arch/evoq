@@ -12,7 +12,8 @@ Canonical current product truth lives in:
 - [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md)
 - [GITHUB-README-GUIDE.md](GITHUB-README-GUIDE.md)
 
-Some deeper review and architecture documents in this folder preserve historical reasoning and tradeoff analysis. Treat the four documents above as the current product contract when there is any tension.
+Some deeper review and architecture documents in this folder preserve historical reasoning and tradeoff analysis. Treat the canonical documents above as the current product contract when there is any tension.
+Older files that mention Discord-first operation are historical design records unless a current guide explicitly links them as an active procedure. The current product contract is dashboard-first, paper-first, quant-first, and light-gateway-only for alerts or approvals.
 
 ## Start Here
 
@@ -36,7 +37,6 @@ Some deeper review and architecture documents in this folder preserve historical
 - [EVOQ-USER-MANUAL.md](EVOQ-USER-MANUAL.md)
 - [GITHUB-README-GUIDE.md](GITHUB-README-GUIDE.md)
 - [PRODUCT-OVERVIEW.md](PRODUCT-OVERVIEW.md)
-- [DISCORD-NL-INTERACTION-MODEL.md](DISCORD-NL-INTERACTION-MODEL.md)
 - [DASHBOARD-WEBSITE-SPEC.md](DASHBOARD-WEBSITE-SPEC.md)
 - [FAQ.md](FAQ.md)
 
@@ -85,6 +85,7 @@ Some deeper review and architecture documents in this folder preserve historical
 - [IMPLEMENTATION-REVIEW-LOG.md](IMPLEMENTATION-REVIEW-LOG.md)
 - [FULL-SYSTEM-STAGE-PLAN.md](FULL-SYSTEM-STAGE-PLAN.md)
 - [REFERENCE-IMPLEMENTATION-RESEARCH.md](REFERENCE-IMPLEMENTATION-RESEARCH.md)
+- [DISCORD-NL-INTERACTION-MODEL.md](DISCORD-NL-INTERACTION-MODEL.md) as historical interaction design, not the current owner path
 
 ## Reading Paths
 

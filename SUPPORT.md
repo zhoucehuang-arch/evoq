@@ -28,7 +28,7 @@ Check these first:
 - `./ops/bin/core-smoke.sh` for Core VPS deployments
 - `./ops/bin/worker-smoke.sh` for Worker VPS deployments
 - `/api/v1/system/doctor`
-- dashboard health and Telegram/Discord gateway responsiveness, depending on your deployment
+- dashboard health and the light gateway responsiveness for alert/approval flows
 
 ## Filing a useful issue
 

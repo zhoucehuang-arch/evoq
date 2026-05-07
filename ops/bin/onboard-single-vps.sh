@@ -90,4 +90,4 @@ fi
 echo "Running smoke checks..."
 "${CORE_SMOKE_SH}"
 
-echo "Single-VPS onboarding completed. Dashboard, Discord, and the Codex runner are now expected to be reachable on this host."
+echo "Single-VPS onboarding completed. Dashboard, the light alert/approval gateway, and the Codex runner are now expected to be reachable on this host."

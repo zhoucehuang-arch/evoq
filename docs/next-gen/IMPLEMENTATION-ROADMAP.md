@@ -1,5 +1,7 @@
 # IMPLEMENTATION ROADMAP
 
+> Historical note: this roadmap records earlier staged implementation thinking, including Discord-first milestones. The current public product path is dashboard-first with a light Telegram/gateway layer for alerts and quick approvals. Use [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md) and [GITHUB-README-GUIDE.md](GITHUB-README-GUIDE.md) for current guidance.
+
 ## 1. Purpose
 
 This roadmap turns the next-gen design package into an implementation program with clear milestones, review gates, and reflection prompts.

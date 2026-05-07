@@ -1,5 +1,7 @@
 # Full System Stage Plan
 
+> Historical note: this plan preserves earlier Discord-first assumptions. The current product contract is dashboard-first, paper-first, quant-first, with Telegram/light gateway limited to alerts, quick approvals, pause/resume, and emergency actions. Use [CURRENT-DELIVERY-STATUS.md](CURRENT-DELIVERY-STATUS.md) for current delivery truth.
+
 ## 1. Purpose
 
 This document is the execution blueprint for the next-generation autonomous investment system.

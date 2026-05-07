@@ -997,6 +997,22 @@ code {
     flex-direction: column;
   }
 
+  .brand,
+  .brand-status-row,
+  .subtitle {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .brand-status-label {
+    overflow-wrap: anywhere;
+  }
+
+  .brand-divider {
+    display: none;
+  }
+
   .brand-mark {
     width: 44px;
     height: 44px;
@@ -1008,12 +1024,15 @@ code {
   }
 
   .nav {
+    display: grid;
+    grid-template-columns: 1fr;
     width: 100%;
   }
 
   .nav a {
-    flex: 1 1 auto;
     text-align: center;
+    min-width: 0;
+    width: 100%;
   }
 
   .metric-strip {
@@ -1026,5 +1045,15 @@ code {
 
   .primary-action {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-status-row {
+    gap: 6px;
+  }
+
+  .brand-status-label {
+    font-size: 0.72rem;
   }
 }

@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     skill_library_root: str = "workspace/skills"
 
     heartbeat_interval_seconds: int = 60
-    dashboard_title: str = "EvoQ Terminal"
+    dashboard_title: str = "EvoQ Workbench"
     dashboard_bind_host: str = "127.0.0.1"
     dashboard_host_port: int = 3000
     dashboard_api_token: str | None = None

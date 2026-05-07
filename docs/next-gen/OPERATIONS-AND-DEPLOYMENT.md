@@ -1,5 +1,7 @@
 # Operations and Deployment
 
+> Historical note: this document preserves an earlier Discord-first operations design. For the current owner path, use the dashboard as the primary surface and Telegram/light gateway only for alerts, quick approvals, pause/resume, and emergency actions. Prefer [OWNER-OPERATION-QUICKSTART.md](OWNER-OPERATION-QUICKSTART.md), [GITHUB-TO-VPS-DEPLOYMENT.md](GITHUB-TO-VPS-DEPLOYMENT.md), and [VPS-DEPLOYMENT-RUNBOOK.md](VPS-DEPLOYMENT-RUNBOOK.md) when wording conflicts.
+
 ## 1. Purpose
 
 This document defines how the next-generation system should be deployed and operated in real life.

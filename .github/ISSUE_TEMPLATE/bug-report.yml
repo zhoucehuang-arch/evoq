@@ -10,7 +10,7 @@ body:
       label: Area
       options:
         - Dashboard
-        - Discord control plane
+        - Telegram / light gateway
         - Deployment / VPS
         - Trading / execution
         - Learning / research

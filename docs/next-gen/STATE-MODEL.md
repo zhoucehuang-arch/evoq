@@ -18,14 +18,14 @@ The goal is to replace chat residue and file-scattered assumptions with explicit
   code, strategies, docs, versioned artifacts
 - `Artifact store`
   reports, backtests, charts, raw captures, model outputs, bundles
-- `Discord`
+- `Telegram / light gateway`
   interaction traces and notifications only, not canonical truth
 
 ### Derived state
 
 These are useful, but not authoritative:
 
-- Discord message history
+- chat or gateway message history
 - thread discussions
 - README or deployment notes
 - temporary workspace files
@@ -141,7 +141,7 @@ Every important entity should carry:
 
 ## Truth Rules
 
-- Discord can request change, but does not own truth
+- a light gateway can request change, but does not own truth
 - Git can store artifacts, but does not own live runtime truth
 - dashboards should read from APIs backed by durable state
 - reconciled broker truth must be written back into runtime state

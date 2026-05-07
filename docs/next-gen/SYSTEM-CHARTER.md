@@ -8,9 +8,9 @@ It is not a single trading bot. It is an operating system for governed research,
 
 ## End-State Vision
 
-The target end state is `Discord-native but workflow-governed`:
+The target end state is `dashboard-first and workflow-governed`:
 
-- from the owner experience, it still feels like interacting with a multi-role autonomous team
+- from the owner experience, the dashboard is the main workbench and the light gateway handles alerts or quick approvals
 - under the shell, it behaves like a state machine plus workflow engine plus artifact system
 - Codex is the default execution engine for complex implementation work
 - capital-facing behavior remains deterministic and policy-bound
@@ -62,9 +62,9 @@ High-impact self-change requires evaluation, review, and rollback-ready promotio
 
 Strategies, principles, patches, and incidents must remain traceable.
 
-### Discord as shell, not truth
+### Gateway as shell, not truth
 
-Discord is the interaction layer, not the canonical runtime database.
+Telegram or any other chat gateway is an interaction layer, not the canonical runtime database.
 
 ## Operating Domains
 

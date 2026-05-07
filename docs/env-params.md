@@ -2,14 +2,18 @@
 
 This document summarizes the main environment parameters used during deployment.
 
-## Discord
+## Light Gateway / Legacy Chat Compatibility
 
-- `QE_DISCORD_TOKEN`: Discord bot token for the Core node.
-- `QE_DISCORD_GUILD_ID`: Discord guild ID.
-- `QE_DISCORD_CONTROL_CHANNEL_ID`: channel used for owner control commands.
-- `QE_DISCORD_APPROVALS_CHANNEL_ID`: channel used for approvals.
-- `QE_DISCORD_ALERTS_CHANNEL_ID`: channel used for alerts.
-- `QE_DISCORD_ALLOWED_USER_IDS`: comma-separated user IDs that may control the bot.
+The current product path is dashboard-first with a light gateway for alerts, quick approvals, pause/resume, and emergency actions.
+
+Some runtime/config names still use `DISCORD` from the earlier implementation. Treat them as legacy chat-gateway compatibility fields, not as the current primary owner surface:
+
+- `QE_DISCORD_TOKEN`: legacy chat-gateway bot token for the Core node.
+- `QE_DISCORD_GUILD_ID`: legacy chat workspace/server ID.
+- `QE_DISCORD_CONTROL_CHANNEL_ID`: legacy channel used for owner control commands.
+- `QE_DISCORD_APPROVALS_CHANNEL_ID`: legacy channel used for approvals.
+- `QE_DISCORD_ALERTS_CHANNEL_ID`: legacy channel used for alerts.
+- `QE_DISCORD_ALLOWED_USER_IDS`: comma-separated user IDs that may control the gateway.
 
 ## Model and Relay
 
