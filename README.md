@@ -189,6 +189,21 @@ Start with:
 3. [First Paper Run Checklist](docs/next-gen/FIRST-PAPER-RUN-CHECKLIST.md)
 4. [Break Glass Runbook](docs/next-gen/BREAK-GLASS-RUNBOOK.md)
 
+For a single-machine VPS bootstrap, the repo-local helper is:
+
+```bash
+./ops/bin/quickstart-single-vps.sh
+```
+
+Related operator helpers:
+
+```bash
+./ops/bin/onboard-single-vps.sh
+./ops/bin/system-doctor.sh
+./ops/bin/bootstrap-node.sh core
+./ops/bin/bootstrap-node.sh worker
+```
+
 ## Documentation Map
 
 | Goal | Read |
