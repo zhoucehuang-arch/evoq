@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import socket
 import time
+from dataclasses import dataclass
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 

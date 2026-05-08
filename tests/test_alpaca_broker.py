@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+import pytest
 
 from quant_evo_nextgen.config import Settings
 from quant_evo_nextgen.services.alpaca_broker import AlpacaBrokerAdapter
@@ -279,6 +280,86 @@ def test_alpaca_adapter_syncs_option_position_and_capability_hint(tmp_path: Path
     assert result.orders[0].requested_notional == 600.0
     assert result.positions[0].underlying_symbol == "AAPL"
     assert result.positions[0].contract_multiplier == 100.0
+
+
+def test_alpaca_adapter_retries_transient_read_requests(tmp_path: Path) -> None:
+    calls = {"account": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/v2/account":
+            calls["account"] += 1
+            if calls["account"] == 1:
+                return httpx.Response(503, json={"message": "temporarily unavailable"})
+            return httpx.Response(
+                200,
+                json={
+                    "id": "acct-1",
+                    "equity": "1000",
+                    "cash": "1000",
+                    "buying_power": "1000",
+                    "long_market_value": "0",
+                    "short_market_value": "0",
+                    "updated_at": "2026-03-19T10:05:00Z",
+                },
+            )
+        if request.url.path == "/v2/orders":
+            return httpx.Response(200, json=[])
+        if request.url.path == "/v2/positions":
+            return httpx.Response(200, json=[])
+        raise AssertionError(f"Unexpected path: {request.url.path}")
+
+    adapter = AlpacaBrokerAdapter(_settings(tmp_path), transport=httpx.MockTransport(handler))
+    result = adapter.sync_state(
+        BrokerSyncRequest(
+            provider_key="alpaca-paper",
+            account_ref="paper-main",
+            environment="paper",
+            full_sync=True,
+        )
+    )
+
+    assert calls["account"] == 2
+    assert result.account_state.equity == 1000.0
+
+
+def test_alpaca_adapter_does_not_retry_mutating_order_submission(tmp_path: Path) -> None:
+    calls = {"orders": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["orders"] += 1
+        return httpx.Response(503, json={"message": "temporarily unavailable"})
+
+    adapter = AlpacaBrokerAdapter(_settings(tmp_path), transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ValueError, match="status 503"):
+        adapter.execute_order(
+            BrokerExecutionRequest(
+                order_intent_id="intent-1",
+                client_order_id="qe-intent-1",
+                strategy_spec_id="strategy-1",
+                provider_key="alpaca-paper",
+                account_ref="paper-main",
+                environment="paper",
+                symbol="AAPL",
+                instrument_id=None,
+                instrument_key="equity:AAPL",
+                underlying_symbol=None,
+                asset_type="equity",
+                position_effect="open",
+                side="buy",
+                order_type="market",
+                time_in_force="day",
+                quantity=1,
+                reference_price=100.0,
+                requested_notional=100.0,
+                limit_price=None,
+                stop_price=None,
+                allow_short=False,
+            ),
+            current_position=None,
+        )
+
+    assert calls["orders"] == 1
 
 
 def test_alpaca_adapter_cancels_order(tmp_path: Path) -> None:

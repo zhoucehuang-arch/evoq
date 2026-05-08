@@ -41,8 +41,8 @@ from quant_evo_nextgen.db.models import (
     GoalModel,
     HeartbeatModel,
     IncidentModel,
-    OwnerPreferenceModel,
     OperatorOverrideModel,
+    OwnerPreferenceModel,
     ProviderProfileModel,
     RuntimeConfigProposalModel,
     RuntimeConfigRevisionModel,
@@ -529,6 +529,8 @@ OWNER_PREFERENCE_METADATA: dict[str, dict[str, Any]] = {
 
 
 class StateStore:
+    """Persists governance, runtime config, workflow, approval, and reference-data state."""
+
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self.session_factory = session_factory
 

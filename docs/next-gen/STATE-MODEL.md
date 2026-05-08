@@ -18,7 +18,7 @@ The goal is to replace chat residue and file-scattered assumptions with explicit
   code, strategies, docs, versioned artifacts
 - `Artifact store`
   reports, backtests, charts, raw captures, model outputs, bundles
-- `Telegram / light gateway`
+- `Light gateway`
   interaction traces and notifications only, not canonical truth
 
 ### Derived state

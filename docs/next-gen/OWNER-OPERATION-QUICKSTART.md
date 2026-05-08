@@ -5,7 +5,7 @@ This guide is for the person operating the system day to day.
 ## Main Surfaces
 
 - Dashboard: primary control and review surface for health, data, research, strategy, trading, learning, evolution, system, and incidents
-- Telegram / light gateway: alerts, quick approvals, pause/resume, and emergency actions only
+- Optional light gateway: alerts, quick approvals, pause/resume, and emergency actions only
 - SSH: first deployment, upgrades, restores, and break-glass repair
 - Owner CLI: bootstrap deploy drafts before the dashboard and light gateway are fully online
 

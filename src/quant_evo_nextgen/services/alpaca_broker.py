@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -7,6 +8,7 @@ from typing import Any
 import httpx
 
 from quant_evo_nextgen.config import Settings
+from quant_evo_nextgen.logging_utils import log_event
 from quant_evo_nextgen.services.broker import (
     BrokerAccountState,
     BrokerCancelRequest,
@@ -20,10 +22,12 @@ from quant_evo_nextgen.services.broker import (
     BrokerSyncResult,
     PositionState,
 )
-
+from quant_evo_nextgen.services.resilience import is_transient_http_status, retry_transient
 
 OPEN_ORDER_STATUSES = {"accepted", "submitted", "partially_filled"}
 OPTION_CONTRACT_MULTIPLIER = 100.0
+SAFE_RETRY_METHODS = {"GET", "HEAD", "OPTIONS"}
+logger = logging.getLogger(__name__)
 
 
 def _coerce_float(value: Any, default: float = 0.0) -> float:
@@ -149,6 +153,8 @@ def alpaca_capability_hint_from_account(
 
 
 class AlpacaBrokerAdapter:
+    """Adapts governed EvoQ broker requests to Alpaca's paper/live trading API."""
+
     adapter_key = "alpaca"
 
     def __init__(
@@ -427,6 +433,7 @@ class AlpacaBrokerAdapter:
         success_codes: set[int],
     ) -> Any:
         base_url, key, secret = self._connection_settings(environment)
+        normalized_method = method.upper()
         try:
             with httpx.Client(
                 base_url=base_url.rstrip("/"),
@@ -439,11 +446,47 @@ class AlpacaBrokerAdapter:
                 timeout=self.settings.alpaca_timeout_seconds,
                 transport=self.transport,
             ) as client:
-                response = client.request(method, path, params=params, json=json_body)
+                operation_name = f"alpaca.{normalized_method} {path}"
+
+                def send_request() -> httpx.Response:
+                    return client.request(normalized_method, path, params=params, json=json_body)
+
+                if normalized_method in SAFE_RETRY_METHODS:
+                    response = retry_transient(
+                        send_request,
+                        operation_name=operation_name,
+                        logger=logger,
+                        retry_on_result=lambda result: result.status_code not in success_codes
+                        and is_transient_http_status(result.status_code),
+                    )
+                else:
+                    response = send_request()
         except httpx.HTTPError as exc:
+            log_event(
+                logger,
+                "external_call_exception",
+                provider="alpaca",
+                method=normalized_method,
+                path=path,
+                environment=environment,
+                retrying=False,
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
             raise ValueError(f"Alpaca request failed: {exc}") from exc
 
         if response.status_code not in success_codes:
+            log_event(
+                logger,
+                "external_call_failed",
+                provider="alpaca",
+                method=normalized_method,
+                path=path,
+                environment=environment,
+                status_code=response.status_code,
+                transient=is_transient_http_status(response.status_code),
+                retried=normalized_method in SAFE_RETRY_METHODS,
+            )
             message = None
             try:
                 payload = response.json()
@@ -454,6 +497,15 @@ class AlpacaBrokerAdapter:
             if response.status_code in {401, 403}:
                 raise ValueError("Alpaca authentication failed. Check API key, secret, and endpoint environment.")
             raise ValueError(f"Alpaca request failed with status {response.status_code}: {message or response.text}")
+        log_event(
+            logger,
+            "external_call_completed",
+            provider="alpaca",
+            method=normalized_method,
+            path=path,
+            environment=environment,
+            status_code=response.status_code,
+        )
         if response.status_code == 204:
             return None
         return response.json()

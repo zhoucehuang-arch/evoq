@@ -28,13 +28,13 @@ export default function RootLayout({
                   <span className="brand-status-dot" />
                   <span className="brand-status-label">Dashboard-first runtime</span>
                   <span className="brand-divider" />
-                  <span className="brand-status-label">Telegram light gateway</span>
+                  <span className="brand-status-label">Optional light gateway</span>
                 </div>
                 <span className="eyebrow">Quant Research And Paper Runtime</span>
                 <h1 className="title">EvoQ Workbench</h1>
                 <p className="subtitle">
-                  Use the dashboard for research, evidence, backtests, paper runs, and governance. Telegram stays light:
-                  alerts, quick approvals, pause, resume, and emergency control.
+                  Use the dashboard for research, evidence, backtests, paper runs, and governance. The light gateway
+                  stays limited to alerts, quick approvals, pause, resume, and emergency control.
                 </p>
                 <div className="header-note-row">
                   <span className="header-note">Paper-first live gating</span>

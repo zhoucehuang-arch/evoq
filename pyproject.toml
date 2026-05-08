@@ -10,22 +10,26 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
-  "fastapi>=0.135,<0.136",
-  "uvicorn>=0.42,<0.43",
+  "fastapi>=0.135,<0.140",
+  "uvicorn>=0.42,<0.45",
   "pydantic>=2.12,<3.0",
   "pydantic-settings>=2.11,<3.0",
-  "pydantic-ai-slim[openai]>=1.70,<1.71",
-  "dbos>=2.15,<2.16",
-  "discord.py>=2.7,<2.8",
-  "sqlalchemy>=2.0,<2.1",
-  "psycopg[binary]>=3.2,<3.3",
-  "httpx>=0.28,<0.29",
-  "alembic>=1.16,<1.17",
+  "pydantic-ai-slim[openai]>=1.70,<1.80",
+  "dbos>=2.15,<2.20",
+  "discord.py>=2.7,<2.10",
+  "sqlalchemy>=2.0,<2.2",
+  "psycopg[binary]>=3.2,<3.5",
+  "httpx>=0.28,<0.31",
+  "alembic>=1.16,<1.20",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.4,<8.5",
+  "pytest>=9.0,<10.0",
+  "ruff>=0.14,<0.15",
+  "mypy>=1.19,<1.20",
+  "pip-audit>=2.9,<3.0",
+  "pre-commit>=4.5,<5.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -33,3 +37,22 @@ packages = ["src/quant_evo_nextgen"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "slow: marks tests that exercise long-running integration paths",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["quant_evo_nextgen"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true
+no_implicit_optional = true

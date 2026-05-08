@@ -76,6 +76,7 @@ def test_acquisition_stack_surfaces_probe_failure_for_configured_http_fallback(m
     )
 
     def _raise_probe(*args, **kwargs):
+        del args, kwargs
         raise OSError("probe down")
 
     monkeypatch.setattr("quant_evo_nextgen.services.acquisition.urlopen", _raise_probe)
@@ -101,11 +102,16 @@ def test_acquisition_stack_surfaces_probe_success_for_playwright_socket(monkeypa
             return self
 
         def __exit__(self, exc_type, exc, tb):
+            del exc_type, exc, tb
             return False
+
+    def _connect(*args, **kwargs):
+        del args, kwargs
+        return _DummySocket()
 
     monkeypatch.setattr(
         "quant_evo_nextgen.services.acquisition.socket.create_connection",
-        lambda *args, **kwargs: _DummySocket(),
+        _connect,
     )
     summary = AcquisitionStackService(settings).build_summary(probe_endpoints=True)
     layer = next(layer for layer in summary.layers if layer.key == "browser_fallback")

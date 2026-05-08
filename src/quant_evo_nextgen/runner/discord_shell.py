@@ -18,7 +18,6 @@ from quant_evo_nextgen.services.repo_state import RepoStateService
 from quant_evo_nextgen.services.router import NaturalLanguageRouter
 from quant_evo_nextgen.services.state_store import StateStore
 
-
 settings = get_settings()
 configure_logging()
 logger = logging.getLogger("quant_evo_nextgen.discord")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Callable
 
@@ -20,12 +21,15 @@ from quant_evo_nextgen.db.models import (
     ReconciliationRunModel,
     StrategySpecModel,
 )
-
+from quant_evo_nextgen.logging_utils import log_event
 
 OPEN_PROVIDER_INCIDENT_STATUSES = ("open", "investigating", "mitigated")
+logger = logging.getLogger(__name__)
 
 
 class ExecutionReadinessEvaluator:
+    """Produces the capital-facing readiness verdict from market, broker, provider, and override state."""
+
     def __init__(self, session_factory: Callable[[], Session], settings: Settings) -> None:
         self.session_factory = session_factory
         self.settings = settings
@@ -164,7 +168,7 @@ class ExecutionReadinessEvaluator:
                 )
 
         readiness_status = "blocked" if blocked_reasons else ("degraded" if warnings else "ready")
-        return ExecutionReadinessSummary(
+        summary = ExecutionReadinessSummary(
             status=readiness_status,
             trading_allowed=not blocked_reasons,
             market_calendar=self.settings.market_calendar,
@@ -185,6 +189,19 @@ class ExecutionReadinessEvaluator:
             reconciliation_status=latest_reconciliation.status if latest_reconciliation is not None else None,
             reconciliation_halt_triggered=latest_reconciliation.halt_triggered if latest_reconciliation is not None else False,
         )
+        log_event(
+            logger,
+            "execution_readiness_evaluated",
+            status=summary.status,
+            trading_allowed=summary.trading_allowed,
+            blocked_reasons_count=len(summary.blocked_reasons),
+            warnings_count=len(summary.warnings),
+            active_production_strategies=summary.active_production_strategies,
+            open_provider_incidents=summary.open_provider_incidents,
+            broker_snapshot_age_seconds=summary.broker_snapshot_age_seconds,
+            reconciliation_status=summary.reconciliation_status,
+        )
+        return summary
 
     def _resolve_broker_capability(self, session: Session) -> BrokerCapabilityModel | None:
         rows = session.scalars(

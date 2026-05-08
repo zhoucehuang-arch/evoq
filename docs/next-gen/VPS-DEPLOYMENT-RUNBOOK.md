@@ -27,7 +27,7 @@ Repo path on both machines:
 - The repo is cloned on both nodes at `/opt/evoq`.
 - Core and Worker can reach each other over Tailscale or another private network path.
 - Postgres is not exposed to the open internet.
-- The owner will operate primarily from Telegram and the dashboard.
+- The owner will operate primarily from the dashboard; any chat gateway is optional and limited to alerts, approvals, pause/resume, and emergency actions.
 - The relay/API key is OpenAI-compatible and works with Codex CLI.
 
 If you are starting from a fresh Ubuntu or Debian VPS, you can install the host prerequisites first:
@@ -144,6 +144,12 @@ Only switch `QE_POSTGRES_BIND_HOST` away from `127.0.0.1` after you have a priva
 If `QE_EDGE_PUBLIC_HOST` is set, `./ops/bin/core-up.sh` also starts the bundled Caddy reverse proxy from `ops/production/core/docker-compose.edge.yml`. Keep `QE_API_BIND_HOST=127.0.0.1` and `QE_DASHBOARD_BIND_HOST=127.0.0.1` in that mode so the edge proxy remains the only public surface.
 If `QE_DEPLOYMENT_TOPOLOGY=single_vps_compact`, `./ops/bin/core-up.sh` also starts `codex-fabric-runner` on the Core host so a second machine is not required.
 
+Resource controls:
+
+- Compose files set default CPU, memory, and json-file log rotation limits for Postgres, API, dashboard, supervisor, and Codex workers.
+- Override `QE_*_MEMORY_LIMIT`, `QE_*_CPUS`, `QE_DOCKER_LOG_MAX_SIZE`, and `QE_DOCKER_LOG_MAX_FILE` in the env file for the VPS size.
+- Core API, supervisor, and Discord compatibility containers mount the workspace read-only in production; Codex runner keeps a read-write workspace because it is the only service expected to write worker artifacts.
+
 ## 4. Worker VPS
 
 ### 4.1 Bootstrap the Worker env file
@@ -193,7 +199,7 @@ What this does:
 - starts Postgres
 - waits for Postgres health
 - runs `alembic upgrade head`
-- starts API, supervisor, Telegram gateway, and dashboard
+- starts API, supervisor, optional chat gateway, and dashboard
 - starts the bundled edge proxy too when `QE_EDGE_PUBLIC_HOST` is configured
 - `core-smoke.sh` runs doctor, API health, API doctor endpoint, and dashboard reachability checks from inside the compose network
 
@@ -258,7 +264,7 @@ Then confirm:
 - `/api/v1/system/doctor` should be reviewed together with worker reachability, broker sync state, smoke checks, and the current paper/live activation posture before treating the deployment as production-ready
 - `http://127.0.0.1:${QE_API_HOST_PORT:-8000}/healthz` returns `ok: true`
 - dashboard loads on the configured dashboard host and port
-- Telegram bot responds only in the configured control path
+- optional chat gateway responds only in the configured control path
 - trading dashboard shows broker snapshots after the first broker sync cycle
 - `./ops/bin/worker-smoke.sh` reports no `fail` and confirms the Worker container can see `codex`
 
@@ -281,6 +287,8 @@ Minimum cadence:
 - nightly backup
 - before every upgrade
 - before switching broker environment from `paper` to `live`
+
+Retention defaults to `QE_BACKUP_RETENTION_DAYS=30`. Review [BACKUP-AND-RESTORE-RUNBOOK.md](BACKUP-AND-RESTORE-RUNBOOK.md) for backup pruning and runtime data retention.
 
 ## 10. Restore
 
@@ -319,11 +327,11 @@ curl -X POST http://127.0.0.1:8000/api/v1/operator-overrides \
 
 ### 11.3 Safe operating posture
 
-If broker state, Telegram control, or relay quality is uncertain:
+If broker state, chat gateway control, or relay quality is uncertain:
 
 - keep `QE_DEFAULT_BROKER_ADAPTER=paper_sim`
 - keep live promotion paused
-- keep Telegram allowlist narrow
+- keep chat gateway allowlists narrow
 - run `core-smoke.sh` before resuming normal automation
 
 ## 12. Security Minimums

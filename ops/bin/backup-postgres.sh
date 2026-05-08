@@ -6,6 +6,7 @@ ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 COMPOSE_FILE="${ROOT_DIR}/ops/production/core/docker-compose.core.yml"
 ENV_FILE="${QE_CORE_ENV_FILE:-${ROOT_DIR}/ops/production/core/core.env}"
 BACKUP_DIR="${QE_BACKUP_DIR:-${ROOT_DIR}/.qe/backups}"
+RETENTION_DAYS="${QE_BACKUP_RETENTION_DAYS:-30}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
@@ -46,3 +47,13 @@ tar -czf "${RUNTIME_BACKUP}" -C "${STAGING_DIR}" .
 
 echo "Created ${DB_BACKUP}"
 echo "Created ${RUNTIME_BACKUP}"
+
+if [[ "${RETENTION_DAYS}" =~ ^[0-9]+$ ]] && [[ "${RETENTION_DAYS}" -gt 0 ]]; then
+  find "${BACKUP_DIR}" -type f \
+    \( -name 'postgres-*.sql' -o -name 'runtime-*.tgz' \) \
+    -mtime +"${RETENTION_DAYS}" \
+    -print -delete
+  echo "Pruned backups older than ${RETENTION_DAYS} days from ${BACKUP_DIR}"
+else
+  echo "Backup pruning skipped because QE_BACKUP_RETENTION_DAYS=${RETENTION_DAYS}"
+fi

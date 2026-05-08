@@ -21,7 +21,8 @@ def validate_backtest_statistics(metrics: dict[str, Any], *, sample_size: int) -
     trial_count = max(1, int(_float(metrics.get("trial_count"), default=1.0)))
     oos_return_pct = _float(metrics.get("oos_return_pct"), default=excess_return_pct)
     walk_forward_pass_rate = _float(metrics.get("walk_forward_pass_rate"), default=1.0 if sample_size >= 100 else 0.0)
-    equity_curve = metrics.get("equity_curve") if isinstance(metrics.get("equity_curve"), list) else []
+    raw_equity_curve = metrics.get("equity_curve")
+    equity_curve = raw_equity_curve if isinstance(raw_equity_curve, list) else []
 
     observed_returns = [
         _float(point.get("return_pct")) / 100.0

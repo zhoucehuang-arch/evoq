@@ -11,7 +11,6 @@ from quant_evo_nextgen.services.acquisition import AcquisitionStackService
 from quant_evo_nextgen.services.execution import ExecutionService
 from quant_evo_nextgen.services.state_store import StateStore
 
-
 EXPECTED_HEAD_REVISION = "20260508_0018"
 
 
@@ -359,7 +358,7 @@ class DoctorService:
         try:
             with self.session_factory() as session:
                 revision = session.execute(text("SELECT version_num FROM alembic_version")).scalar_one_or_none()
-        except Exception as exc:
+        except Exception:
             return DoctorCheck(
                 key="schema_revision",
                 label="Schema Revision",

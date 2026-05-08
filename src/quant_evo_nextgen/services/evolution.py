@@ -43,6 +43,8 @@ class EvolutionGovernanceTickResult:
 
 
 class EvolutionService:
+    """Manages improvement proposals, canary evidence, promotion decisions, and rollback actions."""
+
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self.session_factory = session_factory
 

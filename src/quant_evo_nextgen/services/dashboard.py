@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
 
 from quant_evo_nextgen.contracts.dashboard import (
     AllocationPolicyCard,
@@ -24,6 +23,7 @@ from quant_evo_nextgen.contracts.dashboard import (
     EvolutionPromotionDecisionCard,
     EvolutionProposalCard,
     ExecutionReadinessCard,
+    ExpiringOptionPositionCard,
     FreshnessPayload,
     FreshnessState,
     IncidentCard,
@@ -45,14 +45,15 @@ from quant_evo_nextgen.contracts.dashboard import (
     RuntimeConfigProposalCard,
     RuntimeConfigRevisionCard,
     SourceHealthCard,
-    ExpiringOptionPositionCard,
-    StrategyLabMetrics as DashboardStrategyLabMetrics,
     StrategySpecCard,
     StrategySummary,
     SummaryCard,
     SupervisorLoopCard,
     SystemSummary,
     WorkflowRunCard,
+)
+from quant_evo_nextgen.contracts.dashboard import (
+    StrategyLabMetrics as DashboardStrategyLabMetrics,
 )
 from quant_evo_nextgen.services.codex_fabric import CodexFabricService
 from quant_evo_nextgen.services.evolution import EvolutionService
@@ -62,7 +63,6 @@ from quant_evo_nextgen.services.learning import LearningService
 from quant_evo_nextgen.services.repo_state import RepoStateService
 from quant_evo_nextgen.services.state_store import RuntimeSnapshot, StateStore
 from quant_evo_nextgen.services.strategy_lab import StrategyLabService
-
 
 _DASHBOARD_PREVIEW_MAX_LINES = 4
 _SENSITIVE_VALUE_EXACT_KEYS = {
@@ -91,6 +91,8 @@ _SENSITIVE_VALUE_PREFIXES = ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "xox
 
 
 class DashboardService:
+    """Builds dashboard read models from repository state and runtime services."""
+
     def __init__(
         self,
         repo_state_service: RepoStateService,

@@ -6,7 +6,6 @@ from quant_evo_nextgen.contracts.dashboard import DashboardOverview
 from quant_evo_nextgen.contracts.intents import IntentClassification, IntentType
 from quant_evo_nextgen.services.deploy_fields import find_deploy_field, normalize_deploy_field_alias
 
-
 APPROVAL_ID_RE = re.compile(r"\b([a-zA-Z0-9-]{8,})\b")
 ROLLBACK_RE = re.compile(
     "(?:rollback(?:\\s+to)?)\\s*(?:config)?\\s*(?:(?:revision)\\s+)?(?P<revision>[a-zA-Z0-9-]{8,})$",

@@ -204,6 +204,7 @@ def test_doctor_surfaces_acquisition_probe_details(monkeypatch, tmp_path: Path) 
     store.bootstrap_reference_data(settings)
 
     def _raise_probe(*args, **kwargs):
+        del args, kwargs
         raise OSError("probe down")
 
     monkeypatch.setattr("quant_evo_nextgen.services.acquisition.urlopen", _raise_probe)

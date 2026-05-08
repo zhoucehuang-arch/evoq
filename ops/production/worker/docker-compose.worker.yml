@@ -1,15 +1,24 @@
 name: quant-evo-worker
 
+x-service-logging: &service-logging
+  driver: json-file
+  options:
+    max-size: "${QE_DOCKER_LOG_MAX_SIZE:-10m}"
+    max-file: "${QE_DOCKER_LOG_MAX_FILE:-5}"
+
 services:
   codex-fabric-runner:
     build:
       context: ../../..
       dockerfile: ops/docker/codex-runner.Dockerfile
     restart: unless-stopped
+    mem_limit: ${QE_CODEX_FABRIC_MEMORY_LIMIT:-2g}
+    cpus: ${QE_CODEX_FABRIC_CPUS:-1.5}
+    logging: *service-logging
     env_file:
       - ${QE_WORKER_RUNTIME_ENV_FILE:-./worker.env}
     environment:
       QE_REPO_ROOT: /workspace
     command: python -m quant_evo_nextgen.runner.codex_fabric
     volumes:
-      - ../../..:/workspace
+      - ${QE_WORKSPACE_BIND:-../../..}:/workspace:rw

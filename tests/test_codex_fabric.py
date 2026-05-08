@@ -60,6 +60,8 @@ def test_codex_fabric_runs_implement_review_eval_loop(tmp_path: Path, monkeypatc
     seen_phases: list[str] = []
 
     def fake_run(command, *, cwd, env, capture_output, text, timeout, check):
+        assert capture_output is True
+        assert timeout is not None
         phase = _phase_from_command(command)
         seen_phases.append(phase)
         final_message_path = Path(command[command.index("--output-last-message") + 1])
@@ -106,6 +108,8 @@ def test_codex_fabric_retries_failed_attempt_until_success(tmp_path: Path, monke
     execution_count = 0
 
     def fake_run(command, *, cwd, env, capture_output, text, timeout, check):
+        assert capture_output is True
+        assert timeout is not None
         nonlocal execution_count
         execution_count += 1
         final_message_path = Path(command[command.index("--output-last-message") + 1])
@@ -152,6 +156,8 @@ def test_codex_fabric_does_not_sync_failed_isolated_changes(tmp_path: Path, monk
     original_path.write_text("print('original')\n", encoding="utf-8")
 
     def fake_run(command, *, cwd, env, capture_output, text, timeout, check):
+        assert capture_output is True
+        assert timeout is not None
         workspace_path = Path(cwd)
         (workspace_path / "src" / "failed.py").write_text("print('isolated only')\n", encoding="utf-8")
         return subprocess.CompletedProcess(command, 1, stdout="failed", stderr="boom")

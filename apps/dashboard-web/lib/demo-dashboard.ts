@@ -30,7 +30,7 @@ export function buildDemoOverview(): DashboardOverview {
       { label: "Active overrides", value: "1", tone: "warn", hint: "One guarded exposure override" },
     ],
     highlights: [
-      "Telegram light control, dashboard monitoring, and governed research loops are online.",
+      "Light gateway control, dashboard monitoring, and governed research loops are online.",
       "The runtime is still in paper-first posture even though multiple sleeves are execution-ready.",
       "Codex work is queued behind governed approvals instead of acting as an unbounded control plane.",
       "Long-term memory remains separated from raw research intake so promotion stays explicit.",
@@ -926,7 +926,7 @@ export function buildDemoSystem(): DashboardSystem {
     ],
     highlights: [
       "The authority core keeps runtime config, owner preferences, and governed change history visible in one place.",
-      "System state should explain whether the stack is trustworthy before the owner acts through Telegram.",
+      "System state should explain whether the stack is trustworthy before the owner acts through any light gateway.",
       "Single-VPS operation remains the default posture; worker scale-out is optional, not required.",
     ],
     providers: [
@@ -947,12 +947,12 @@ export function buildDemoSystem(): DashboardSystem {
         base_url: "https://market-data.internal",
       },
       {
-        provider_key: "discord",
-        display_name: "Telegram Gateway",
+        provider_key: "light-gateway",
+        display_name: "Light Gateway",
         health_status: "healthy",
         api_style: "im-relay",
         is_primary: true,
-        base_url: "https://discord-relay.internal",
+        base_url: "https://light-gateway.internal",
       },
       {
         provider_key: "memory-store",
@@ -1031,7 +1031,7 @@ export function buildDemoSystem(): DashboardSystem {
         status: "completed",
         started_at: "2026-03-25T13:52:00.000Z",
         ended_at: "2026-03-25T13:55:00.000Z",
-        latest_event_summary: "Telegram gateway health stayed green across command and approval paths.",
+        latest_event_summary: "Light gateway health stayed green across command and approval paths.",
       },
       {
         id: "wf-system-002",
@@ -1202,7 +1202,7 @@ export function buildDemoSystem(): DashboardSystem {
       {
         preference_key: "owner_notification_window",
         display_name: "Notification Window",
-        scope: "discord",
+        scope: "light-gateway",
         updated_by: "owner",
         updated_at: "2026-03-24T21:05:00.000Z",
         value_preview: "08:00-23:00 HKT",

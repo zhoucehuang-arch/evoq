@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+import logging
 import secrets
+import time
+from contextlib import asynccontextmanager
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,13 +41,13 @@ from quant_evo_nextgen.contracts.state import (
     BrokerCapabilityUpsert,
     BrokerSyncRunCreate,
     BrokerSyncRunSummary,
-    ExecutionReadinessSummary,
     EvolutionCanaryRunCreate,
     EvolutionCanaryRunSummary,
     EvolutionImprovementProposalCreate,
     EvolutionImprovementProposalSummary,
     EvolutionPromotionDecisionCreate,
     EvolutionPromotionDecisionSummary,
+    ExecutionReadinessSummary,
     FactorGenerationRequest,
     FactorReplayBacktestCreate,
     FactorSnapshotSummary,
@@ -69,13 +72,13 @@ from quant_evo_nextgen.contracts.state import (
     OperatorOverrideCreate,
     OperatorOverrideReleaseCreate,
     OperatorOverrideSummary,
+    OptionLifecycleEventCreate,
+    OptionLifecycleEventSummary,
     OrderCancelCreate,
     OrderIntentCreate,
     OrderIntentSummary,
-    OptionLifecycleEventCreate,
-    OptionLifecycleEventSummary,
-    OrderReplaceCreate,
     OrderRecordSummary,
+    OrderReplaceCreate,
     OwnerPreferenceSummary,
     OwnerPreferenceUpsert,
     PaperRunCreate,
@@ -112,6 +115,7 @@ from quant_evo_nextgen.contracts.state import (
     WorkflowRunSummary,
 )
 from quant_evo_nextgen.db.session import Database
+from quant_evo_nextgen.logging_utils import configure_logging, log_event
 from quant_evo_nextgen.services.codex_fabric import CodexFabricService
 from quant_evo_nextgen.services.dashboard import DashboardService
 from quant_evo_nextgen.services.doctor import DoctorService
@@ -125,6 +129,8 @@ from quant_evo_nextgen.services.strategy_lab import StrategyLabService
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    configure_logging()
+    logger = logging.getLogger("quant_evo_nextgen.api")
     runtime_settings = settings or get_settings()
     database = Database(runtime_settings.postgres_url, echo=runtime_settings.db_echo)
     repo_state_service = RepoStateService(runtime_settings.resolved_repo_root)
@@ -197,6 +203,37 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 content={"detail": "Dashboard API token is missing or invalid."},
             )
         return await call_next(request)
+
+    @app.middleware("http")
+    async def request_logging(request: Request, call_next):
+        trace_id = request.headers.get("x-request-id") or str(uuid4())
+        request.state.trace_id = trace_id
+        started_at = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            latency_ms = round((time.perf_counter() - started_at) * 1000, 2)
+            log_event(
+                logger,
+                "api_request_failed",
+                trace_id=trace_id,
+                method=request.method,
+                path=request.url.path,
+                latency_ms=latency_ms,
+            )
+            raise
+        latency_ms = round((time.perf_counter() - started_at) * 1000, 2)
+        response.headers["x-request-id"] = trace_id
+        log_event(
+            logger,
+            "api_request_completed",
+            trace_id=trace_id,
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+        )
+        return response
 
     @app.get("/healthz")
     async def healthcheck(request: Request) -> dict[str, object]:

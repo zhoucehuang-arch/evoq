@@ -21,20 +21,21 @@ function Test-PortOpen {
 function Resolve-Python {
     $candidates = @(
         $env:PYTHON,
-        "C:\Users\hzc_\AppData\Local\Programs\Python\Python313\python.exe",
+        (Join-Path $RepoRoot ".venv\Scripts\python.exe"),
+        "python3",
         "python"
     ) | Where-Object { $_ -and $_.Trim() }
 
     foreach ($candidate in $candidates) {
         try {
-            $version = & $candidate -c "import sys; print(sys.version_info.major)" 2>$null
-            if ($LASTEXITCODE -eq 0 -and $version.Trim() -eq "3") {
+            $version = & $candidate -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)" 2>$null
+            if ($LASTEXITCODE -eq 0) {
                 return $candidate
             }
         } catch {
         }
     }
-    throw "No usable Python 3 interpreter found. Set PYTHON to a valid python.exe path."
+    throw "No usable Python >= 3.11 interpreter found. Set PYTHON to a valid python executable path."
 }
 
 $Python = Resolve-Python

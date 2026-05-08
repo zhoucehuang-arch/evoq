@@ -10,7 +10,7 @@ body:
       label: Area
       options:
         - Dashboard
-        - Telegram / light gateway
+        - Light gateway
         - Deployment / VPS
         - Trading / execution
         - Learning / research

@@ -15,7 +15,7 @@ If this is your first real deployment, start with `1 VPS` unless you already kno
 
 - a GitHub repository for this project
 - one Ubuntu, Debian, or local Linux machine for the first deploy
-- Telegram bot token and allowed owner user IDs
+- optional light-gateway credentials if you enable chat control; the current compatibility shell uses the `QE_DISCORD_*` env keys
 - an OpenAI-compatible API key or relay key
 - `QE_OPENAI_BASE_URL` if you use a relay
 - a market choice for this deployment: `us` or `cn`
@@ -58,7 +58,7 @@ This creates the simplest supported product shape:
 
 - Core services
 - dashboard
-- Telegram bot
+- optional light gateway
 - Postgres
 - Codex runner on the same host
 
@@ -141,7 +141,7 @@ cd /opt/evoq
 Also check:
 
 - dashboard loads
-- Telegram bot responds only in the allowed owner path
+- configured light gateway responds only in the allowed owner path, if enabled
 - `./ops/bin/system-doctor.sh` reports no `fail`
 - `/api/v1/system/doctor` reports no `fail`
 
@@ -155,7 +155,7 @@ Recommended order:
 2. confirm the deployment market mode is correct for this VPS
 3. keep the broker path in `paper`
 4. let the first broker sync and reconciliation finish cleanly
-5. verify dashboard, Telegram, and doctor all agree on runtime health
+5. verify dashboard, doctor, and any enabled light gateway all agree on runtime health
 6. only then consider a paper-broker path or later live approval
 
 ## 7. Scale to Core + Worker Later

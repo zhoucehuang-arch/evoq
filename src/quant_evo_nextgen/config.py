@@ -1,10 +1,42 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+@dataclass(frozen=True, slots=True)
+class DatabaseConfig:
+    postgres_url: str
+    bootstrap_on_start: bool
+    echo: bool
+
+
+@dataclass(frozen=True, slots=True)
+class AlpacaConfig:
+    paper_base_url: str
+    live_base_url: str
+    timeout_seconds: int
+    sync_lookback_days: int
+
+
+@dataclass(frozen=True, slots=True)
+class DashboardConfig:
+    title: str
+    bind_host: str
+    host_port: int
+    api_token: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class CodexConfig:
+    command: str
+    default_model: str
+    timeout_seconds: int
+    workspace_mode: str
 
 
 class Settings(BaseSettings):
@@ -94,6 +126,41 @@ class Settings(BaseSettings):
     @property
     def cors_allow_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
+
+    @property
+    def database(self) -> DatabaseConfig:
+        return DatabaseConfig(
+            postgres_url=self.postgres_url,
+            bootstrap_on_start=self.db_bootstrap_on_start,
+            echo=self.db_echo,
+        )
+
+    @property
+    def alpaca(self) -> AlpacaConfig:
+        return AlpacaConfig(
+            paper_base_url=self.alpaca_paper_base_url,
+            live_base_url=self.alpaca_live_base_url,
+            timeout_seconds=self.alpaca_timeout_seconds,
+            sync_lookback_days=self.alpaca_sync_lookback_days,
+        )
+
+    @property
+    def dashboard(self) -> DashboardConfig:
+        return DashboardConfig(
+            title=self.dashboard_title,
+            bind_host=self.dashboard_bind_host,
+            host_port=self.dashboard_host_port,
+            api_token=self.dashboard_api_token,
+        )
+
+    @property
+    def codex(self) -> CodexConfig:
+        return CodexConfig(
+            command=self.codex_command,
+            default_model=self.codex_default_model,
+            timeout_seconds=self.codex_timeout_seconds,
+            workspace_mode=self.codex_workspace_mode,
+        )
 
 
 @lru_cache(maxsize=1)

@@ -21,10 +21,10 @@ EvoQ 想解决的是：如何让“金融 + 量化 + 大模型”的系统长期
 
 | 模块 | 当前能力 |
 |---|---|
-| 本地运行 | Windows/PowerShell 一键启动 API + Dashboard，并可 smoke 验证 |
+| 本地运行 | Windows PowerShell 和 Linux/macOS Bash 都可一键启动 API + Dashboard，并可 smoke 验证 |
 | Dashboard | Workbench、Research、Strategy、Data、Trading、Learning、Evolution、System、Incidents |
 | 市场数据 | provider、watchlist、quote、freshness、local replay bars、historical bars API |
-| 因子 | `momentum_close_return`、`reversal_close_return`、`realized_volatility`、`dollar_volume_liquidity` |
+| 因子 | 10 个内置因子 + `custom_linear_combo`：momentum、reversal、volatility、liquidity、intraday、overnight、range、volume trend、risk-adjusted momentum、liquidity-adjusted momentum |
 | 回测 | 从 factor snapshots 运行 PIT replay backtest，包含成本、滑点、baseline、lineage、equity curve |
 | 策略生命周期 | research brief -> hypothesis -> spec -> backtest -> paper run -> promotion / withdrawal |
 | 执行门禁 | market session、broker snapshot、reconciliation、provider incident、override、stale quote blocking |
@@ -42,7 +42,7 @@ EvoQ 的不同点是：它更关注 owner 可以长期运行的 **dashboard-firs
 
 ## 从 GitHub 到本地 Dashboard
 
-这是第一次使用 EvoQ 时最推荐的路径：先在 Windows 本地跑起来，使用本地 SQLite 和 paper/simulated 环境，不需要券商密钥，也不会进入实盘交易。
+这是第一次使用 EvoQ 时最推荐的路径：先在本地跑起来，使用本地 SQLite 和 paper/simulated 环境，不需要券商密钥，也不会进入实盘交易。最快的数据到回测路径见：[First 5 Minutes](docs/next-gen/FIRST-5-MINUTES-TUTORIAL.md)。
 
 ### 1. 先安装基础工具
 
@@ -51,11 +51,11 @@ EvoQ 的不同点是：它更关注 owner 可以长期运行的 **dashboard-firs
 - Git：<https://git-scm.com/downloads>
 - Python 3.11 或更新版本：<https://www.python.org/downloads/>
 - Node.js 20 或更新版本：<https://nodejs.org/>
-- PowerShell：Windows 自带 PowerShell 或 PowerShell 7+
+- Shell：Windows PowerShell、PowerShell 7+，或 Linux/macOS Bash
 
-打开一个新的 PowerShell，确认命令可用：
+打开一个新的终端，确认命令可用：
 
-```powershell
+```bash
 git --version
 python --version
 node --version
@@ -98,6 +98,14 @@ cd ..\..
 
 ### 4. 启动本地运行时
 
+Linux/macOS：
+
+```bash
+./ops/tools/start_local.sh
+```
+
+Windows：
+
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.ps1
 ```
@@ -110,6 +118,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.
 默认使用本地 SQLite 数据库：`.runtime/evoq-local.db`。
 
 ### 5. 验证是否真的可用
+
+Linux/macOS：
+
+```bash
+./ops/tools/smoke_local.sh
+```
+
+Windows：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
@@ -125,8 +141,8 @@ EvoQ local smoke passed.
 
 建议按这个顺序理解：
 
-1. 在 **Data** 页面注册 `local-replay` provider。
-2. 在 **Data** 页面粘贴 OHLCV historical bars。
+1. 把 `sample-data/ohlcv/us-local-replay.json` 导入 `/api/v1/market-data/replay-bars`。
+2. 在 **Data** 页面查看 `local-replay` historical bars。
 3. 在 **Data** 页面生成 factor snapshots。
 4. 在 **Workbench / Research** 创建 research brief。
 5. 在 **Research** 查看 brief 是 `Ready`、`Needs evidence` 还是 `Blocked`。
@@ -136,7 +152,7 @@ EvoQ local smoke passed.
 9. 在 **Trading** 查看 execution readiness。
 10. 在 **Incidents** 处理 approvals，并在需要时 pause/resume。
 
-更适合新手的说明见：[EVOQ-BEGINNER-README.md](docs/next-gen/EVOQ-BEGINNER-README.md)。
+可直接执行的 5 分钟流程见：[First 5 Minutes](docs/next-gen/FIRST-5-MINUTES-TUTORIAL.md)。更适合新手的说明见：[EVOQ-BEGINNER-README.md](docs/next-gen/EVOQ-BEGINNER-README.md)。
 
 ## 安全边界
 
@@ -152,9 +168,9 @@ EvoQ local smoke passed.
 ```mermaid
 flowchart LR
   Owner[Owner] --> Dashboard[Dashboard]
-  Owner --> Telegram[Telegram / light gateway]
+  Owner --> Gateway[Optional light gateway]
   Dashboard --> API[FastAPI Core]
-  Telegram --> API
+  Gateway --> API
   API --> DB[(Runtime DB)]
   API --> Data[Market Data + Historical Bars]
   API --> Factors[Deterministic Factor Engine]
@@ -174,7 +190,8 @@ flowchart LR
 | `src/quant_evo_nextgen` | 后端 API、contracts、services、DB models、控制面 |
 | `apps/dashboard-web` | Next.js Dashboard |
 | `alembic/versions` | 数据库迁移 |
-| `ops/tools` | 本地 Windows 启动、测试、smoke 工具 |
+| `ops/tools` | 本地 PowerShell/Bash 启动、测试、smoke 工具 |
+| `sample-data` | 首次教程使用的内置 local replay OHLCV 数据 |
 | `ops/production` | Core/Worker 部署示例 |
 | `docs/next-gen` | 当前产品文档、用户手册、部署 runbook、评审 |
 | `workspace` | 仓库内 memory、knowledge、strategies、trading artifacts |
@@ -182,6 +199,14 @@ flowchart LR
 | `tests` | 服务和 API 回归测试 |
 
 ## 常用验证命令
+
+统一 task runner：
+
+```bash
+make lint test build-dashboard audit
+```
+
+Windows 明确命令：
 
 ```powershell
 cd apps\dashboard-web
@@ -191,10 +216,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
 ```
 
+Linux/macOS 等价命令：
+
+```bash
+cd apps/dashboard-web
+npm run build
+cd ../..
+./ops/tools/run_tests.sh -q
+./ops/tools/smoke_local.sh
+```
+
 当前本地验证结果：
 
 - Dashboard build：通过
-- 后端/服务测试：`135 passed`
+- 后端/服务测试：`158 passed`
 - Local smoke：通过
 
 ## 部署入口
@@ -206,7 +241,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.
 - 本地 Postgres
 - paper 模式
 - Dashboard 主操作
-- Telegram 只做轻提醒和审批入口
+- 可选 chat gateway 只做轻提醒和审批入口
 
 阅读顺序：
 

@@ -50,7 +50,7 @@ It is not trying to be a full architecture spec. It is the front door.
 The older README over-emphasized Discord-first operation and VPS deployment. That was no longer aligned with the current product:
 
 - Dashboard is now the primary owner surface.
-- Telegram is a light gateway, not the main operating model.
+- The chat gateway is optional and light, not the main operating model.
 - The useful first path is local replay data -> deterministic factors -> PIT replay backtest -> paper evidence.
 - LLMs are a research/challenge layer, not a direct trading engine.
 

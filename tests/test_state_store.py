@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from quant_evo_nextgen.config import Settings

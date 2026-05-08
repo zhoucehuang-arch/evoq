@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-
 WorkerClass = Literal[
     "analysis_worker",
     "implementation_worker",

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import json
-import os
 import hashlib
+import json
+import logging
+import os
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,8 +24,8 @@ from quant_evo_nextgen.contracts.codex import (
     CodexStructuredOutput,
 )
 from quant_evo_nextgen.db.models import CodexArtifactModel, CodexAttemptModel, CodexRunModel
+from quant_evo_nextgen.logging_utils import log_event
 from quant_evo_nextgen.services.codex import build_exec_command, build_exec_environment, ensure_paths_exist
-
 
 ACTIVE_RUN_STATUSES = {"queued", "booting", "running", "reviewing"}
 TERMINAL_RUN_STATUSES = {"completed", "blocked", "failed", "needs_review", "needs_eval", "rejected"}
@@ -32,6 +34,23 @@ ISOLATED_COPY_WORKSPACE_MODE = "isolated_copy"
 ISOLATION_IGNORED_DIRS = {".git", ".qe", ".next", "node_modules", "__pycache__", ".pytest_cache"}
 ISOLATION_IGNORED_SUFFIXES = {".pyc", ".pyo", ".db", ".sqlite", ".sqlite3"}
 ISOLATION_IGNORED_PREFIXES = (".tmp-", "tmp-")
+TRANSIENT_CODEX_ERROR_MARKERS = (
+    "429",
+    "rate limit",
+    "too many requests",
+    "temporarily unavailable",
+    "timeout",
+    "timed out",
+    "connection reset",
+    "connection refused",
+    "network",
+    "dns",
+    "service unavailable",
+    "502",
+    "503",
+    "504",
+)
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -56,6 +75,8 @@ class _AttemptExecution:
 
 
 class CodexFabricService:
+    """Queues and executes governed Codex worker runs with durable attempts and artifacts."""
+
     def __init__(self, session_factory: Callable[[], Session], settings: Settings) -> None:
         self.session_factory = session_factory
         self.settings = settings
@@ -104,6 +125,15 @@ class CodexFabricService:
             session.add(run)
             session.commit()
             session.refresh(run)
+            log_event(
+                logger,
+                "codex_run_queued",
+                codex_run_id=run.id,
+                worker_class=run.worker_class,
+                risk_tier=run.risk_tier,
+                max_iterations=run.max_iterations,
+                workspace_mode=self.settings.codex_workspace_mode,
+            )
             return self._run_summary(run)
 
     def list_runs(
@@ -196,7 +226,15 @@ class CodexFabricService:
             with self.session_factory() as session:
                 run = self._load_run(session, codex_run_id)
                 if run.status in TERMINAL_RUN_STATUSES:
+                    log_event(
+                        logger,
+                        "codex_run_completed",
+                        codex_run_id=run.id,
+                        status=run.status,
+                        attempts=run.current_attempt,
+                    )
                     return self._run_summary(run)
+
                 if run.current_attempt >= run.max_iterations:
                     run.status = "failed"
                     run.completed_at = datetime.now(tz=UTC)
@@ -278,7 +316,30 @@ class CodexFabricService:
                 session.refresh(run)
 
                 if run.status in TERMINAL_RUN_STATUSES:
+                    log_event(
+                        logger,
+                        "codex_run_completed",
+                        codex_run_id=run.id,
+                        status=run.status,
+                        attempts=run.current_attempt,
+                    )
                     return self._run_summary(run)
+
+                if next_status == "queued":
+                    retry_delay_seconds = self._retry_delay_seconds(run.current_attempt)
+                    log_event(
+                        logger,
+                        "codex_run_retry_scheduled",
+                        codex_run_id=run.id,
+                        status=run.status,
+                        attempts=run.current_attempt,
+                        retry_delay_seconds=retry_delay_seconds,
+                        retryable_failure=bool(result_payload.get("retryable")),
+                    )
+                    time.sleep(retry_delay_seconds)
+
+    def _retry_delay_seconds(self, attempt_no: int) -> float:
+        return min(10.0, 0.25 * (2 ** max(0, attempt_no - 1)))
 
     def _prepare_attempt(self, run: CodexRunModel) -> _AttemptExecution:
         request = CodexRunRequest.model_validate(run.request_payload)
@@ -343,6 +404,14 @@ class CodexFabricService:
         env = os.environ.copy()
         env.update(build_exec_environment(self.settings))
         started_at = datetime.now(tz=UTC)
+        log_event(
+            logger,
+            "codex_attempt_started",
+            codex_run_id=execution.request.codex_run_id,
+            attempt_no=execution.attempt_no,
+            phase=execution.phase,
+            workspace_mode=execution.workspace_mode,
+        )
         try:
             completed = subprocess.run(
                 execution.command,
@@ -355,9 +424,25 @@ class CodexFabricService:
             )
             execution.stdout_path.write_text(completed.stdout or "", encoding="utf-8")
             execution.stderr_path.write_text(completed.stderr or "", encoding="utf-8")
+            status = "completed" if completed.returncode == 0 else "failed"
+            retryable = completed.returncode != 0 and _looks_like_transient_codex_error(
+                f"{completed.stdout or ''}\n{completed.stderr or ''}"
+            )
+            log_event(
+                logger,
+                "codex_attempt_finished",
+                codex_run_id=execution.request.codex_run_id,
+                attempt_no=execution.attempt_no,
+                phase=execution.phase,
+                status=status,
+                exit_code=completed.returncode,
+                retryable=retryable,
+            )
             return {
-                "status": "completed" if completed.returncode == 0 else "failed",
+                "status": status,
                 "exit_code": completed.returncode,
+                "retryable": retryable,
+                "error": "Transient Codex/provider failure; retry scheduled if attempts remain." if retryable else None,
                 "stdout_path": str(execution.stdout_path),
                 "stderr_path": str(execution.stderr_path),
                 "started_at": started_at.isoformat(),
@@ -366,20 +451,40 @@ class CodexFabricService:
         except subprocess.TimeoutExpired as exc:
             execution.stdout_path.write_text(exc.stdout or "", encoding="utf-8")
             execution.stderr_path.write_text(exc.stderr or "", encoding="utf-8")
+            log_event(
+                logger,
+                "codex_attempt_timeout",
+                codex_run_id=execution.request.codex_run_id,
+                attempt_no=execution.attempt_no,
+                phase=execution.phase,
+                timeout_seconds=execution.request.max_duration_sec,
+                retryable=True,
+            )
             return {
                 "status": "failed",
                 "error": f"Codex attempt timed out after {execution.request.max_duration_sec} seconds.",
                 "exit_code": None,
+                "retryable": True,
                 "stdout_path": str(execution.stdout_path),
                 "stderr_path": str(execution.stderr_path),
                 "started_at": started_at.isoformat(),
                 "ended_at": datetime.now(tz=UTC).isoformat(),
             }
         except FileNotFoundError:
+            log_event(
+                logger,
+                "codex_attempt_command_missing",
+                codex_run_id=execution.request.codex_run_id,
+                attempt_no=execution.attempt_no,
+                phase=execution.phase,
+                command=self.settings.codex_command,
+                retryable=False,
+            )
             return {
                 "status": "failed",
                 "error": f"Codex command not found: {self.settings.codex_command}",
                 "exit_code": None,
+                "retryable": False,
                 "stdout_path": str(execution.stdout_path),
                 "stderr_path": str(execution.stderr_path),
                 "started_at": started_at.isoformat(),
@@ -949,3 +1054,8 @@ class CodexFabricService:
         if message in existing:
             return existing
         return f"{existing} | {message}"
+
+
+def _looks_like_transient_codex_error(output: str) -> bool:
+    normalized = output.lower()
+    return any(marker in normalized for marker in TRANSIENT_CODEX_ERROR_MARKERS)

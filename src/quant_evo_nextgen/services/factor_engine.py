@@ -108,6 +108,8 @@ def evaluate_factor(
     *,
     custom_expression: str | None = None,
 ) -> FactorResult:
+    if not bars:
+        raise ValueError("factor evaluation requires at least one historical bar.")
     catalog = factor_catalog()
     if factor_code == "custom_linear_combo":
         if not custom_expression:

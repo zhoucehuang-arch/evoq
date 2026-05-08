@@ -3,9 +3,10 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $pythonCandidates = @(
     (Join-Path $repoRoot ".venv\Scripts\python.exe"),
-    "C:\Users\hzc_\AppData\Local\Programs\Python\Python313\python.exe",
+    $env:PYTHON,
+    "python3",
     "python"
-)
+) | Where-Object { $_ -and $_.Trim() }
 
 $python = $null
 foreach ($candidate in $pythonCandidates) {

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 from quant_evo_nextgen.services.deploy_config import DeployConfigService

@@ -21,11 +21,23 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
-      - name: Run backend tests
-        run: python -m pytest -q
+      - name: Lint backend
+        run: python -m ruff check src tests alembic
 
       - name: Verify backend imports and migrations compile
         run: python -m compileall src tests alembic/versions
+
+      - name: Verify empty database migrations
+        run: QE_POSTGRES_URL=sqlite+pysqlite:///./ci-alembic.db alembic upgrade head
+
+      - name: Verify OpenAPI export
+        run: QE_POSTGRES_URL=sqlite+pysqlite:///./ci-openapi.db python -m quant_evo_nextgen.runner.export_openapi --output /tmp/evoq-openapi.json
+
+      - name: Run backend tests
+        run: python -m pytest -q
+
+      - name: Audit backend dependencies
+        run: python -m pip_audit
 
   dashboard:
     runs-on: ubuntu-latest
@@ -43,6 +55,9 @@ jobs:
 
       - name: Install dashboard dependencies
         run: npm ci
+
+      - name: Audit dashboard production dependencies
+        run: npm audit --omit=dev --audit-level=moderate
 
       - name: Build dashboard
         run: npm run build

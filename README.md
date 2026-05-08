@@ -40,10 +40,10 @@ The product splits responsibilities deliberately:
 
 | Area | What works now |
 |---|---|
-| Local runtime | Windows/PowerShell local API + dashboard startup and smoke validation |
+| Local runtime | Windows PowerShell and Linux/macOS Bash local API + dashboard startup and smoke validation |
 | Dashboard | Owner workbench, research, strategy, data, trading, learning, evolution, system, and incident pages |
 | Market data | Providers, watchlists, quote snapshots, freshness, local replay bars, historical bars API |
-| Factor engine | `momentum_close_return`, `reversal_close_return`, `realized_volatility`, `dollar_volume_liquidity` |
+| Factor engine | 10 built-in factors plus `custom_linear_combo`: momentum, reversal, volatility, liquidity, intraday, overnight, range, volume trend, risk-adjusted momentum, and liquidity-adjusted momentum |
 | Backtesting | PIT factor replay backtest with cost/slippage, baseline comparison, input-bar lineage, and equity curve |
 | Strategy lifecycle | research brief -> hypothesis -> spec -> backtest -> paper run -> promotion / withdrawal |
 | Execution readiness | market session, broker snapshot, reconciliation, provider incidents, overrides, stale quote blocking |
@@ -61,7 +61,7 @@ The key difference: EvoQ is optimized for an owner-operated, dashboard-first, pa
 
 ## Quick Start: From GitHub To Local Dashboard
 
-This is the recommended first path for a new user on Windows. The dashboard and API run locally; no broker credentials or live-trading setup are required.
+This is the recommended first path for a new user. The dashboard and API run locally; no broker credentials or live-trading setup are required. For the shortest data-to-backtest walkthrough, use [First 5 Minutes](docs/next-gen/FIRST-5-MINUTES-TUTORIAL.md).
 
 ### 1. Install prerequisites
 
@@ -70,11 +70,11 @@ Install these first:
 - Git: <https://git-scm.com/downloads>
 - Python 3.11 or newer: <https://www.python.org/downloads/>
 - Node.js 20 or newer: <https://nodejs.org/>
-- PowerShell: Windows PowerShell or PowerShell 7+
+- Shell: Windows PowerShell, PowerShell 7+, or Bash on Linux/macOS
 
-Check them in a new PowerShell window:
+Check them in a new terminal:
 
-```powershell
+```bash
 git --version
 python --version
 node --version
@@ -117,6 +117,14 @@ cd ..\..
 
 ### 4. Start the local runtime
 
+Linux/macOS:
+
+```bash
+./ops/tools/start_local.sh
+```
+
+Windows:
+
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\start_local.ps1
 ```
@@ -129,6 +137,14 @@ Then open:
 The local script uses SQLite at `.runtime/evoq-local.db` and a local dashboard API token by default.
 
 ### 5. Verify the product is usable
+
+Linux/macOS:
+
+```bash
+./ops/tools/smoke_local.sh
+```
+
+Windows:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
@@ -146,8 +162,8 @@ If this passes, the dashboard, API, market-data endpoints, strategy endpoints, l
 
 Use this path to understand the product quickly:
 
-1. **Data**: register a provider such as `local-replay`.
-2. **Data**: paste replay OHLCV bars into the historical-bar importer.
+1. **Data**: import `sample-data/ohlcv/us-local-replay.json` into `/api/v1/market-data/replay-bars`.
+2. **Data**: inspect the `local-replay` historical bars.
 3. **Data**: generate factor snapshots, starting with `momentum_close_return`.
 4. **Workbench / Research**: create a research brief and let the audit gate classify it.
 5. **Strategy**: promote a ready brief into a hypothesis and create a deterministic strategy spec.
@@ -156,7 +172,7 @@ Use this path to understand the product quickly:
 8. **Trading**: check execution readiness before any broker-facing action.
 9. **Incidents**: approve/reject pending actions and use overrides for pause/resume.
 
-For a beginner-friendly Chinese walkthrough, start with [EVOQ-BEGINNER-README.md](docs/next-gen/EVOQ-BEGINNER-README.md).
+For a runnable walkthrough, start with [First 5 Minutes](docs/next-gen/FIRST-5-MINUTES-TUTORIAL.md). For a beginner-friendly Chinese overview, start with [EVOQ-BEGINNER-README.md](docs/next-gen/EVOQ-BEGINNER-README.md).
 
 ## Safety Model
 
@@ -173,9 +189,9 @@ EvoQ has hard product boundaries:
 ```mermaid
 flowchart LR
   Owner[Owner] --> Dashboard[Dashboard]
-  Owner --> Telegram[Telegram / light gateway]
+  Owner --> Gateway[Optional light gateway]
   Dashboard --> API[FastAPI Core]
-  Telegram --> API
+  Gateway --> API
   API --> DB[(Runtime DB)]
   API --> Data[Market Data + Historical Bars]
   API --> Factors[Deterministic Factor Engine]
@@ -196,7 +212,8 @@ Design rule: **one authoritative Core, one runtime database, deterministic finan
 | `src/quant_evo_nextgen` | backend API, contracts, services, DB models, control-plane logic |
 | `apps/dashboard-web` | Next.js operator dashboard |
 | `alembic/versions` | database migrations |
-| `ops/tools` | local Windows start, smoke, and test helpers |
+| `ops/tools` | local PowerShell/Bash start, smoke, and test helpers |
+| `sample-data` | bundled local replay OHLCV payloads for the first tutorial |
 | `ops/production` | Core/Worker deployment examples |
 | `docs/next-gen` | current product docs, user manual, deployment runbooks, reviews |
 | `workspace` | repo-backed memory, knowledge, candidate strategies, trading artifacts |
@@ -204,6 +221,14 @@ Design rule: **one authoritative Core, one runtime database, deterministic finan
 | `tests` | regression coverage for services and API behavior |
 
 ## Validation Commands
+
+Task-runner path:
+
+```bash
+make lint test build-dashboard audit
+```
+
+Windows explicit commands:
 
 ```powershell
 cd apps\dashboard-web
@@ -213,10 +238,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1
 ```
 
+Linux/macOS equivalents:
+
+```bash
+cd apps/dashboard-web
+npm run build
+cd ../..
+./ops/tools/run_tests.sh -q
+./ops/tools/smoke_local.sh
+```
+
 Latest local validation in this workspace:
 
 - Dashboard build: passed
-- Backend/service tests: `135 passed`
+- Backend/service tests: `158 passed`
 - Local smoke: passed
 
 ## Deployment
@@ -228,7 +263,7 @@ Recommended first deployment:
 - local Postgres
 - paper broker posture
 - dashboard as the main owner surface
-- Telegram only as a light alert/approval gateway
+- optional chat gateway only as a light alert/approval surface
 
 Start with:
 

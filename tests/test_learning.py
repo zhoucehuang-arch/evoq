@@ -638,6 +638,8 @@ def _mock_completed_research_run(
     }
 
     def fake_run(command, *, cwd, env, capture_output, text, timeout, check):
+        assert capture_output is True
+        assert timeout is not None
         prompt = command[-1]
         phase = "eval" if "Current phase: eval" in prompt else "implement"
         final_message_path = Path(command[command.index("--output-last-message") + 1])

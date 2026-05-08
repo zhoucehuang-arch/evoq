@@ -24,14 +24,14 @@ from quant_evo_nextgen.contracts.state import (
     InstrumentDefinitionUpsert,
     MarketSessionStateCreate,
     MarketSessionStateSummary,
-    OrderCancelCreate,
-    OrderIntentCreate,
-    OrderLegSummary,
-    OrderIntentSummary,
     OptionLifecycleEventCreate,
     OptionLifecycleEventSummary,
-    OrderReplaceCreate,
+    OrderCancelCreate,
+    OrderIntentCreate,
+    OrderIntentSummary,
+    OrderLegSummary,
     OrderRecordSummary,
+    OrderReplaceCreate,
     PositionRecordSummary,
     ProviderIncidentCreate,
     ProviderIncidentResolve,
@@ -47,18 +47,18 @@ from quant_evo_nextgen.db.models import (
     IncidentModel,
     InstrumentDefinitionModel,
     MarketCalendarStateModel,
-    MarketQuoteSnapshotModel,
+    OperatorOverrideModel,
+    OptionLifecycleEventModel,
     OrderIntentModel,
     OrderLegModel,
     OrderRecordModel,
-    OptionLifecycleEventModel,
-    OperatorOverrideModel,
     PositionRecordModel,
     ProviderIncidentModel,
     ProviderProfileModel,
     ReconciliationRunModel,
     StrategySpecModel,
 )
+from quant_evo_nextgen.services.alpaca_broker import AlpacaBrokerAdapter
 from quant_evo_nextgen.services.broker import (
     BrokerAdapter,
     BrokerCancelRequest,
@@ -72,9 +72,7 @@ from quant_evo_nextgen.services.broker import (
     PositionState,
     broker_capability_defaults,
 )
-from quant_evo_nextgen.services.alpaca_broker import AlpacaBrokerAdapter
 from quant_evo_nextgen.services.execution_readiness import ExecutionReadinessEvaluator
-
 
 OPEN_PROVIDER_INCIDENT_STATUSES = ("open", "investigating", "mitigated")
 
@@ -108,6 +106,8 @@ class OrderCapitalProfile:
 
 
 class ExecutionService:
+    """Coordinates execution governance, broker sync, paper/live readiness, and order records."""
+
     def __init__(
         self,
         session_factory: Callable[[], Session],
@@ -2537,13 +2537,6 @@ class ExecutionService:
             f"via a {underlying_side} transformation at strike {instrument.strike_price:.2f}."
         )
         return resulting_position, underlying_instrument, derived_cash_flow, auto_note
-        position.unrealized_pnl = self._compute_unrealized_pnl(
-            direction=position.direction,
-            quantity=remaining_quantity,
-            avg_entry_price=position.avg_entry_price,
-            market_price=event_price,
-            contract_multiplier=multiplier,
-        )
 
     def _ensure_option_review_incident(
         self,

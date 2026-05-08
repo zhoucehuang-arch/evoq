@@ -1,16 +1,15 @@
 from __future__ import annotations
 
+import secrets
 from dataclasses import asdict, dataclass
 from getpass import getpass
 from ipaddress import ip_address, ip_network
 from pathlib import Path
-import secrets
 from typing import Any, Callable, Mapping
 
 from sqlalchemy.engine import make_url
 
 from quant_evo_nextgen.config import Settings
-
 
 PRIVATE_NETWORKS = (
     ip_network("10.0.0.0/8"),

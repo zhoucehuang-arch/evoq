@@ -265,7 +265,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.
 
 - LLM 不直接交易。
 - Dashboard 是主操作界面。
-- Telegram 只保留提醒、轻审批和紧急入口。
+- 聊天/轻入口只保留提醒、轻审批和紧急入口。
 - Codex 用于工程实现、工具创建、测试和系统进化落地。
 - 金融数据和证据链由 EvoQ 自己的 provider、watchlist、quote、freshness、research artifact 流程负责。
 - 实盘之前必须经过 backtest、paper、risk、approval 和 broker sync。

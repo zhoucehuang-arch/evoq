@@ -117,7 +117,7 @@ Recommended first real deployment:
 - local Postgres
 - paper broker posture
 - dashboard-first owner operation
-- Telegram as light alert/approval gateway
+- optional light gateway for alerts and approvals
 
 ### Scale out later
 

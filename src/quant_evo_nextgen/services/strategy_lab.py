@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Callable, Sequence
@@ -37,6 +38,7 @@ from quant_evo_nextgen.db.models import (
     StrategySpecModel,
     WithdrawalDecisionModel,
 )
+from quant_evo_nextgen.logging_utils import log_event
 from quant_evo_nextgen.services.adversarial import run_adversarial_checks
 from quant_evo_nextgen.services.cost_models import (
     CostModelConfig,
@@ -45,6 +47,8 @@ from quant_evo_nextgen.services.cost_models import (
     estimate_symbol_trade_cost,
 )
 from quant_evo_nextgen.services.statistical_validation import validate_backtest_statistics
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -58,6 +62,8 @@ class StrategyLabMetrics:
 
 
 class StrategyLabService:
+    """Manages research briefs, hypotheses, strategy specs, backtests, paper gates, and promotions."""
+
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self.session_factory = session_factory
 
@@ -290,6 +296,15 @@ class StrategyLabService:
             spec.current_stage = self._spec_stage_after_backtest(gate_result)
             session.commit()
             session.refresh(backtest)
+            log_event(
+                logger,
+                "strategy_backtest_gate_evaluated",
+                strategy_spec_id=request.strategy_spec_id,
+                backtest_run_id=backtest.id,
+                gate_result=gate_result,
+                sample_size=request.sample_size,
+                gate_notes_count=len(gate_notes),
+            )
             return self._backtest_summary(backtest)
 
     def run_factor_replay_backtest(
@@ -416,6 +431,17 @@ class StrategyLabService:
             }
             session.commit()
             session.refresh(backtest)
+            log_event(
+                logger,
+                "strategy_factor_replay_gate_evaluated",
+                strategy_spec_id=request.strategy_spec_id,
+                backtest_run_id=backtest.id,
+                factor_code=request.factor_code,
+                gate_result=gate_result,
+                sample_size=bar_count,
+                selected_symbols=[snapshot.symbol for snapshot in selected],
+                gate_notes_count=len(gate_notes),
+            )
             return self._backtest_summary(backtest)
 
     def list_backtests(
@@ -468,6 +494,15 @@ class StrategyLabService:
             spec.current_stage = self._spec_stage_after_paper_run(gate_result)
             session.commit()
             session.refresh(paper_run)
+            log_event(
+                logger,
+                "strategy_paper_gate_evaluated",
+                strategy_spec_id=request.strategy_spec_id,
+                paper_run_id=paper_run.id,
+                gate_result=gate_result,
+                monitoring_days=request.monitoring_days,
+                gate_notes_count=len(gate_notes),
+            )
             return self._paper_run_summary(paper_run)
 
     def list_paper_runs(

@@ -250,7 +250,7 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
     "Push the repository to GitHub.",
     "Clone the stack to /opt/evoq on one local Linux host or a single Ubuntu VPS.",
     "Run ./ops/bin/quickstart-single-vps.sh or use onboard-single-vps first if you want a reviewable draft.",
-    "Confirm the market mode, then fill Telegram, relay, and dashboard secrets.",
+    "Confirm the market mode, then fill light-gateway, relay, and dashboard secrets.",
     "Pass doctor, smoke, and broker-sync checks in paper mode before touching any real capital.",
     "Only add a second Worker VPS when you truly need stronger isolation or higher Codex throughput.",
   ];
@@ -258,7 +258,7 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
   const activationChecks = [
     "./ops/bin/core-smoke.sh returns no fail",
     "./ops/bin/system-doctor.sh returns no fail",
-    "Dashboard and Telegram agree on runtime health",
+    "Dashboard and light gateway agree on runtime health",
     "Broker sync and reconciliation look healthy in paper mode",
     "No unresolved incident is hiding behind a stale or broken freshness state",
   ];
@@ -277,7 +277,7 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
   const supportedSurface = [
     "US mode supports governed US equities, US options, mixed sleeves, and short-equity paths with borrow and margin gates.",
     "CN mode supports A-share research, ranking, calendar-aware supervision, and paper-first operation.",
-    "Dashboard is the write and review surface while Telegram stays a light gateway.",
+    "Dashboard is the write and review surface while any chat gateway stays a light gateway.",
   ];
 
   const honestBoundaries = [

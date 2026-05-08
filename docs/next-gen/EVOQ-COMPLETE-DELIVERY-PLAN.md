@@ -66,7 +66,7 @@ Already live or recently added:
 Current verified baseline:
 
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps1 -q`
-- latest result: `135 passed`
+- latest result: `158 passed`
 - `npm run build` in `apps/dashboard-web`
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1`
 

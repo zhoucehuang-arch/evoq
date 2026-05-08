@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
+from quant_evo_nextgen.config import Settings
 from quant_evo_nextgen.db.session import Database
 from quant_evo_nextgen.services.evolution import EvolutionService
 from quant_evo_nextgen.services.state_store import StateStore
-from quant_evo_nextgen.config import Settings
 
 
 def test_evolution_service_tracks_proposals_canaries_and_promotions(tmp_path: Path) -> None:

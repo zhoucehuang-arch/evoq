@@ -65,7 +65,6 @@ class EvolutionCapabilityService:
         sources = self.state_store.list_source_health()
         loops = self.state_store.list_supervisor_loops()
         incidents = self.state_store.list_incidents(open_only=True, limit=50)
-        runtime = self.state_store.get_runtime_snapshot()
         learning_metrics = self.learning_service.get_learning_metrics() if self.learning_service is not None else None
         strategy_metrics = self.strategy_service.get_metrics() if self.strategy_service is not None else None
         evolution_metrics = self.evolution_service.get_metrics() if self.evolution_service is not None else None

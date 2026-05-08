@@ -21,7 +21,6 @@ from quant_evo_nextgen.services.learning import LearningService
 from quant_evo_nextgen.services.state_store import StateStore
 from quant_evo_nextgen.services.strategy_lab import StrategyLabService
 
-
 logger = logging.getLogger("quant_evo_nextgen.supervisor")
 
 

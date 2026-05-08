@@ -22,7 +22,6 @@ from quant_evo_nextgen.db.models import (
     StrategySpecModel,
 )
 
-
 _QUARANTINE_KEYWORDS = (
     "prompt injection",
     "system prompt",
@@ -73,6 +72,8 @@ class LearningMeshMetrics:
 
 
 class LearningService:
+    """Turns completed research runs and strategy evidence into auditable documents and insights."""
+
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self.session_factory = session_factory
 

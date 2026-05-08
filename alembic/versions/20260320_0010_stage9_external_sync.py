@@ -8,8 +8,8 @@ Create Date: 2026-03-20 01:15:00
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20260320_0010"

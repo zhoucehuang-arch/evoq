@@ -4,16 +4,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from quant_evo_nextgen.services.deploy_config import (
-    DeployConfigService,
     SUPPORTED_DEPLOYMENT_MARKET_MODES,
     SUPPORTED_DEPLOYMENT_TOPOLOGIES,
+    DeployConfigService,
     normalize_deploy_role,
 )
 from quant_evo_nextgen.services.deploy_fields import (
     DeployFieldSpec,
     resolve_deploy_field,
 )
-
 
 SUPPORTED_BROKER_MODES = {
     "paper": "paper_sim",

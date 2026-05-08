@@ -23,10 +23,37 @@ This project mixes product surfaces, automation, and trading-system safety conce
 
 ## Local verification
 
+Install the dev toolchain once:
+
+```bash
+python3 -m pip install -e ".[dev]"
+cd apps/dashboard-web && npm ci && cd ../..
+```
+
 For most backend or contract changes:
+
+Linux/macOS:
+
+```bash
+./ops/tools/run_tests.sh -q
+```
+
+Windows:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\run_tests.ps1 -q
+```
+
+Run lint before opening a PR:
+
+```bash
+python3 -m ruff check src tests alembic
+```
+
+Or use the task runner:
+
+```bash
+make lint test build-dashboard audit
 ```
 
 For dashboard changes:
@@ -37,6 +64,14 @@ npm run build
 ```
 
 For local product smoke:
+
+Linux/macOS:
+
+```bash
+./ops/tools/smoke_local.sh
+```
+
+Windows:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ops\tools\smoke_local.ps1

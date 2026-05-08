@@ -10,7 +10,7 @@ You are done with this checklist only when all of the following are true:
 
 - Core and Worker both pass smoke checks
 - the dashboard loads and shows non-broken freshness
-- Discord responds only for approved owner identities and channels
+- any optional chat gateway responds only for approved owner identities and channels
 - the broker adapter is still in `paper` mode
 - the first broker sync and reconciliation cycle look sane
 - there are no unexplained overrides, halted loops, or red incidents
@@ -54,9 +54,9 @@ Stop and fix the environment if `worker-smoke.sh` reports any `fail`.
 Verify:
 
 - the dashboard opens successfully
-- Discord is reachable
-- only the intended owner accounts and channels can control the bot
-- the dashboard and Discord agree on basic system state
+- optional chat gateway is reachable, if enabled
+- only the intended owner accounts and channels can control the gateway, if enabled
+- the dashboard and optional gateway agree on basic system state
 
 ## Step 4. Confirm Safe Trading Posture
 
@@ -91,7 +91,7 @@ Useful evidence to capture:
 
 - screenshot of the dashboard Overview and Trading pages
 - the latest `core-smoke.sh` and `worker-smoke.sh` outputs
-- the first successful Discord status exchange
+- the first successful optional gateway status exchange, if enabled
 - notes about any incident, override, or loop that needed intervention
 
 ## Stop Conditions
@@ -99,7 +99,7 @@ Useful evidence to capture:
 Do not move forward if any of these is true:
 
 - dashboard freshness is `broken`
-- Discord is responding in the wrong channel or for the wrong account
+- optional chat gateway is responding in the wrong channel or for the wrong account
 - worker execution cannot reach the configured provider or relay
 - broker sync is missing, stale, or inconsistent
 - system state looks healthy in one surface but unhealthy in another

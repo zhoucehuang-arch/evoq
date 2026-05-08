@@ -156,12 +156,12 @@ export default async function SystemPage() {
     },
     {
       title: "Pause trading, keep learning",
-      surface: "Telegram",
-      detail: "Use the Telegram gateway to halt automated trading while leaving research, learning, and evaluation loops active.",
+      surface: "Light gateway",
+      detail: "Use the configured light gateway to halt automated trading while leaving research, learning, and evaluation loops active.",
     },
     {
       title: "Review drift before changing posture",
-      surface: "Dashboard + Telegram",
+      surface: "Dashboard + gateway",
       detail: "Inspect config, owner preferences, proposals, and incidents here before requesting a governed runtime change.",
     },
     {
